@@ -5,24 +5,23 @@
     "margin-top": 4,
     "margin-left": 8,
     "margin-right": 8,
-    "height": 34,
+    "height": 36,
     "spacing": 6,
 
     "modules-left": [
         "custom/launcher",
         "hyprland/workspaces",
-        "hyprland/window",
-        "custom/btn-minimize",
-        "custom/btn-minimize-all",
-        "custom/btn-maximize",
-        "custom/btn-close"
+        "wlr/taskbar"
     ],
     "modules-center": [
-        "custom/minimized",
+        "custom/btn-minimize",
+        "custom/btn-maximize",
+        "custom/btn-close",
         "mpris",
         "clock"
     ],
     "modules-right": [
+        "custom/quick-ssh",
         "cpu",
         "custom/gpu",
         "memory",
@@ -39,7 +38,7 @@
         "format": "󰣇",
         "on-click": "/home/gallo/.config/hypr/scripts/launchpad.sh",
         "on-click-right": "/home/gallo/.config/hypr/scripts/wallpaper-select.sh",
-        "tooltip-format": "Garchy Launchpad (Left Click)\nWallpaper Menu (Right Click)"
+        "tooltip-format": "Gally Launchpad (Left Click)\nWallpaper Menu (Right Click)"
     },
 
     "hyprland/workspaces": {
@@ -61,25 +60,21 @@
             "15": "8", "16": "8",
             "17": "9", "18": "9",
             "19": "10", "20": "10"
-        },
-        "persistent-workspaces": {
-            "DP-2": [1, 3, 5, 7, 9, 11, 13, 15, 17, 19],
-            "DP-1": [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
         }
     },
 
-    "hyprland/window": {
-        "format": "{title}",
-        "max-length": 25,
-        "separate-outputs": true,
-        "on-click-right": "/home/gallo/.config/hypr/scripts/force-kill.sh",
-        "rewrite": {
-            "(.*) — Mozilla Firefox": "󰈹 $1",
-            "(.*) - Brave": "󰖟 $1",
-            "(.*) - Visual Studio Code": "󰨞 $1",
-            "(.*) - Discord": "󰙯 $1",
-            "kitty": " Terminal"
-        }
+    "wlr/taskbar": {
+        "format": "{icon} {name}",
+        "icon-size": 16,
+        "icon-theme": "Papirus-Dark",
+        "tooltip-format": "{title}",
+        "on-click": "activate",
+        "on-click-middle": "close",
+        "on-click-right": "fullscreen",
+        "ignore-list": [
+            "wlogout",
+            "rofi"
+        ]
     },
 
     "custom/btn-minimize": {
@@ -87,13 +82,6 @@
         "tooltip-format": "Minimize Active Window (Left Click)\nRestore Last Window (Right Click)",
         "on-click": "/home/gallo/.config/hypr/scripts/minimize-window.sh minimize",
         "on-click-right": "/home/gallo/.config/hypr/scripts/minimize-window.sh restore-last"
-    },
-
-    "custom/btn-minimize-all": {
-        "format": "󰘖",
-        "tooltip-format": "Minimize ALL Windows on this Screen (Show Desktop)\nClick again to restore all",
-        "on-click": "/home/gallo/.config/hypr/scripts/minimize-window.sh toggle-all",
-        "on-click-right": "/home/gallo/.config/hypr/scripts/minimize-window.sh restore-all"
     },
 
     "custom/btn-maximize": {
@@ -109,18 +97,10 @@
         "on-click-right": "/home/gallo/.config/hypr/scripts/force-kill.sh"
     },
 
-    "custom/minimized": {
-        "exec": "/home/gallo/.config/hypr/scripts/minimized-status.sh",
-        "return-type": "json",
-        "interval": 2,
-        "on-click": "/home/gallo/.config/hypr/scripts/window-switch.sh",
-        "tooltip": true
-    },
-
     "mpris": {
         "format": " {title} - {artist}",
         "format-paused": " {title} - {artist}",
-        "max-length": 30,
+        "max-length": 26,
         "tooltip-format": "{player}: {title} - {artist}",
         "on-click": "playerctl play-pause",
         "on-click-right": "playerctl next"
@@ -138,27 +118,36 @@
             "format": {
                 "months": "<span color='#7aa2f7'><b>{}</b></span>",
                 "days": "<span color='#c0caf5'><b>{}</b></span>",
-                "weeks": "<span color='#7dcfff'><b>W{}</b></span>",
-                "weekdays": "<span color='#bb9af7'><b>{}</b></span>",
+                "weeks": "<span color='#73daca'><b>W{}</b></span>",
+                "weekdays": "<span color='#ff9e64'><b>{}</b></span>",
                 "today": "<span color='#f7768e'><b><u>{}</u></b></span>"
             }
         },
         "actions": {
-            "on-click-right": "mode"
+            "on-click-right": "mode",
+            "on-scroll-up": "shift_up",
+            "on-scroll-down": "shift_down"
         }
+    },
+
+    "custom/quick-ssh": {
+        "format": "󰢹 SSH",
+        "tooltip-format": "SSH Servers & Quick Connect",
+        "on-click": "/home/gallo/.config/hypr/scripts/quick-ssh.sh"
     },
 
     "cpu": {
         "format": " {usage}%",
-        "tooltip": true,
+        "tooltip-format": "Ryzen 9 5900X (24 Threads)\nUsage: {usage}%\nLoad: {load}",
         "interval": 2
     },
 
     "custom/gpu": {
-        "exec": "/home/gallo/.config/waybar/scripts/gpu_usage.sh",
+        "exec": "/home/gallo/.config/hypr/scripts/gpu_usage.sh",
+        "return-type": "json",
+        "format": "{}",
         "interval": 2,
-        "format": " {}%",
-        "tooltip-format": "NVIDIA RTX 3080 Ti: {}%"
+        "tooltip": true
     },
 
     "memory": {
@@ -172,7 +161,7 @@
         "critical-threshold": 80,
         "format": " {temperatureC}°C",
         "format-critical": " {temperatureC}°C",
-        "tooltip-format": "Ryzen 9 5900X: {temperatureC}°C",
+        "tooltip-format": "CPU Temperature: {temperatureC}°C",
         "interval": 2
     },
 
@@ -195,15 +184,10 @@
         "tooltip-format": "Volume: {volume}%"
     },
 
-    "tray": {
-        "icon-size": 15,
-        "spacing": 8
-    },
-
     "custom/ai-hub": {
-        "format": "🤖 AI",
-        "tooltip-format": "Garchy AI Copilot & Fixes (Super + Shift + Space)",
-        "on-click": "/home/gallo/.config/hypr/scripts/garchy-ai-hud.sh"
+        "format": "🤖 Gally AI",
+        "tooltip-format": "Gally AI Copilot & Troubleshooter (Super + Shift + Space)",
+        "on-click": "/home/gallo/.config/hypr/scripts/gally-ai-hud.sh"
     },
 
     "custom/theme": {
@@ -214,8 +198,13 @@
 
     "custom/help": {
         "format": "❓",
-        "tooltip-format": "Quick Guide & Shortcuts (F1)",
+        "tooltip-format": "Quick Guide & Keyboard Shortcuts (F1)",
         "on-click": "/home/gallo/.config/hypr/scripts/help-hud.sh"
+    },
+
+    "tray": {
+        "icon-size": 15,
+        "spacing": 8
     },
 
     "custom/power": {

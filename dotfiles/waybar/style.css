@@ -107,6 +107,55 @@ window#waybar {
     border-color: @red;
 }
 
+/* Modern Taskbar Buttons (Running Applications) */
+#taskbar {
+    margin-left: 6px;
+}
+
+#taskbar button {
+    padding: 0 8px;
+    margin: 0 2px;
+    color: @fg-muted;
+    background: @bg-alt;
+    border: 1px solid @border-col;
+    border-radius: 6px;
+    font-size: 11px;
+}
+
+#taskbar button:hover {
+    color: @fg;
+    background: @border-col;
+    border-color: @accent;
+}
+
+#taskbar button.active {
+    color: @fg;
+    background: @bg;
+    border-bottom: 2px solid @accent;
+    border-color: @accent;
+    font-weight: bold;
+}
+
+#taskbar button.maximized {
+    border-color: @yellow;
+}
+
+/* SSH Quick Connect */
+#custom-quick-ssh {
+    color: @accent;
+    font-size: 11px;
+    padding: 0 8px;
+    background: @bg-alt;
+    border: 1px solid @border-col;
+    border-radius: 6px;
+}
+
+#custom-quick-ssh:hover {
+    color: #ffffff;
+    background: @accent;
+    border-color: @accent;
+}
+
 /* Minimized Badge */
 #custom-minimized.has-minimized {
     color: @yellow;

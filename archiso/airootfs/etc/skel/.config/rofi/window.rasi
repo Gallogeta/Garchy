@@ -1,22 +1,18 @@
+/**
+ * Gally OS - Interactive Window Switcher
+ */
+
+@import "colors.rasi"
+
 configuration {
-    font: "JetBrainsMono Nerd Font 12";
     show-icons: true;
-    icon-theme: "Papirus-Dark";
-    display-dmenu: "󰖯  SWITCH WINDOW";
+    font: "JetBrainsMono Nerd Font 11";
+    hover-select: true;
+    me-select-entry: "";
+    me-accept-entry: "MousePrimary";
 }
 
 * {
-    bg: rgba(19, 22, 34, 0.94);
-    bg-alt: rgba(255, 255, 255, 0.05);
-    bg-selected: rgba(122, 162, 247, 0.28);
-    border-color: #7aa2f7;
-    border-subtle: #24283b;
-    fg: #c0caf5;
-    fg-muted: #787c99;
-    fg-selected: #ffffff;
-    accent: #7aa2f7;
-    urgent: #f7768e;
-
     background-color: transparent;
     text-color: @fg;
     margin: 0;
@@ -27,87 +23,73 @@ configuration {
 window {
     location: center;
     anchor: center;
-    width: 780px;
-    height: 520px;
+    width: 700px;
+    height: 480px;
     background-color: @bg;
-    border: 2px;
-    border-color: @border-color;
-    border-radius: 0px;
-    padding: 20px;
+    border: 2px solid;
+    border-color: @border-accent;
+    border-radius: @radius;
+    padding: 16px;
 }
 
 mainbox {
-    orientation: vertical;
-    background-color: transparent;
-    spacing: 16px;
-    children: [inputbar, listview];
+    spacing: 12px;
+    children: [ inputbar, listview ];
 }
 
 inputbar {
+    padding: 10px 14px;
     background-color: @bg-alt;
-    border: 1px;
-    border-color: @border-subtle;
-    border-radius: 0px;
-    padding: 12px 16px;
-    spacing: 12px;
-    children: [prompt, entry];
+    border-radius: 10px;
+    border: 1px solid @border-accent;
+    children: [ prompt, entry ];
+    spacing: 8px;
 }
 
 prompt {
-    enabled: true;
-    background-color: transparent;
     text-color: @accent;
-    font: "JetBrainsMono Nerd Font Bold 13";
-    vertical-align: 0.5;
+    font: "JetBrainsMono Nerd Font Bold 11";
 }
 
 entry {
-    background-color: transparent;
-    text-color: @fg;
-    font: "JetBrainsMono Nerd Font 12";
-    placeholder: "Type to filter active windows...";
+    placeholder: "Search running windows...";
     placeholder-color: @fg-muted;
-    vertical-align: 0.5;
+    text-color: @fg;
 }
 
 listview {
-    background-color: transparent;
-    border: 0;
-    spacing: 8px;
-    padding: 4px 0;
-    lines: 7;
     columns: 1;
-    fixed-height: true;
-    scrollbar: false;
+    lines: 7;
+    scrollbar: true;
+    spacing: 6px;
+}
+
+scrollbar {
+    width: 5px;
+    handle-width: 5px;
+    handle-color: @accent;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.08);
 }
 
 element {
-    background-color: @bg-alt;
-    border: 1px;
-    border-color: @border-subtle;
-    border-radius: 0px;
     padding: 10px 14px;
-    spacing: 14px;
-    orientation: horizontal;
-    children: [element-icon, element-text];
+    border-radius: 8px;
+    cursor: pointer;
 }
 
-element selected {
-    background-color: @bg-selected;
-    border-color: @border-color;
-    text-color: @fg-selected;
+element selected.normal,
+element:hover {
+    background-color: @accent;
+    text-color: @fg-active;
 }
 
 element-icon {
-    background-color: transparent;
-    size: 32px;
-    vertical-align: 0.5;
+    size: 26px;
+    margin: 0 12px 0 0;
 }
 
 element-text {
-    background-color: transparent;
+    font: "JetBrainsMono Nerd Font Medium 11";
     text-color: inherit;
-    font: "JetBrainsMono Nerd Font 12";
-    vertical-align: 0.5;
-    highlight: bold #7dcfff;
 }

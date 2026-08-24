@@ -1,9 +1,9 @@
-/* ===================================================================
- * Antigravity Riced Rofi Configuration
- * Fully Responsive, Dynamic Themed, Glassmorphic Multi-Tool Launcher
- * =================================================================== */
+/**
+ * Gally OS - Modern App & Command Launcher
+ * Fully Responsive, Theme-Aware, with Mouse Hover Selection and Scrollbar
+ */
 
-@import "active-theme.rasi"
+@import "colors.rasi"
 
 configuration {
     modi: "drun,run,window";
@@ -11,16 +11,20 @@ configuration {
     icon-theme: "Papirus";
     drun-display-format: "{name}";
     window-format: "{w}  ·  {c}  ·  {t}";
-    font: "JetBrainsMono Nerd Font 12";
+    font: "JetBrainsMono Nerd Font 11";
 
     location: 0;
     fixed-num-lines: true;
     sidebar-mode: true;
-    scroll-method: 0;
     matching: "fuzzy";
     sort: true;
     sorting-method: "normal";
     click-to-exit: true;
+
+    /* Mouse Hover & Follow Behavior */
+    hover-select: true;
+    me-select-entry: "";
+    me-accept-entry: "MousePrimary";
 
     display-drun: "󰀻  Apps";
     display-run: "  Commands";
@@ -43,159 +47,139 @@ configuration {
 window {
     location: center;
     anchor: center;
-    width: 780px;
-    height: 540px;
+    width: 740px;
+    height: 520px;
     background-color: @bg;
-    border: 2px;
+    border: 2px solid;
     border-color: @border-accent;
     border-radius: @radius;
-    padding: 20px;
+    padding: 18px;
+    cursor: "default";
 }
 
 mainbox {
     orientation: vertical;
     background-color: transparent;
-    spacing: 16px;
-    children: [mode-switcher, inputbar, listview, message];
+    spacing: 14px;
+    children: [ mode-switcher, inputbar, listview, message ];
 }
 
-/* --------------------------------------------------
- * MODE SWITCHER BAR (Apps / Commands / Windows Tabs)
- * -------------------------------------------------- */
 mode-switcher {
-    spacing: 8px;
+    spacing: 10px;
     background-color: transparent;
 }
 
 button {
-    padding: 8px 18px;
+    padding: 8px 14px;
     background-color: @bg-alt;
-    border: 1px;
-    border-color: @border-col;
-    border-radius: @radius;
     text-color: @fg-muted;
-    font: "JetBrainsMono Nerd Font 11";
+    border-radius: 12px;
+    border: 1px solid @border-col;
     cursor: pointer;
+    font: "JetBrainsMono Nerd Font Bold 11";
 }
 
 button selected {
     background-color: @accent;
-    border-color: @accent;
-    text-color: #131622;
-    font: "JetBrainsMono Nerd Font Bold 11";
+    text-color: @fg-active;
+    border: 1px solid @accent;
 }
 
-/* --------------------------------------------------
- * INPUT BAR & PROMPT
- * -------------------------------------------------- */
+button:hover {
+    background-color: @accent-alt;
+    text-color: @fg-active;
+}
+
 inputbar {
-    background-color: @bg-alt;
-    border: 1px;
-    border-color: @border-col;
-    border-radius: @radius;
     padding: 10px 16px;
-    spacing: 12px;
-    children: [prompt, entry];
+    background-color: @bg-alt;
+    border-radius: 12px;
+    border: 1px solid @border-accent;
+    children: [ prompt, entry ];
+    spacing: 10px;
 }
 
 prompt {
-    enabled: true;
-    background-color: transparent;
     text-color: @accent;
-    font: "JetBrainsMono Nerd Font Bold 14";
+    font: "JetBrainsMono Nerd Font Bold 11";
     vertical-align: 0.5;
 }
 
 entry {
-    background-color: transparent;
-    text-color: @fg-selected;
-    font: "JetBrainsMono Nerd Font 12";
-    placeholder: "Search applications, windows, or math (=)...";
+    placeholder: "Search applications or commands...";
     placeholder-color: @fg-muted;
+    text-color: @fg;
+    cursor: text;
     vertical-align: 0.5;
 }
 
-/* --------------------------------------------------
- * 2-COLUMN LISTVIEW
- * -------------------------------------------------- */
 listview {
-    background-color: transparent;
-    border: 0;
+    columns: 1;
+    lines: 7;
+    cycle: true;
+    dynamic: true;
+    scrollbar: true;
+    layout: vertical;
     spacing: 6px;
-    padding: 4px 0;
-    lines: 6;
-    columns: 2;
-    fixed-height: true;
-    scrollbar: false;
+    background-color: transparent;
+}
+
+scrollbar {
+    width: 5px;
+    border: 0;
+    handle-width: 5px;
+    handle-color: @accent;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.08);
+    margin: 0 0 0 8px;
 }
 
 element {
+    padding: 10px 14px;
+    border-radius: 10px;
     background-color: transparent;
-    border: 1px;
-    border-color: transparent;
-    border-radius: @radius;
-    padding: 8px 12px;
+    text-color: @fg;
     spacing: 12px;
     cursor: pointer;
 }
 
-element-icon {
-    size: 32px;
-    background-color: transparent;
-    vertical-align: 0.5;
-}
-
-element-text {
-    background-color: transparent;
-    text-color: inherit;
-    vertical-align: 0.5;
-    font: "JetBrainsMono Nerd Font 12";
-}
-
-element normal.normal,
-element alternate.normal {
+element normal.normal {
     background-color: transparent;
     text-color: @fg;
 }
 
-element normal.active,
-element alternate.active {
-    background-color: @bg-hover;
-    text-color: @accent;
-}
-
-element normal.urgent,
-element alternate.urgent {
-    background-color: rgba(247, 118, 142, 0.18);
-    text-color: @urgent;
-}
-
 element selected.normal,
+element:hover {
+    background-color: @accent;
+    text-color: @fg-active;
+    border-radius: 10px;
+}
+
 element selected.active {
-    background-color: @bg-selected;
-    border-color: @border-accent;
-    text-color: @fg-selected;
+    background-color: @yellow;
+    text-color: @bg;
 }
 
-element selected.urgent {
-    background-color: @urgent;
-    text-color: #131622;
+element-icon {
+    size: 24px;
+    cursor: inherit;
+    vertical-align: 0.5;
 }
 
-/* --------------------------------------------------
- * FOOTER & HINTS MESSAGE
- * -------------------------------------------------- */
+element-text {
+    font: "JetBrainsMono Nerd Font Medium 11";
+    cursor: inherit;
+    vertical-align: 0.5;
+    text-color: inherit;
+}
+
 message {
+    padding: 10px;
+    border-radius: 10px;
     background-color: @bg-alt;
-    border: 1px;
-    border-color: @border-col;
-    border-radius: @radius;
-    padding: 8px 14px;
+    border: 1px solid @border-col;
 }
 
 textbox {
-    background-color: transparent;
-    text-color: @fg-muted;
-    font: "JetBrainsMono Nerd Font 11";
-    vertical-align: 0.5;
+    text-color: @fg;
 }

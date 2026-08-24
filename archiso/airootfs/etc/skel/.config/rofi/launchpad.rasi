@@ -1,60 +1,67 @@
 /**
- * Garchy OS - Launchpad / Fullscreen App Grid
- * Clean, modern iPad/macOS style launcher for children and beginners
+ * Gally OS - Modern Fullscreen Launchpad (App Grid)
+ * Optimized for mouse hover, smooth scrolling, and keyboard search
  */
+
+@import "colors.rasi"
 
 configuration {
     modi: "drun";
     show-icons: true;
     icon-theme: "Papirus-Dark";
-    display-drun: "🔍 Search Apps:";
+    display-drun: "🔍 Search:";
     drun-display-format: "{name}";
+    hover-select: true;
+    me-select-entry: "";
+    me-accept-entry: "MousePrimary";
+    font: "JetBrainsMono Nerd Font 12";
 }
 
-@import "colors.rasi"
-
 * {
-    font: "JetBrainsMono Nerd Font 12";
     background-color: transparent;
     text-color: #e0e6ed;
+    margin: 0;
+    padding: 0;
 }
 
 window {
     transparency: "real";
     fullscreen: true;
-    background-color: rgba(10, 15, 29, 0.92);
-    padding: 60px 120px;
+    background-color: rgba(10, 15, 29, 0.94);
+    padding: 50px 100px;
     cursor: "default";
 }
 
 mainbox {
-    spacing: 30px;
+    spacing: 25px;
     children: [ inputbar, listview ];
 }
 
 inputbar {
     enabled: true;
-    spacing: 15px;
-    margin: 0px 200px;
-    padding: 14px 20px;
+    spacing: 12px;
+    margin: 0px 220px;
+    padding: 12px 24px;
     border: 2px solid;
     border-color: #d4af37;
-    border-radius: 20px;
-    background-color: rgba(19, 27, 46, 0.8);
-    text-color: #e0e6ed;
+    border-radius: 24px;
+    background-color: rgba(19, 27, 46, 0.85);
+    text-color: #ffffff;
     children: [ prompt, entry ];
 }
 
 prompt {
-    font: "JetBrainsMono Nerd Font Bold 12";
+    font: "JetBrainsMono Nerd Font Bold 13";
     text-color: #00d2ff;
+    vertical-align: 0.5;
 }
 
 entry {
-    placeholder: "Type to search or click any app below...";
-    placeholder-color: rgba(224, 230, 237, 0.4);
+    placeholder: "Type to search or click any application below...";
+    placeholder-color: rgba(224, 230, 237, 0.45);
     text-color: #ffffff;
     cursor: text;
+    vertical-align: 0.5;
 }
 
 listview {
@@ -63,34 +70,42 @@ listview {
     lines: 4;
     cycle: true;
     dynamic: true;
-    scrollbar: false;
+    scrollbar: true;
     layout: vertical;
-    spacing: 30px;
-    margin: 20px 0px 0px 0px;
+    spacing: 20px;
+    margin: 15px 0px 0px 0px;
     background-color: transparent;
     cursor: "default";
+}
+
+scrollbar {
+    width: 6px;
+    border: 0;
+    handle-width: 6px;
+    handle-color: #00d2ff;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.1);
+    margin: 0 0 0 10px;
 }
 
 element {
     enabled: true;
     orientation: vertical;
-    spacing: 12px;
-    padding: 24px 12px;
-    border-radius: 18px;
-    background-color: rgba(19, 27, 46, 0.5);
+    spacing: 10px;
+    padding: 20px 10px;
+    border-radius: 16px;
+    background-color: rgba(19, 27, 46, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     cursor: pointer;
 }
 
-element selected.normal {
-    background-color: rgba(0, 210, 255, 0.2);
-    border: 2px solid;
-    border-color: #00d2ff;
-}
-
-element selected.active {
-    background-color: rgba(212, 175, 55, 0.25);
-    border: 2px solid;
-    border-color: #d4af37;
+/* Clear Visual Selection on Hover or Keyboard Focus */
+element selected.normal,
+element selected.active,
+element:hover {
+    background-color: rgba(0, 210, 255, 0.22);
+    border: 2px solid #00d2ff;
+    text-color: #ffffff;
 }
 
 element-icon {

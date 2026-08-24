@@ -1,19 +1,18 @@
-/* Desktop Theme Picker Menu for Rofi */
+/**
+ * Gally OS - Desktop Theme Picker Menu
+ */
+
+@import "colors.rasi"
+
 configuration {
-    font: "JetBrainsMono Nerd Font 12";
-    show-icons: false;
-    click-to-exit: true;
+    show-icons: true;
+    font: "JetBrainsMono Nerd Font 11";
+    hover-select: true;
+    me-select-entry: "";
+    me-accept-entry: "MousePrimary";
 }
 
 * {
-    bg: rgba(19, 22, 34, 0.95);
-    bg-alt: rgba(255, 255, 255, 0.06);
-    bg-selected: rgba(122, 162, 247, 0.30);
-    border-color: #7aa2f7;
-    fg: #c0caf5;
-    fg-selected: #ffffff;
-    accent: #7aa2f7;
-
     background-color: transparent;
     text-color: @fg;
     margin: 0;
@@ -24,70 +23,75 @@ configuration {
 window {
     location: center;
     anchor: center;
-    width: 480px;
+    width: 640px;
+    height: 440px;
     background-color: @bg;
-    border: 2px;
-    border-color: @border-color;
+    border: 2px solid;
+    border-color: @accent;
+    border-radius: @radius;
     padding: 16px;
 }
 
 mainbox {
-    orientation: vertical;
     spacing: 12px;
-    children: [inputbar, listview];
+    children: [ inputbar, listview ];
 }
 
 inputbar {
-    background-color: @bg-alt;
-    border: 1px;
-    border-color: @border-color;
     padding: 10px 14px;
-    spacing: 10px;
-    children: [prompt, entry];
+    background-color: @bg-alt;
+    border-radius: 10px;
+    border: 1px solid @border-accent;
+    children: [ prompt, entry ];
+    spacing: 8px;
 }
 
 prompt {
     text-color: @accent;
-    font: "JetBrainsMono Nerd Font 13";
-    vertical-align: 0.5;
+    font: "JetBrainsMono Nerd Font Bold 11";
 }
 
 entry {
+    placeholder: "Filter desktop themes...";
+    placeholder-color: @fg-muted;
     text-color: @fg;
-    font: "JetBrainsMono Nerd Font 12";
-    placeholder: "Select theme...";
-    placeholder-color: #565f89;
-    vertical-align: 0.5;
 }
 
 listview {
-    spacing: 4px;
-    padding: 4px 0;
-    lines: 8;
     columns: 1;
-    fixed-height: true;
-    scrollbar: false;
+    lines: 6;
+    cycle: true;
+    dynamic: true;
+    scrollbar: true;
+    spacing: 6px;
+}
+
+scrollbar {
+    width: 5px;
+    handle-width: 5px;
+    handle-color: @accent;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.08);
 }
 
 element {
-    padding: 8px 12px;
-    spacing: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+element selected.normal,
+element:hover {
+    background-color: @accent;
+    text-color: @fg-active;
+}
+
+element-icon {
+    size: 24px;
+    margin: 0 10px 0 0;
 }
 
 element-text {
+    font: "JetBrainsMono Nerd Font Medium 11";
     text-color: inherit;
-    vertical-align: 0.5;
-    font: "JetBrainsMono Nerd Font 12";
-}
-
-element normal.normal {
-    background-color: transparent;
-    text-color: @fg;
-}
-
-element selected.normal {
-    background-color: @bg-selected;
-    text-color: @fg-selected;
-    border: 1px;
-    border-color: @accent;
 }
