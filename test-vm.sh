@@ -12,15 +12,11 @@ if [ -z "$ISO_FILE" ] || [ ! -f "$ISO_FILE" ]; then
     exit 1
 fi
 
-echo "Found Garchy ISO: $ISO_FILE ($(du -h "$ISO_FILE" | cut -f1))"
-echo "Launching QEMU / KVM Virtual Machine with hardware acceleration..."
-
-# Strictly prevent running as root/sudo
-if [ "$EUID" -eq 0 ]; then
-    echo -e "\033[91m\033[1m❌ ERROR: test-vm.sh must NOT be run with sudo.\033[0m"
-    echo -e "👉 Please run as your normal user:\033[96m ./test-vm.sh\033[0m\n"
-    exit 1
-fi
+echo "=========================================================="
+echo "  🚀 Launching Garchy Linux in KVM Virtual Machine"
+echo "  💡 TIP: Mouse cursor moves freely into/out of window."
+echo "  💡 TIP: If mouse is ever grabbed, press [Ctrl + Alt + G]"
+echo "=========================================================="
 
 # Ensure Wayland / XDG environment is loaded
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
@@ -31,11 +27,18 @@ if [ -z "$WAYLAND_DISPLAY" ]; then
     fi
 fi
 
-# Try SDL display first (best for Wayland / Hyprland), fallback to GTK
-if qemu-system-x86_64 -display help 2>&1 | grep -q 'sdl'; then
-    DISPLAY_OPT="-display sdl,gl=off"
-elif qemu-system-x86_64 -display help 2>&1 | grep -q 'gtk'; then
+# Create temporary virtual drive for installer testing if not exists (20GB sparse)
+VM_DISK="/tmp/garchy_test_disk.qcow2"
+if [ ! -f "$VM_DISK" ]; then
+    echo "Creating 20GB test virtual hard drive ($VM_DISK)..."
+    qemu-img create -f qcow2 "$VM_DISK" 20G >/dev/null
+fi
+
+# Determine display backend (prefer GTK on Arch/Hyprland)
+if qemu-system-x86_64 -display help 2>&1 | grep -q 'gtk'; then
     DISPLAY_OPT="-display gtk"
+elif qemu-system-x86_64 -display help 2>&1 | grep -q 'sdl'; then
+    DISPLAY_OPT="-display sdl,gl=off"
 else
     DISPLAY_OPT="-display default"
 fi
@@ -45,8 +48,13 @@ qemu-system-x86_64 \
     -m 4G \
     -smp 4 \
     -cpu host \
+    -drive file="$VM_DISK",format=qcow2,if=virtio \
     -cdrom "$ISO_FILE" \
     -boot d \
     -vga virtio \
+    -device virtio-tablet-pci \
+    -device virtio-keyboard-pci \
+    -device intel-hda \
+    -device hda-duplex \
     $DISPLAY_OPT \
-    -name "Garchy Linux Live Test"
+    -name "Garchy Linux Live Installer Test"
