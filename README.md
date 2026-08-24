@@ -44,14 +44,13 @@ curl -sS https://raw.githubusercontent.com/Gallogeta/Garchy/main/install.sh | ba
 
 ---
 
-## 💿 Live ISO Installation
+## 💿 Live ISO Installation (Coming Soon)
 
-1. Download the latest bootable ISO from the **[GitHub Releases](https://github.com/Gallogeta/Garchy/releases)** page.
-2. Flash to a USB drive using **Ventoy**, **BalenaEtcher**, or `dd`:
-   ```bash
-   sudo dd if=garchy-x86_64.iso of=/dev/sdX bs=4M status=progress oflag=sync
-   ```
-3. Boot the USB and run the installer.
+> [!NOTE]
+> **Status**: Garchy Linux is currently under active development and VM testing. Bootable ISO images will be hosted on self-hosted infrastructure soon.
+
+* **Target Availability**: Self-hosted ISO downloads via official website & mirrors.
+* **Installation Support**: UEFI & BIOS live environment with Calamares / automated installer.
 
 ---
 
