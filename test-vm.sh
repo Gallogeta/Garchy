@@ -15,24 +15,29 @@ fi
 echo "Found Garchy ISO: $ISO_FILE ($(du -h "$ISO_FILE" | cut -f1))"
 echo "Launching QEMU / KVM Virtual Machine with hardware acceleration..."
 
-# Do not run QEMU with sudo - drop to original user if invoked via sudo
-if [ "$EUID" -eq 0 ] && [ -n "$SUDO_USER" ]; then
-    echo "Re-launching as normal user ($SUDO_USER)..."
-    exec su "$SUDO_USER" -c "$0"
+# Strictly prevent running as root/sudo
+if [ "$EUID" -eq 0 ]; then
+    echo -e "\033[91m\033[1m❌ ERROR: test-vm.sh must NOT be run with sudo.\033[0m"
+    echo -e "👉 Please run as your normal user:\033[96m ./test-vm.sh\033[0m\n"
+    exit 1
 fi
 
-export SDL_VIDEODRIVER=wayland
-
-# Authorize XWayland if needed
-if command -v xhost >/dev/null 2>&1; then
-    xhost +SI:localuser:$(whoami) 2>/dev/null || true
+# Ensure Wayland / XDG environment is loaded
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+if [ -z "$WAYLAND_DISPLAY" ]; then
+    WL_SOCKET=$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name "wayland-*" 2>/dev/null | head -n 1)
+    if [ -n "$WL_SOCKET" ]; then
+        export WAYLAND_DISPLAY="$(basename "$WL_SOCKET")"
+    fi
 fi
 
 # Try SDL display first (best for Wayland / Hyprland), fallback to GTK
 if qemu-system-x86_64 -display help 2>&1 | grep -q 'sdl'; then
     DISPLAY_OPT="-display sdl,gl=off"
-else
+elif qemu-system-x86_64 -display help 2>&1 | grep -q 'gtk'; then
     DISPLAY_OPT="-display gtk"
+else
+    DISPLAY_OPT="-display default"
 fi
 
 qemu-system-x86_64 \
