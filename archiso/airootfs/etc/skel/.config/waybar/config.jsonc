@@ -59,10 +59,10 @@
     },
 
     "wlr/taskbar": {
-        "format": "{icon} {name}",
-        "icon-size": 16,
+        "format": "{icon}",
+        "icon-size": 18,
         "icon-theme": "Papirus-Dark",
-        "tooltip-format": "🗔 {title}\n───────────────────────\n• Left Click: Focus & Raise Window\n• Right Click / Middle Click: Close App",
+        "tooltip-format": "🗔 {title}\n───────────────────────\n• Left Click: Bring to Front\n• Right Click: Close Window",
         "on-click": "activate",
         "on-click-middle": "close",
         "on-click-right": "close",
