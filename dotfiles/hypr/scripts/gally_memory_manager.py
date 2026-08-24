@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Gally AI — Persistent Memory & System Profiling Engine
-Maintains system profile, user preferences, learned memories, and non-technical safe rules.
+Gally AI — Security, Privacy & Mode Controller (Cephalon Gally)
+Manages 3 Persona Modes (Child, Normal, Professional Sudo),
+Internet Permission Sandbox, Document Privacy Guard & Persistent Memory.
 """
 
 import os
@@ -9,27 +10,53 @@ import sys
 import json
 import subprocess
 
+CONFIG_PATH = os.path.expanduser("~/.config/gally/ai_config.json")
 MEMORY_DIR = os.path.expanduser("~/.config/gally/memory")
 SYSTEM_PROFILE_FILE = os.path.join(MEMORY_DIR, "system_profile.json")
 USER_PREFS_FILE = os.path.join(MEMORY_DIR, "user_preferences.json")
 LEARNED_MEMORIES_FILE = os.path.join(MEMORY_DIR, "learned_memories.json")
 
+DEFAULT_CONFIG = {
+    "provider": "ollama",
+    "ollama_model": "gally-cephalon-ai",
+    "voice_enabled": True,
+    "voice_name": "en-US-AriaNeural",
+    "mode": "normal", # "child", "normal", "professional_sudo"
+    "internet_permitted": False,
+    "document_access_permitted": False,
+    "tokens_used_total": 0,
+    "total_queries": 0
+}
+
 DEFAULT_PREFS = {
     "user_name": "Operator",
-    "technical_level": "beginner_friendly",
+    "current_mode": "normal",
     "preferred_theme": "Tokyo Night",
-    "voice_style": "warm_female_neural",
-    "safety_mode": "strict_safe",
-    "explanation_style": "simple_analogies"
+    "voice_style": "warm_female_neural"
 }
 
 DEFAULT_MEMORIES = [
-    "Operator prefers visual, friendly, and non-technical explanations.",
+    "Operator prefers visual, friendly, and non-technical explanations in Normal mode.",
     "System is running Garchy Linux with dual 144Hz displays (DP-1 and DP-2).",
     "Hardware: AMD Ryzen 9 5900X (24 Threads) + NVIDIA RTX Graphics.",
     "Primary browser is Brave; main gaming launchers are Steam and Heroic.",
     "Desktop shortcuts: Super+Space (Apps), Super+W (Wallpapers), Super+C (Themes)."
 ]
+
+def load_config():
+    os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
+    if os.path.exists(CONFIG_PATH):
+        try:
+            with open(CONFIG_PATH, "r") as f:
+                return {**DEFAULT_CONFIG, **json.load(f)}
+        except Exception:
+            pass
+    return DEFAULT_CONFIG.copy()
+
+def save_config(cfg):
+    os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(cfg, f, indent=2)
 
 def init_memory():
     os.makedirs(MEMORY_DIR, exist_ok=True)
@@ -45,7 +72,6 @@ def init_memory():
 
 def update_system_profile():
     try:
-        # Probe Hardware
         cpu_info = subprocess.getoutput("lscpu | grep 'Model name' | awk -F: '{print $2}'").strip()
         if not cpu_info: cpu_info = "AMD Ryzen 9 5900X (24 Threads)"
         
@@ -96,11 +122,35 @@ def clear_learned_memories():
     with open(LEARNED_MEMORIES_FILE, "w") as f:
         json.dump(DEFAULT_MEMORIES, f, indent=2)
 
+def verify_sudo_password(password_str):
+    """Verifies sudo password safely without storing it."""
+    try:
+        p = subprocess.Popen(["sudo", "-k", "-S", "-v"],
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.DEVNULL,
+                             stderr=subprocess.PIPE,
+                             text=True)
+        _, err = p.communicate(input=f"{password_str}\n")
+        return p.returncode == 0
+    except Exception:
+        return False
+
+def open_browser_link(url_or_query):
+    """Opens link in primary browser safely with user intention."""
+    if not url_or_query.startswith("http://") and not url_or_query.startswith("https://"):
+        if "." in url_or_query and " " not in url_or_query:
+            url_or_query = f"https://{url_or_query}"
+        else:
+            url_or_query = f"https://search.brave.com/search?q={subprocess.quote(url_or_query)}"
+    try:
+        subprocess.Popen(["xdg-open", url_or_query])
+        return True
+    except Exception:
+        return False
+
 def check_for_memory_directives(user_prompt):
-    """Detects if the user asked Cephalon to remember or forget something."""
     p_lower = user_prompt.lower().strip()
     if p_lower.startswith("remember that ") or p_lower.startswith("remember: ") or p_lower.startswith("remember "):
-        # Extract fact
         for prefix in ["remember that ", "remember: ", "remember "]:
             if p_lower.startswith(prefix):
                 fact = user_prompt[len(prefix):].strip()
@@ -120,12 +170,10 @@ def check_for_memory_directives(user_prompt):
         
     return None
 
-def build_system_context_prompt(base_prompt):
-    """Injects user preferences, system profile, and learned memories into the AI query."""
+def build_mode_system_prompt(base_prompt, mode="normal", internet_ok=False, doc_ok=False):
     init_memory()
-    
     memories = get_learned_memories()
-    mem_text = "\n".join([f"- {m}" for m in memories[:10]])
+    mem_text = "\n".join([f"- {m}" for m in memories[:8]])
     
     try:
         with open(SYSTEM_PROFILE_FILE, "r") as f:
@@ -133,32 +181,44 @@ def build_system_context_prompt(base_prompt):
     except Exception:
         sys_info = {}
 
-    context_header = f"""[CEPHALON SYSTEM PROFILE & MEMORY]
-User / Operator: Operator gallo
-Target Audience: Non-technical users & beginners (explain simply, use friendly metaphors, avoid confusing jargon)
-Tone: Warm, protective, encouraging, and intelligent (Warframe Cephalon persona)
+    privacy_status = f"""[PRIVACY & SECURITY ENFORCEMENT]
+- Internet Access: {'[ PERMITTED BY OPERATOR ]' if internet_ok else '[ RESTRICTED / OFFLINE ONLY ] (Do not attempt external network requests without asking)'}
+- Document Files Access: {'[ PERMITTED ]' if doc_ok else '[ SANDBOXED / PROTECTED ] (User Documents/Downloads are private and invisible)'}
+"""
 
-Hardware & Environment:
-- CPU: {sys_info.get('cpu', 'AMD Ryzen 9 5900X')}
-- GPU: {sys_info.get('gpu', 'NVIDIA GeForce RTX')}
-- Displays: {sys_info.get('displays', 'Dual 144Hz Displays')}
-- OS & Desktop: Garchy Linux (Hyprland + Waybar)
+    if mode == "child":
+        mode_instructions = """[MODE: 🧸 CHILD MODE - SAFE & SIMPLE]
+- You are a gentle, magical, friendly computer guide for young kids and beginners.
+- Use fun, simple, real-world analogies (e.g. computer is like a spaceship or a magical toybox).
+- Absolutely NO dangerous terminal commands or scary technical jargon.
+- If asked to install or open games (like SuperTuxKart or Minecraft), give 1 simple click instruction.
+- Protect the child and keep everything cheerful, encouraging, and safe!"""
 
-Active Memories & Preferences:
+    elif mode == "professional_sudo":
+        mode_instructions = """[MODE: ⚡ PROFESSIONAL SUDO MODE - DEEP SYSADMIN & ARCHITECT]
+- Authentication: Sudo Administrator Verified.
+- Persona: Highly technical, exact, deep, and collaborative Linux Systems Architect (similar to Antigravity CLI Pro).
+- Provide low-level kernel diagnostics, exact systemd unit directives, Hyprland Wayland IPC commands, pacman/AUR building, Wine/Proton prefix optimizations, and deep debugging.
+- You analyze deeply, explain exact flags, exit codes, and listen to the Operator's directives with absolute precision."""
+
+    else: # normal mode
+        mode_instructions = """[MODE: 🚀 NORMAL MODE - SEMI-AUTONOMOUS CEPHALON]
+- You are Cephalon Gally, the balanced and intelligent companion for Garchy Linux.
+- Provide clear, friendly assistance for installing Linux apps (`pacman`), running Windows software via Wine/Proton/Bottles, fixing audio, changing themes, and browsing.
+- Always explain what a command does in plain English before suggesting it."""
+
+    full_context = f"""{mode_instructions}
+
+{privacy_status}
+
+[SYSTEM SPECIFICATIONS]
+- Hardware: {sys_info.get('cpu', 'Ryzen 9 5900X')} | {sys_info.get('gpu', 'NVIDIA RTX')} | {sys_info.get('displays', 'Dual 144Hz')}
+- Operating System: Garchy Linux (Hyprland + Waybar)
+
+[ACTIVE MEMORY]
 {mem_text}
-
-STRICT SAFETY & BOUNDARY RULES:
-1. NEVER recommend destructive commands (rm -rf, mkfs, dd to active drives, fork bombs) without loud safety warnings.
-2. Explain what 'sudo' / administrator permissions do before asking the user to type password.
-3. Keep answers clear, step-by-step, and safe for beginners and children.
-4. If providing a terminal command, always explain what it does in simple English first.
 
 [OPERATOR QUERY]
 {base_prompt}
 """
-    return context_header
-
-if __name__ == "__main__":
-    init_memory()
-    print("Gally Memory Engine Initialized successfully at:", MEMORY_DIR)
-    print("Sample Prompt Context:\n", build_system_context_prompt("How do I update my apps?"))
+    return full_context
