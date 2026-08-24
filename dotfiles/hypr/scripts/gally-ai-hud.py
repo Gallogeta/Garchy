@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """
-Cephalon Gally — Holographic AI System Core (Warframe Aesthetic)
-Thread-Safe Real-time Streaming (Queue Event Pump for Python 3.14+),
-3 Persona Modes (Child, Normal, Professional Sudo), Sudo Password Unlock,
-Internet Permission Sandbox, Document Privacy Guard & Neural Voice.
+Cephalon Gally — Ultra-Modern Glassmorphic AI System Core (Warframe Aesthetic)
+High-Graphics 3D Particle & Crystal Matrix, Full Uncut Neural Voice,
+3 Persona Modes (Child, Normal, Pro Sudo), Sudo Password Unlock & Privacy Sandboxes.
 """
 
 import os
@@ -24,24 +23,25 @@ from tkinter import ttk, messagebox, simpledialog
 CONFIG_PATH = os.path.expanduser("~/.config/gally/ai_config.json")
 HISTORY_PATH = os.path.expanduser("~/.config/gally/cephalon_history.json")
 
-# Theme Palette (Cephalon Hologram & Orokin Radiance)
-BG_MAIN = "#030610"
-BG_CARD = "#070c1b"
-BG_INPUT = "#0c1326"
-FG_LIGHT = "#e2e8f0"
-FG_MUTED = "#64748b"
+# Glassmorphic Orokin Palette
+BG_MAIN = "#030611"
+BG_GLASS = "#070c1e"
+BG_GLASS_CARD = "#0a122c"
+BG_INPUT = "#0d1738"
+FG_LIGHT = "#f1f5f9"
+FG_MUTED = "#94a3b8"
 ACCENT_CYAN = "#00f0ff"
 ACCENT_BLUE = "#38bdf8"
 ACCENT_GOLD = "#fbbf24"
 ACCENT_PURPLE = "#c084fc"
 ACCENT_GREEN = "#22c55e"
 ACCENT_ROSE = "#f43f5e"
-BORDER_CYAN = "#0369a1"
-BORDER_GOLD = "#b45309"
+BORDER_GLASS = "#1e293b"
+BORDER_CYAN = "#0284c7"
+BORDER_GOLD = "#d97706"
 
 CURRENT_TTS_PROC = None
 
-# Import Memory & Security Engine
 sys.path.insert(0, os.path.expanduser("~/.config/hypr/scripts"))
 try:
     import gally_memory_manager
@@ -96,9 +96,19 @@ def speak_voice_neural_async(text, enabled=True, voice="en-US-AriaNeural"):
         return
         
     clean = text.replace("*", "").replace("#", "").replace("`", "").replace("[", "").replace("]", "")
-    clean = " ".join([line for line in clean.splitlines() if not line.strip().startswith("$") and not line.strip().startswith("sudo")])
-    if len(clean) > 350:
-        clean = clean[:350] + "..."
+    # Strip raw code blocks and terminal execution lines from speech
+    clean_lines = []
+    in_code = False
+    for line in clean.splitlines():
+        if line.strip().startswith("```"):
+            in_code = not in_code
+            continue
+        if not in_code and not line.strip().startswith("$") and not line.strip().startswith("sudo"):
+            clean_lines.append(line)
+    clean = " ".join(clean_lines).strip()
+    
+    if not clean:
+        return
 
     def run_tts():
         global CURRENT_TTS_PROC
@@ -106,7 +116,8 @@ def speak_voice_neural_async(text, enabled=True, voice="en-US-AriaNeural"):
         try:
             import edge_tts
             async def generate():
-                comm = edge_tts.Communicate(clean, voice, rate="+4%", pitch="+2Hz")
+                # Speak full sentence without truncation
+                comm = edge_tts.Communicate(clean, voice, rate="+3%", pitch="+2Hz")
                 await comm.save(out_file)
             asyncio.run(generate())
             
@@ -125,46 +136,69 @@ def speak_voice_neural_async(text, enabled=True, voice="en-US-AriaNeural"):
 
     threading.Thread(target=run_tts, daemon=True).start()
 
-class CephalonGlowingMatrix(tk.Canvas):
-    def __init__(self, parent, width=280, height=230):
-        super().__init__(parent, width=width, height=height, bg=BG_CARD, highlightthickness=0)
+class HighGraphicsCephalonMatrix(tk.Canvas):
+    """High-Definition 3D Holographic Cephalon Core with Multi-Layered Crystals, 40-Particle Swarm & 24-Band Equalizer"""
+    def __init__(self, parent, width=280, height=210):
+        super().__init__(parent, width=width, height=height, bg=BG_GLASS, highlightthickness=0)
         self.w = width
         self.h = height
         self.cx = width // 2
         self.cy = height // 2
         
-        self.angle_x = 0.0
-        self.angle_y = 0.0
-        self.angle_z = 0.0
+        self.rot_x = 0.0
+        self.rot_y = 0.0
+        self.rot_z = 0.0
+        self.inner_rot = 0.0
         self.is_speaking = False
         self.pulse = 0.0
         self.core_color = ACCENT_GOLD
         
-        self.outer_vertices = [
-            (0, -75, 0), (55, -20, 35), (0, -20, -65), (-55, -20, 35),
-            (55, 20, -35), (0, 20, 65), (-55, 20, -35), (0, 75, 0)
+        # 3D Icosahedron / Geodesic Facet Vertices
+        phi = (1.0 + math.sqrt(5.0)) / 2.0
+        scale = 36.0
+        self.raw_outer_verts = [
+            (-1,  phi,  0), ( 1,  phi,  0), (-1, -phi,  0), ( 1, -phi,  0),
+            ( 0, -1,  phi), ( 0,  1,  phi), ( 0, -1, -phi), ( 0,  1, -phi),
+            ( phi,  0, -1), ( phi,  0,  1), (-phi,  0, -1), (-phi,  0,  1)
         ]
+        self.outer_verts = [(x * scale, y * scale, z * scale) for (x, y, z) in self.raw_outer_verts]
+        
         self.outer_edges = [
-            (0, 1), (0, 2), (0, 3), (1, 4), (2, 4), (2, 6), (3, 6), (3, 5), (1, 5),
-            (7, 4), (7, 5), (7, 6), (1, 2), (2, 3), (3, 1), (4, 5), (5, 6), (6, 4)
+            (0, 1), (0, 5), (0, 7), (0, 10), (0, 11),
+            (1, 5), (1, 7), (1, 8), (1, 9),
+            (2, 3), (2, 4), (2, 6), (2, 10), (2, 11),
+            (3, 4), (3, 6), (3, 8), (3, 9),
+            (4, 5), (4, 9), (4, 11),
+            (5, 9), (5, 11),
+            (6, 7), (6, 8), (6, 10),
+            (7, 8), (7, 10),
+            (8, 9), (10, 11)
         ]
-        self.inner_vertices = [
-            (0, -35, 0), (25, 0, 0), (0, 0, 25), (-25, 0, 0), (0, 0, -25), (0, 35, 0)
+
+        # Inner Glowing Orokin Diamond
+        in_s = 20.0
+        self.inner_verts = [
+            (0, -in_s*1.6, 0), (in_s, 0, 0), (0, 0, in_s),
+            (-in_s, 0, 0), (0, 0, -in_s), (0, in_s*1.6, 0)
         ]
         self.inner_edges = [
-            (0, 1), (0, 2), (0, 3), (0, 4), (5, 1), (5, 2), (5, 3), (5, 4),
+            (0, 1), (0, 2), (0, 3), (0, 4),
+            (5, 1), (5, 2), (5, 3), (5, 4),
             (1, 2), (2, 3), (3, 4), (4, 1)
         ]
+
+        # 40-Particle Holographic Starfield Swarm
         self.particles = []
-        for i in range(24):
+        for i in range(40):
             self.particles.append({
-                "radius": random.uniform(85, 120),
-                "angle": random.uniform(0, 2 * math.pi),
-                "speed": random.uniform(0.015, 0.035) * random.choice([1, -1]),
-                "tilt": random.uniform(-0.6, 0.6),
-                "size": random.uniform(1.5, 3.2),
-                "color": random.choice([ACCENT_CYAN, ACCENT_GOLD, ACCENT_PURPLE, "#38bdf8"])
+                "r": random.uniform(70, 125),
+                "theta": random.uniform(0, 2 * math.pi),
+                "phi": random.uniform(-0.8, 0.8),
+                "speed": random.uniform(0.012, 0.032) * random.choice([1, -1]),
+                "size": random.uniform(1.2, 3.5),
+                "color": random.choice([ACCENT_CYAN, ACCENT_GOLD, ACCENT_PURPLE, "#38bdf8", "#f43f5e"])
             })
+        
         self.animate()
 
     def set_speaking_state(self, state: bool):
@@ -180,52 +214,73 @@ class CephalonGlowingMatrix(tk.Canvas):
 
     def animate(self):
         self.delete("all")
-        self.angle_x += 0.018
-        self.angle_y += 0.024
-        self.angle_z += 0.012
+        self.rot_x += 0.015
+        self.rot_y += 0.022
+        self.rot_z += 0.008
+        self.inner_rot -= 0.035
         self.pulse += 0.075
         
-        amp = 0.28 if self.is_speaking else 0.08
+        amp = 0.32 if self.is_speaking else 0.08
         pulse_scale = 1.0 + amp * math.sin(self.pulse)
         
-        for r_offset, col, dash in [
-            (95 * pulse_scale, "#0e2a47", (2, 4)),
-            (115 * pulse_scale, "#091d33", (1, 5))
-        ]:
-            self.create_oval(self.cx - r_offset, self.cy - r_offset,
-                              self.cx + r_offset, self.cy + r_offset,
-                              outline=col, width=1, dash=dash)
-                              
+        # 1. Holographic HUD Orbital Rings
+        r_inner = 78 * pulse_scale
+        r_outer = 98 * pulse_scale
+        self.create_oval(self.cx - r_inner, self.cy - r_inner, self.cx + r_inner, self.cy + r_inner,
+                          outline="#0e2a4a", width=1, dash=(3, 6))
+        self.create_oval(self.cx - r_outer, self.cy - r_outer, self.cx + r_outer, self.cy + r_outer,
+                          outline="#071a30", width=1, dash=(1, 5))
+
+        # 2. 24-Band Radial Equalizer Spectrum (Dancing when speaking)
         if self.is_speaking:
-            num_rays = 16
-            for i in range(num_rays):
-                ang = i * (2 * math.pi / num_rays) + (self.pulse * 0.5)
-                wave = math.sin(self.pulse * 3 + i * 1.2) * 22
-                r1 = 88 * pulse_scale
-                r2 = 98 * pulse_scale + max(4, wave)
+            num_bands = 24
+            for i in range(num_bands):
+                ang = i * (2 * math.pi / num_bands) + (self.pulse * 0.4)
+                wave = math.sin(self.pulse * 3.5 + i * 1.5) * 24 + math.cos(self.pulse * 2 + i * 0.8) * 8
+                r1 = 82 * pulse_scale
+                r2 = 88 * pulse_scale + max(3, wave)
                 x1 = self.cx + r1 * math.cos(ang)
                 y1 = self.cy + r1 * math.sin(ang)
                 x2 = self.cx + r2 * math.cos(ang)
                 y2 = self.cy + r2 * math.sin(ang)
-                self.create_line(x1, y1, x2, y2, fill=self.core_color, width=2)
+                col = ACCENT_CYAN if i % 2 == 0 else self.core_color
+                self.create_line(x1, y1, x2, y2, fill=col, width=2)
 
+        # 3. 40-Particle Swarm with Z-Depth Projection
         for p in self.particles:
-            p["angle"] += p["speed"]
-            px = self.cx + p["radius"] * math.cos(p["angle"])
-            py = self.cy + p["radius"] * math.sin(p["angle"]) * math.cos(p["tilt"]) + (10 * math.sin(self.pulse + p["angle"]))
-            ps = p["size"] if not self.is_speaking else p["size"] * 1.5
-            self.create_oval(px - ps, py - ps, px + ps, py + ps, fill=p["color"], outline="")
+            p["theta"] += p["speed"]
+            # 3D spherical orbit
+            px3 = p["r"] * math.cos(p["theta"]) * math.cos(p["phi"])
+            py3 = p["r"] * math.sin(p["theta"]) * math.cos(p["phi"])
+            pz3 = p["r"] * math.sin(p["phi"])
+            
+            # Rotate around Y
+            px = px3 * math.cos(self.rot_y) + pz3 * math.sin(self.rot_y)
+            pz = -px3 * math.sin(self.rot_y) + pz3 * math.cos(self.rot_y)
+            py = py3 + 8 * math.sin(self.pulse + p["theta"])
+            
+            fov = 220
+            dist = fov / (fov + pz + 120)
+            scr_x = self.cx + px * dist * 1.3
+            scr_y = self.cy + py * dist * 1.3
+            
+            # Depth size
+            ps = p["size"] * dist * (1.6 if self.is_speaking else 1.1)
+            self.create_oval(scr_x - ps, scr_y - ps, scr_x + ps, scr_y + ps, fill=p["color"], outline="")
 
-        def project_3d(v_list, scale):
+        # 4. Project Outer Icosahedron Facets
+        def project_mesh(verts, rx, ry, scale):
             proj = []
-            for (x, y, z) in v_list:
+            for (x, y, z) in verts:
                 x, y, z = x * scale, y * scale, z * scale
-                x1 = x * math.cos(self.angle_y) + z * math.sin(self.angle_y)
+                # Y rot
+                x1 = x * math.cos(ry) + z * math.sin(ry)
                 y1 = y
-                z1 = -x * math.sin(self.angle_y) + z * math.cos(self.angle_y)
+                z1 = -x * math.sin(ry) + z * math.cos(ry)
+                # X rot
                 x2 = x1
-                y2 = y1 * math.cos(self.angle_x) - z1 * math.sin(self.angle_x)
-                z2 = y1 * math.sin(self.angle_x) + z1 * math.cos(self.angle_x)
+                y2 = y1 * math.cos(rx) - z1 * math.sin(rx)
+                z2 = y1 * math.sin(rx) + z1 * math.cos(rx)
                 fov = 220
                 dist = fov / (fov + z2 + 120)
                 px = self.cx + x2 * dist * 1.4
@@ -233,21 +288,34 @@ class CephalonGlowingMatrix(tk.Canvas):
                 proj.append((px, py, z2))
             return proj
 
-        outer_proj = project_3d(self.outer_vertices, pulse_scale)
-        inner_proj = project_3d(self.inner_vertices, pulse_scale * 1.1)
+        outer_proj = project_mesh(self.outer_verts, self.rot_x, self.rot_y, pulse_scale)
+        inner_proj = project_mesh(self.inner_verts, self.rot_x * 1.5, self.inner_rot, pulse_scale * 1.2)
 
+        # Draw Outer Crystal Facets with Depth Luminescence
         for u, v in self.outer_edges:
             x1, y1, z1 = outer_proj[u]
             x2, y2, z2 = outer_proj[v]
-            depth_col = ACCENT_CYAN if (z1 + z2) / 2 > -20 else "#0369a1"
-            self.create_line(x1, y1, x2, y2, fill=depth_col, width=2 if self.is_speaking else 1)
+            avg_z = (z1 + z2) / 2
+            edge_col = ACCENT_CYAN if avg_z > -10 else "#034977"
+            w = 2 if self.is_speaking else 1
+            self.create_line(x1, y1, x2, y2, fill=edge_col, width=w)
 
+        # Draw Inner Counter-Rotating Core Facets
         for u, v in self.inner_edges:
             x1, y1, _ = inner_proj[u]
             x2, y2, _ = inner_proj[v]
             self.create_line(x1, y1, x2, y2, fill=self.core_color, width=2)
 
-        core_r = 7 if not self.is_speaking else 11 + 3 * math.sin(self.pulse * 2)
+        # Glowing Vertex Nodes
+        for (px, py, z) in outer_proj:
+            if z > -20:
+                self.create_oval(px - 2, py - 2, px + 2, py + 2, fill=ACCENT_CYAN, outline="")
+
+        # Central Orokin Eye Core
+        core_r = 7 if not self.is_speaking else 11 + 3 * math.sin(self.pulse * 2.5)
+        self.create_oval(self.cx - core_r - 4, self.cy - core_r - 4,
+                          self.cx + core_r + 4, self.cy + core_r + 4,
+                          outline=ACCENT_PURPLE, width=1)
         self.create_oval(self.cx - core_r, self.cy - core_r,
                           self.cx + core_r, self.cy + core_r,
                           fill=self.core_color, outline="#ffffff", width=2)
@@ -257,16 +325,14 @@ class CephalonGlowingMatrix(tk.Canvas):
 class CephalonApp(tk.Tk):
     def __init__(self):
         super().__init__(className='gally_cephalon_hud')
-        self.title("Cephalon Gally — Multi-Mode AI System Core")
-        self.geometry("1020x730")
+        self.title("Cephalon Gally — Glassmorphic AI System Core")
+        self.geometry("1040x740")
         self.configure(bg=BG_MAIN)
-        self.minsize(900, 620)
+        self.minsize(920, 640)
         
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         
-        # Thread-safe queue for streaming tokens and terminal updates
         self.msg_queue = queue.Queue()
-        
         self.config_data = load_config()
         self.history = load_history()
         self.mode = self.config_data.get("mode", "normal")
@@ -276,8 +342,8 @@ class CephalonApp(tk.Tk):
         self.document_permitted = self.config_data.get("document_access_permitted", False)
         self.sudo_unlocked = False
 
-        # 1. Top Cephalon Holographic Header Bar
-        hdr = tk.Frame(self, bg=BG_MAIN, padx=20, pady=8)
+        # 1. Top Glass Header Bar
+        hdr = tk.Frame(self, bg=BG_MAIN, padx=22, pady=10)
         hdr.pack(fill="x")
         
         top_row = tk.Frame(hdr, bg=BG_MAIN)
@@ -285,118 +351,122 @@ class CephalonApp(tk.Tk):
         
         tk.Label(top_row, text="🌌 CEPHALON GALLY", font=("Sans", 16, "bold"), fg=ACCENT_CYAN, bg=BG_MAIN).pack(side="left")
         
-        self.lbl_mode_badge = tk.Label(top_row, text="", font=("Sans", 9, "bold"), padx=10, pady=2)
-        self.lbl_mode_badge.pack(side="left", padx=10)
+        self.lbl_mode_badge = tk.Label(top_row, text="", font=("Sans", 9, "bold"), padx=12, pady=3,
+                                       relief="flat")
+        self.lbl_mode_badge.pack(side="left", padx=12)
         self.update_mode_badge_ui()
         
         self.lbl_telemetry = tk.Label(top_row, text="⚡ RYZEN 9 5900X (24T) | RTX GPU | DUAL 144Hz",
-                                      font=("Sans", 9, "bold"), fg=ACCENT_CYAN, bg=BG_CARD, padx=12, pady=4,
+                                      font=("Sans", 9, "bold"), fg=ACCENT_CYAN, bg=BG_GLASS_CARD, padx=14, pady=5,
                                       highlightthickness=1, highlightbackground=BORDER_CYAN)
         self.lbl_telemetry.pack(side="right")
         
-        tk.Frame(hdr, height=2, bg=ACCENT_CYAN).pack(fill="x", pady=(6, 0))
+        tk.Frame(hdr, height=2, bg=ACCENT_CYAN).pack(fill="x", pady=(8, 0))
 
-        # 2. Main Content Frame
-        main_content = tk.Frame(self, bg=BG_MAIN, padx=14, pady=4)
+        # 2. Main Glass Content Layout
+        main_content = tk.Frame(self, bg=BG_MAIN, padx=16, pady=6)
         main_content.pack(fill="both", expand=True)
         
-        # Left Panel: Modes, Privacy & Visual Core
-        left_panel = tk.Frame(main_content, bg=BG_CARD, width=300, padx=12, pady=8,
+        # Left Panel (Translucent Glass Card with Rounded Feel)
+        left_panel = tk.Frame(main_content, bg=BG_GLASS, width=310, padx=14, pady=10,
                               highlightthickness=1, highlightbackground=BORDER_CYAN)
-        left_panel.pack(side="left", fill="y", padx=(0, 10))
+        left_panel.pack(side="left", fill="y", padx=(0, 12))
         left_panel.pack_propagate(False)
         
-        # 3D Matrix
-        self.matrix_canvas = CephalonGlowingMatrix(left_panel, width=270, height=190)
+        # High Graphics 3D Cephalon Matrix
+        self.matrix_canvas = HighGraphicsCephalonMatrix(left_panel, width=280, height=200)
         self.matrix_canvas.pack()
         self.matrix_canvas.set_mode_color(self.mode)
         
-        self.lbl_status = tk.Label(left_panel, text="● CEPHALON READY", font=("Sans", 8, "bold"), fg=ACCENT_GREEN, bg=BG_CARD)
-        self.lbl_status.pack(pady=(2, 4))
+        self.lbl_status = tk.Label(left_panel, text="● CEPHALON ONLINE", font=("Sans", 8, "bold"), fg=ACCENT_GREEN, bg=BG_GLASS)
+        self.lbl_status.pack(pady=(2, 6))
         
-        # --- Mode Selector Section ---
-        tk.Label(left_panel, text="◈ OPERATION PERSONA ◈", font=("Sans", 8, "bold"), fg=ACCENT_GOLD, bg=BG_CARD).pack(pady=(2, 2))
+        # Mode Selector Pill Buttons
+        tk.Label(left_panel, text="◈ OPERATION PERSONA ◈", font=("Sans", 8, "bold"), fg=ACCENT_GOLD, bg=BG_GLASS).pack(pady=(2, 3))
         
-        mode_btn_row = tk.Frame(left_panel, bg=BG_CARD)
+        mode_btn_row = tk.Frame(left_panel, bg=BG_GLASS)
         mode_btn_row.pack(fill="x", pady=2)
         
         self.btn_mode_child = tk.Button(mode_btn_row, text="🧸 Child", font=("Sans", 8, "bold"),
-                                        bg=BG_INPUT, fg=FG_LIGHT, relief="flat", padx=6, pady=4, cursor="hand2",
+                                        bg=BG_INPUT, fg=FG_LIGHT, activebackground="#f472b6", activeforeground="#000",
+                                        relief="flat", padx=6, pady=5, cursor="hand2",
                                         command=lambda: self.switch_mode("child"))
-        self.btn_mode_child.pack(side="left", fill="x", expand=True, padx=1)
+        self.btn_mode_child.pack(side="left", fill="x", expand=True, padx=2)
         
         self.btn_mode_normal = tk.Button(mode_btn_row, text="🚀 Normal", font=("Sans", 8, "bold"),
-                                         bg=BG_INPUT, fg=FG_LIGHT, relief="flat", padx=6, pady=4, cursor="hand2",
+                                         bg=BG_INPUT, fg=FG_LIGHT, activebackground=ACCENT_GOLD, activeforeground="#000",
+                                         relief="flat", padx=6, pady=5, cursor="hand2",
                                          command=lambda: self.switch_mode("normal"))
-        self.btn_mode_normal.pack(side="left", fill="x", expand=True, padx=1)
+        self.btn_mode_normal.pack(side="left", fill="x", expand=True, padx=2)
         
-        self.btn_mode_sudo = tk.Button(mode_btn_row, text="⚡ Sudo Pro", font=("Sans", 8, "bold"),
-                                       bg=BG_INPUT, fg=FG_LIGHT, relief="flat", padx=6, pady=4, cursor="hand2",
+        self.btn_mode_sudo = tk.Button(mode_btn_row, text="⚡ Sudo", font=("Sans", 8, "bold"),
+                                       bg=BG_INPUT, fg=FG_LIGHT, activebackground=ACCENT_ROSE, activeforeground="#fff",
+                                       relief="flat", padx=6, pady=5, cursor="hand2",
                                        command=lambda: self.switch_mode("professional_sudo"))
-        self.btn_mode_sudo.pack(side="left", fill="x", expand=True, padx=1)
+        self.btn_mode_sudo.pack(side="left", fill="x", expand=True, padx=2)
         
-        # --- Privacy & Sandboxing Controls ---
-        tk.Label(left_panel, text="─ PRIVACY & GUARDRAILS ─", font=("Sans", 8, "bold"), fg=FG_MUTED, bg=BG_CARD).pack(pady=(6, 2))
+        # Privacy Controls Section
+        tk.Label(left_panel, text="─ PRIVACY & SANDBOX ─", font=("Sans", 8, "bold"), fg=FG_MUTED, bg=BG_GLASS).pack(pady=(8, 3))
         
         self.btn_internet = tk.Button(left_panel, text="", font=("Sans", 8, "bold"),
-                                      bg=BG_INPUT, relief="flat", padx=6, pady=3, cursor="hand2", anchor="w",
+                                      bg=BG_INPUT, relief="flat", padx=8, pady=4, cursor="hand2", anchor="w",
                                       command=self.toggle_internet_permission)
-        self.btn_internet.pack(fill="x", pady=1)
+        self.btn_internet.pack(fill="x", pady=2)
         
         self.btn_doc = tk.Button(left_panel, text="", font=("Sans", 8, "bold"),
-                                 bg=BG_INPUT, relief="flat", padx=6, pady=3, cursor="hand2", anchor="w",
+                                 bg=BG_INPUT, relief="flat", padx=8, pady=4, cursor="hand2", anchor="w",
                                  command=self.toggle_document_permission)
-        self.btn_doc.pack(fill="x", pady=1)
+        self.btn_doc.pack(fill="x", pady=2)
         
         self.btn_voice = tk.Button(left_panel, text="", font=("Sans", 8, "bold"),
-                                   bg=BG_INPUT, relief="flat", padx=6, pady=3, cursor="hand2", anchor="w",
+                                   bg=BG_INPUT, relief="flat", padx=8, pady=4, cursor="hand2", anchor="w",
                                    command=self.toggle_voice)
-        self.btn_voice.pack(fill="x", pady=1)
+        self.btn_voice.pack(fill="x", pady=2)
         self.update_toggle_buttons_ui()
 
         # Directives
-        tk.Label(left_panel, text="─ DIRECTIVES ─", font=("Sans", 8, "bold"), fg=FG_MUTED, bg=BG_CARD).pack(pady=(6, 2))
+        tk.Label(left_panel, text="─ CEPHALON DIRECTIVES ─", font=("Sans", 8, "bold"), fg=FG_MUTED, bg=BG_GLASS).pack(pady=(8, 3))
         
         directives = [
-            ("🛡️ Full System Scan", "run_diagnostics"),
-            ("⚡ Boost Gaming FPS", "boost_gaming"),
-            ("🔊 Audio Diagnostics", "repair_audio"),
-            ("🌐 Open Web Link...", "open_web_prompt")
+            ("🛡️ Full System Diagnostics", "run_diagnostics"),
+            ("⚡ Boost Gaming FPS & GPU", "boost_gaming"),
+            ("🔊 Audio Subsystem Repair", "repair_audio"),
+            ("🌐 Open Web Link / Search...", "open_web_prompt")
         ]
         for name, act in directives:
             btn = tk.Button(left_panel, text=name, font=("Sans", 8),
                             bg=BG_INPUT, fg=FG_LIGHT, activebackground=ACCENT_CYAN, activeforeground="#000",
-                            relief="flat", padx=6, pady=3, cursor="hand2", anchor="w",
+                            relief="flat", padx=8, pady=4, cursor="hand2", anchor="w",
                             command=lambda a=act, n=name: self.handle_directive_click(n, a))
             btn.pack(fill="x", pady=1)
 
         btn_clear = tk.Button(left_panel, text="🗑️ Clear Console History", font=("Sans", 8),
                               bg="#1e1e2e", fg=FG_MUTED, activebackground=ACCENT_ROSE, activeforeground="#fff",
-                              relief="flat", padx=6, pady=3, cursor="hand2", anchor="center",
+                              relief="flat", padx=6, pady=4, cursor="hand2", anchor="center",
                               command=self.clear_console_history)
-        btn_clear.pack(fill="x", pady=(4, 0), side="bottom")
+        btn_clear.pack(fill="x", pady=(6, 0), side="bottom")
 
-        # Right Panel: Chat Console + Mini Terminal Progress
+        # Right Panel: Glowing Glass Console & Telemetry Progress
         right_panel = tk.Frame(main_content, bg=BG_MAIN)
         right_panel.pack(side="right", fill="both", expand=True)
         
-        self.progress_frame = tk.Frame(right_panel, bg=BG_CARD, padx=8, pady=4,
+        self.progress_frame = tk.Frame(right_panel, bg=BG_GLASS, padx=10, pady=5,
                                        highlightthickness=1, highlightbackground=BORDER_CYAN)
         self.progress_frame.pack(fill="x", pady=(0, 6))
         
         self.lbl_progress = tk.Label(self.progress_frame, text="⚡ SYSTEM TELEMETRY: READY",
-                                     font=("Sans", 8, "bold"), fg=ACCENT_CYAN, bg=BG_CARD)
+                                     font=("Sans", 8, "bold"), fg=ACCENT_CYAN, bg=BG_GLASS)
         self.lbl_progress.pack(anchor="w")
         
         self.prog_bar = ttk.Progressbar(self.progress_frame, orient="horizontal", mode="determinate")
-        self.prog_bar.pack(fill="x", pady=(2, 2))
+        self.prog_bar.pack(fill="x", pady=(3, 2))
         self.prog_bar["value"] = 100
 
-        chat_box_frame = tk.Frame(right_panel, bg=BG_CARD, highlightthickness=1, highlightbackground=BORDER_CYAN)
+        chat_box_frame = tk.Frame(right_panel, bg=BG_GLASS_CARD, highlightthickness=1, highlightbackground=BORDER_CYAN)
         chat_box_frame.pack(fill="both", expand=True, pady=(0, 6))
         
-        self.txt_chat = tk.Text(chat_box_frame, bg=BG_CARD, fg=FG_LIGHT, font=("Sans", 10),
-                                wrap="word", relief="flat", padx=14, pady=12, borderwidth=0)
+        self.txt_chat = tk.Text(chat_box_frame, bg=BG_GLASS_CARD, fg=FG_LIGHT, font=("Sans", 10),
+                                wrap="word", relief="flat", padx=16, pady=14, borderwidth=0)
         self.txt_chat.pack(side="left", fill="both", expand=True)
         
         scroll = ttk.Scrollbar(chat_box_frame, orient="vertical", command=self.txt_chat.yview)
@@ -413,7 +483,7 @@ class CephalonApp(tk.Tk):
         
         self.render_history()
 
-        # Input Bar
+        # Rounded Glass Input Bar
         input_bar = tk.Frame(right_panel, bg=BG_INPUT, padx=8, pady=4,
                              highlightthickness=1, highlightbackground=BORDER_CYAN)
         input_bar.pack(fill="x")
@@ -426,12 +496,10 @@ class CephalonApp(tk.Tk):
         
         self.btn_send = tk.Button(input_bar, text="Transmute (Enter)", font=("Sans", 10, "bold"),
                                   bg=ACCENT_CYAN, fg="#000", activebackground=ACCENT_GOLD, activeforeground="#000",
-                                  relief="flat", padx=16, pady=6, cursor="hand2", command=self.send_query)
+                                  relief="flat", padx=18, pady=6, cursor="hand2", command=self.send_query)
         self.btn_send.pack(side="right")
         
         self.bind("<Escape>", lambda e: self.on_close())
-        
-        # Start Main Event Pump for Thread-safe Queue
         self.poll_msg_queue()
 
     def poll_msg_queue(self):
