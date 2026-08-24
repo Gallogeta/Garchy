@@ -48,11 +48,15 @@ echo -e "\n${BOLD}[4/5] Preparing Garchy ISO Profile...${RESET}"
 mkdir -p "$SCRIPT_DIR/archiso" "$OUT_DIR"
 
 if [ -d /usr/share/archiso/configs/releng ]; then
-    cp /usr/share/archiso/configs/releng/pacman.conf "$SCRIPT_DIR/archiso/" 2>/dev/null || true
-    cp -r /usr/share/archiso/configs/releng/efiboot "$SCRIPT_DIR/archiso/" 2>/dev/null || true
-    cp -r /usr/share/archiso/configs/releng/syslinux "$SCRIPT_DIR/archiso/" 2>/dev/null || true
-    cp -r /usr/share/archiso/configs/releng/grub "$SCRIPT_DIR/archiso/" 2>/dev/null || true
+    [ ! -f "$SCRIPT_DIR/archiso/pacman.conf" ] && cp /usr/share/archiso/configs/releng/pacman.conf "$SCRIPT_DIR/archiso/"
+    [ ! -d "$SCRIPT_DIR/archiso/efiboot" ] && cp -r /usr/share/archiso/configs/releng/efiboot "$SCRIPT_DIR/archiso/"
+    [ ! -d "$SCRIPT_DIR/archiso/syslinux" ] && cp -r /usr/share/archiso/configs/releng/syslinux "$SCRIPT_DIR/archiso/"
+    [ ! -d "$SCRIPT_DIR/archiso/grub" ] && cp -r /usr/share/archiso/configs/releng/grub "$SCRIPT_DIR/archiso/"
 fi
+
+# Ensure multilib is enabled in archiso/pacman.conf
+sed -i 's/^#\[multilib\]/[multilib]/' "$SCRIPT_DIR/archiso/pacman.conf"
+sed -i '/^\[multilib\]/{n;s/^#Include/Include/}' "$SCRIPT_DIR/archiso/pacman.conf"
 
 # 5. Build the Bootable ISO
 echo -e "\n${BOLD}[5/5] Compiling Garchy Linux Live ISO with mkarchiso...${RESET}"
