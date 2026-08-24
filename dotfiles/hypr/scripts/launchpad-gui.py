@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Gally OS - Native Modern App Grid & Launchpad (GUI)
-Instant cached loading (<10ms), theme-synced colors & rounding, and mouse hover glow.
+Flicker-free static layout, instant cached loading, theme-synced colors & smooth hover.
 """
 
 import os
@@ -26,19 +26,18 @@ except Exception:
         "fg_muted": "#94a3b8",
         "accent": "#fbbf24",
         "accent_alt": "#38bdf8",
-        "border_col": "#334155",
-        "rounding": 12
+        "border_col": "#334155"
     }
 
 BG_MAIN = THEME.get("bg", "#070b14")
 BG_CARD = THEME.get("bg_card", "#0f172a")
+BG_HOVER = "#1e293b"
 BG_INPUT = THEME.get("bg_input", "#1e293b")
 FG_LIGHT = THEME.get("fg", "#f1f5f9")
 FG_MUTED = THEME.get("fg_muted", "#94a3b8")
 ACCENT_PRIMARY = THEME.get("accent", "#fbbf24")
 ACCENT_SECONDARY = THEME.get("accent_alt", "#38bdf8")
 BORDER_COL = THEME.get("border_col", "#334155")
-ROUNDING = THEME.get("rounding", 12)
 
 CACHE_FILE = os.path.expanduser("~/.cache/gally_apps_cache.json")
 
@@ -159,7 +158,7 @@ class LaunchpadApp(tk.Tk):
         self.filtered_apps = list(self.all_apps)
         
         # Header & Search Bar
-        hdr = tk.Frame(self, bg=BG_MAIN, padx=25, pady=16)
+        hdr = tk.Frame(self, bg=BG_MAIN, padx=25, pady=14)
         hdr.pack(fill="x")
         
         top_bar = tk.Frame(hdr, bg=BG_MAIN)
@@ -181,7 +180,7 @@ class LaunchpadApp(tk.Tk):
         self.ent_search.bind("<Return>", self.on_enter_press)
         self.ent_search.focus_set()
         
-        tk.Frame(hdr, height=2, bg=ACCENT_PRIMARY).pack(fill="x", pady=(12, 0))
+        tk.Frame(hdr, height=2, bg=ACCENT_PRIMARY).pack(fill="x", pady=(10, 0))
         
         # Scrollable Canvas Grid
         self.canvas_frame = tk.Frame(self, bg=BG_MAIN)
@@ -206,7 +205,6 @@ class LaunchpadApp(tk.Tk):
         
         self.render_grid()
         
-        # Background refresh cache
         threading.Thread(target=self.refresh_cache_async, daemon=True).start()
 
     def refresh_cache_async(self):
@@ -240,37 +238,56 @@ class LaunchpadApp(tk.Tk):
             r = idx // columns
             c = idx % columns
             
+            # Static container with fixed border width to prevent any jumping or flickering
             card = tk.Frame(self.grid_container, bg=BG_CARD, padx=10, pady=8, relief="flat",
                             highlightthickness=1, highlightbackground=BORDER_COL, cursor="hand2", width=195, height=72)
-            card.grid(row=r, column=c, padx=6, pady=6, sticky="nsew")
-            card.grid_propagate(False)
+            card.grid(row=r, column=c, padx=5, pady=5, sticky="nsew")
+            card.pack_propagate(False)
             
-            # Hover bindings
-            card.bind("<Enter>", lambda e, cd=card: cd.configure(highlightbackground=ACCENT_SECONDARY, bg="#1e293b"))
-            card.bind("<Leave>", lambda e, cd=card: cd.configure(highlightbackground=BORDER_COL, bg=BG_CARD))
-            card.bind("<Button-1>", lambda e, ap=app: self.launch_app(ap))
-            
-            # Icon
             lbl_ico = tk.Label(card, text=app['emoji'], font=("Sans", 20), bg=BG_CARD, fg=ACCENT_PRIMARY, cursor="hand2")
             lbl_ico.pack(side="left", padx=(4, 8))
-            lbl_ico.bind("<Button-1>", lambda e, ap=app: self.launch_app(ap))
             
-            # Text info
             info = tk.Frame(card, bg=BG_CARD, cursor="hand2")
             info.pack(side="left", fill="both", expand=True)
-            info.bind("<Button-1>", lambda e, ap=app: self.launch_app(ap))
             
             lbl_nm = tk.Label(info, text=app['name'], font=("Sans", 10, "bold"), fg=FG_LIGHT, bg=BG_CARD,
                               anchor="w", justify="left", cursor="hand2")
             lbl_nm.pack(anchor="w")
-            lbl_nm.bind("<Button-1>", lambda e, ap=app: self.launch_app(ap))
             
             comment = app.get('comment', '')
+            lbl_cm = None
             if comment:
                 lbl_cm = tk.Label(info, text=comment[:22] + ("..." if len(comment) > 22 else ""),
                                   font=("Sans", 8), fg=FG_MUTED, bg=BG_CARD, anchor="w", cursor="hand2")
                 lbl_cm.pack(anchor="w")
-                lbl_cm.bind("<Button-1>", lambda e, ap=app: self.launch_app(ap))
+
+            widgets = [card, lbl_ico, info, lbl_nm]
+            if lbl_cm:
+                widgets.append(lbl_cm)
+
+            def make_hover_handlers(cd, w_list, bg_normal, bg_hover, bd_normal, bd_hover):
+                def on_enter(e):
+                    cd.configure(bg=bg_hover, highlightbackground=bd_hover)
+                    for w in w_list:
+                        try:
+                            w.configure(bg=bg_hover)
+                        except Exception:
+                            pass
+                def on_leave(e):
+                    cd.configure(bg=bg_normal, highlightbackground=bd_normal)
+                    for w in w_list:
+                        try:
+                            w.configure(bg=bg_normal)
+                        except Exception:
+                            pass
+                return on_enter, on_leave
+
+            enter_fn, leave_fn = make_hover_handlers(card, widgets, BG_CARD, BG_HOVER, BORDER_COL, ACCENT_SECONDARY)
+
+            for w in widgets:
+                w.bind("<Enter>", enter_fn)
+                w.bind("<Leave>", leave_fn)
+                w.bind("<Button-1>", lambda e, ap=app: self.launch_app(ap))
 
         for i in range(columns):
             self.grid_container.grid_columnconfigure(i, weight=1)

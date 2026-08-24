@@ -12,7 +12,7 @@
         "custom/launcher",
         "hyprland/workspaces",
         "wlr/taskbar",
-        "hyprland/window"
+        "custom/minimized"
     ],
     "modules-center": [
         "clock"
@@ -58,7 +58,8 @@
     },
 
     "wlr/taskbar": {
-        "format": "{icon} {name}",
+        "format": "{icon} {title}",
+        "max-length": 25,
         "icon-size": 16,
         "icon-theme": "Papirus-Dark",
         "tooltip-format": "🗔 {title}\n───────────────────────\n• Left Click: Focus Window (Bring to Front)\n• Right Click / Middle Click: Close App",
@@ -71,14 +72,14 @@
         ]
     },
 
-    "hyprland/window": {
-        "format": "🗖 {title}",
-        "max-length": 32,
-        "separate-outputs": true,
-        "tooltip-format": "Active Window: {title}\n───────────────────────\n• Left Click: MINIMIZE this window\n• Right Click: CLOSE this window\n• Middle Click: Maximize / Restore",
-        "on-click": "/home/gallo/.config/hypr/scripts/minimize-window.sh minimize",
-        "on-click-right": "/home/gallo/.config/hypr/scripts/minimize-window.sh close-window",
-        "on-click-middle": "/home/gallo/.config/hypr/scripts/minimize-window.sh maximize-toggle"
+    "custom/minimized": {
+        "format": "{}",
+        "return-type": "json",
+        "interval": 1,
+        "exec": "/home/gallo/.config/hypr/scripts/minimized-status.sh",
+        "on-click": "/home/gallo/.config/hypr/scripts/minimize-window.sh restore-last",
+        "on-click-right": "python3 /home/gallo/.config/hypr/scripts/minimized-manager.py",
+        "tooltip": true
     },
 
     "clock": {
