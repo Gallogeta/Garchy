@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """
 Cephalon Gally — Ultra-Modern CustomTkinter AI System Core (Warframe Aesthetic)
-On-The-Fly Model Switcher (Local, Gemini, Claude, OpenAI, DeepSeek, Groq),
-API Key Login Manager, Native Rounded Glass UI, High-Graphics 3D Hologram,
-3 Persona Modes (Child, Normal, Pro Sudo), and Uncut Neural Voice.
+In-Terminal Login & API Key Insert, On-The-Fly Model Switching,
+Native Rounded Glass UI, High-Graphics 3D Hologram, 3 Persona Modes, and Neural Voice.
 """
 
 import os
@@ -72,7 +71,7 @@ def speak_voice_neural_async(text, enabled=True, voice="en-US-AriaNeural"):
         if line.strip().startswith("```"):
             in_code = not in_code
             continue
-        if not in_code and not line.strip().startswith("$") and not line.strip().startswith("sudo"):
+        if not in_code and not line.strip().startswith("$") and not line.strip().startswith("sudo") and not line.strip().startswith("┌") and not line.strip().startswith("│"):
             clean_lines.append(line)
     clean = " ".join(clean_lines).strip()
     
@@ -105,7 +104,7 @@ def speak_voice_neural_async(text, enabled=True, voice="en-US-AriaNeural"):
     threading.Thread(target=run_tts, daemon=True).start()
 
 class HighGraphicsCephalonMatrix(tk.Canvas):
-    def __init__(self, parent, width=280, height=180, bg_color="#0f172a", accent_color="#00f0ff"):
+    def __init__(self, parent, width=280, height=175, bg_color="#0f172a", accent_color="#00f0ff"):
         super().__init__(parent, width=width, height=height, bg=bg_color, highlightthickness=0)
         self.w = width
         self.h = height
@@ -187,7 +186,6 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
         amp = 0.32 if self.is_speaking else 0.08
         pulse_scale = 1.0 + amp * math.sin(self.pulse)
         
-        # Orbital Rings
         r_inner = 68 * pulse_scale
         r_outer = 85 * pulse_scale
         self.create_oval(self.cx - r_inner, self.cy - r_inner, self.cx + r_inner, self.cy + r_inner,
@@ -195,7 +193,6 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
         self.create_oval(self.cx - r_outer, self.cy - r_outer, self.cx + r_outer, self.cy + r_outer,
                           outline="#0e243d", width=1, dash=(1, 5))
 
-        # 24-Band Equalizer Rays
         if self.is_speaking:
             num_bands = 24
             for i in range(num_bands):
@@ -210,7 +207,6 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
                 col = self.accent_color if i % 2 == 0 else self.core_color
                 self.create_line(x1, y1, x2, y2, fill=col, width=2)
 
-        # 35-Particle Swarm
         for p in self.particles:
             p["theta"] += p["speed"]
             px3 = p["r"] * math.cos(p["theta"]) * math.cos(p["phi"])
@@ -228,7 +224,6 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
             ps = p["size"] * dist * (1.5 if self.is_speaking else 1.0)
             self.create_oval(scr_x - ps, scr_y - ps, scr_x + ps, scr_y + ps, fill=p["color"], outline="")
 
-        # 3D Project Outer & Inner Meshes
         def project_mesh(verts, rx, ry, scale):
             proj = []
             for (x, y, z) in verts:
@@ -275,91 +270,6 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
         
         self.after(22, self.animate)
 
-class ApiKeyManagerDialog(ctk.CTkToplevel):
-    """Modal for logging in and configuring Cloud AI Model API Keys"""
-    def __init__(self, parent, config, on_saved_callback):
-        super().__init__(parent)
-        self.parent = parent
-        self.config = config
-        self.on_saved = on_saved_callback
-        
-        self.title("AI Cloud Providers & API Key Manager")
-        self.geometry("540x500")
-        self.resizable(False, False)
-        self.transient(parent)
-        self.grab_set()
-        
-        colors = get_theme_colors()
-        self.configure(fg_color=colors["bg"])
-        
-        # Header
-        hdr = ctk.CTkFrame(self, fg_color=colors["bg_card"], corner_radius=12,
-                           border_width=1, border_color=colors["accent"])
-        hdr.pack(fill="x", padx=16, pady=12)
-        
-        lbl_h = ctk.CTkLabel(hdr, text="🔑 Cloud AI Model Keys & Login",
-                             font=ctk.CTkFont(family="Sans", size=15, weight="bold"),
-                             text_color=colors["accent"])
-        lbl_h.pack(padx=12, pady=(8, 2))
-        lbl_sub = ctk.CTkLabel(hdr, text="Keys are stored securely in ~/.config/gally/ai_config.json",
-                              font=ctk.CTkFont(family="Sans", size=10), text_color=colors["fg_muted"])
-        lbl_sub.pack(padx=12, pady=(0, 8))
-        
-        # Fields Container
-        fields_frame = ctk.CTkFrame(self, fg_color=colors["bg_card"], corner_radius=12)
-        fields_frame.pack(fill="both", expand=True, padx=16, pady=(0, 12))
-        
-        self.entries = {}
-        providers = [
-            ("✨ Google Gemini API Key", "gemini_api_key", "AIzaSy..."),
-            ("🚀 Anthropic Claude Key", "claude_api_key", "sk-ant-..."),
-            ("🧠 OpenAI GPT-4o Key", "openai_api_key", "sk-..."),
-            ("🦙 DeepSeek API Key", "deepseek_api_key", "sk-..."),
-            ("⚡ Groq Cloud API Key", "groq_api_key", "gsk_...")
-        ]
-        
-        for label, key_name, placeholder in providers:
-            row = ctk.CTkFrame(fields_frame, fg_color="transparent")
-            row.pack(fill="x", padx=14, pady=6)
-            
-            lbl = ctk.CTkLabel(row, text=label, font=ctk.CTkFont(size=11, weight="bold"),
-                              text_color=colors["fg"], width=180, anchor="w")
-            lbl.pack(side="left")
-            
-            ent = ctk.CTkEntry(row, placeholder_text=placeholder, show="*",
-                              fg_color=colors["bg_input"], border_width=1, border_color=colors["border"],
-                              font=ctk.CTkFont(size=11), height=28)
-            ent.pack(side="right", fill="x", expand=True, padx=(4, 0))
-            
-            # Preload existing key
-            val = self.config.get(key_name, "")
-            if val:
-                ent.insert(0, val)
-            self.entries[key_name] = ent
-            
-        # Action Buttons
-        btn_row = ctk.CTkFrame(self, fg_color="transparent")
-        btn_row.pack(fill="x", padx=16, pady=(0, 14))
-        
-        btn_cancel = ctk.CTkButton(btn_row, text="Cancel", fg_color=colors["bg_input"],
-                                   hover_color="#334155", corner_radius=12, width=100,
-                                   command=self.destroy)
-        btn_cancel.pack(side="left")
-        
-        btn_save = ctk.CTkButton(btn_row, text="💾 Save Keys & Login", fg_color=colors["accent"],
-                                 text_color="#000", hover_color=colors["accent_alt"],
-                                 corner_radius=12, font=ctk.CTkFont(size=11, weight="bold"),
-                                 command=self.save_keys)
-        btn_save.pack(side="right")
-
-    def save_keys(self):
-        for key_name, ent in self.entries.items():
-            self.config[key_name] = ent.get().strip()
-        gally_ai_router.save_ai_config(self.config)
-        self.on_saved(self.config)
-        messagebox.showinfo("Keys Saved", "✨ Cloud Model API Keys saved and activated successfully!", parent=self)
-        self.destroy()
-
 class CephalonApp(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -393,7 +303,6 @@ class CephalonApp(ctk.CTk):
         hdr_inner = ctk.CTkFrame(self.hdr_frame, fg_color="transparent")
         hdr_inner.pack(fill="x", padx=14, pady=8)
         
-        # Left: Title
         lbl_title = ctk.CTkLabel(hdr_inner, text="🌌 CEPHALON GALLY",
                                  font=ctk.CTkFont(family="Sans", size=16, weight="bold"),
                                  text_color=self.theme_colors["accent"])
@@ -402,10 +311,10 @@ class CephalonApp(ctk.CTk):
         # Center: Live Model Switcher Dropdown
         model_names = [name for (name, _, _) in gally_ai_router.AVAILABLE_MODELS]
         cur_model = self.config_data.get("active_model", "gally-cephalon-ai")
-        cur_name = model_names[0]
+        self.cur_model_name = model_names[0]
         for (name, _, m_id) in gally_ai_router.AVAILABLE_MODELS:
             if m_id == cur_model:
-                cur_name = name
+                self.cur_model_name = name
                 break
                 
         self.opt_model = ctk.CTkOptionMenu(hdr_inner, values=model_names,
@@ -414,19 +323,19 @@ class CephalonApp(ctk.CTk):
                                            button_color=self.theme_colors["accent"],
                                            button_hover_color=self.theme_colors["accent_alt"],
                                            text_color=self.theme_colors["fg"],
-                                           corner_radius=12, width=240, height=28,
+                                           corner_radius=12, width=250, height=28,
                                            command=self.on_model_changed)
-        self.opt_model.set(cur_name)
+        self.opt_model.set(self.cur_model_name)
         self.opt_model.pack(side="left", padx=14)
         
-        # Right: API Keys Login Button & Hardware Badge
-        self.btn_api_keys = ctk.CTkButton(hdr_inner, text="🔑 API Keys & Login",
-                                          font=ctk.CTkFont(size=10, weight="bold"),
-                                          fg_color=self.theme_colors["bg_input"],
-                                          hover_color=self.theme_colors["accent"],
-                                          corner_radius=12, height=28, width=130,
-                                          command=self.open_api_key_manager)
-        self.btn_api_keys.pack(side="right", padx=(8, 0))
+        # In-Terminal Login Direct Command Button
+        self.btn_login_cli = ctk.CTkButton(hdr_inner, text="🔑 In-Terminal Login (login)",
+                                           font=ctk.CTkFont(size=10, weight="bold"),
+                                           fg_color=self.theme_colors["bg_input"],
+                                           hover_color=self.theme_colors["accent"],
+                                           corner_radius=12, height=28, width=150,
+                                           command=self.trigger_terminal_login_guide)
+        self.btn_login_cli.pack(side="right", padx=(8, 0))
 
         self.lbl_telemetry = ctk.CTkLabel(hdr_inner, text="⚡ RYZEN 9 5900X (24T)",
                                           font=ctk.CTkFont(family="Sans", size=10, weight="bold"),
@@ -541,7 +450,7 @@ class CephalonApp(ctk.CTk):
                                            corner_radius=12, border_width=1, border_color=self.theme_colors["accent"])
         self.progress_frame.pack(fill="x", pady=(0, 6))
         
-        self.lbl_progress = ctk.CTkLabel(self.progress_frame, text=f"⚡ ACTIVE MODEL: {cur_name}",
+        self.lbl_progress = ctk.CTkLabel(self.progress_frame, text=f"⚡ ACTIVE MODEL: {self.cur_model_name}",
                                          font=ctk.CTkFont(family="Sans", size=10, weight="bold"),
                                          text_color=self.theme_colors["accent"])
         self.lbl_progress.pack(anchor="w", padx=12, pady=(3, 1))
@@ -565,7 +474,7 @@ class CephalonApp(ctk.CTk):
         input_bar.pack(fill="x")
         
         self.ent_query = ctk.CTkEntry(input_bar, fg_color="transparent", border_width=0,
-                                      placeholder_text="Transmute a directive to Cephalon Gally... (Enter)",
+                                      placeholder_text="Transmute a directive (or type 'login', 'model gemini')... (Enter)",
                                       text_color="#ffffff", font=ctk.CTkFont(family="Sans", size=12))
         self.ent_query.pack(side="left", fill="x", expand=True, padx=10, pady=5)
         self.ent_query.bind("<Return>", lambda e: self.send_query())
@@ -584,63 +493,42 @@ class CephalonApp(ctk.CTk):
         self.render_history()
         self.poll_msg_queue()
 
-    def open_api_key_manager(self):
-        ApiKeyManagerDialog(self, self.config_data, self.on_api_keys_updated)
-
-    def on_api_keys_updated(self, new_cfg):
-        self.config_data = new_cfg
-        msg = "◈ Cloud AI API keys updated and registered, Operator."
-        self.append_message("cephalon", msg)
+    def trigger_terminal_login_guide(self):
+        self.ent_query.delete(0, tk.END)
+        self.ent_query.insert(0, "login")
+        self.send_query()
 
     def on_model_changed(self, chosen_name):
         for (name, provider, model_id) in gally_ai_router.AVAILABLE_MODELS:
             if name == chosen_name:
-                # Check if API key is present for cloud models
-                if provider == "gemini" and not self.config_data.get("gemini_api_key"):
-                    self.prompt_missing_key("Google Gemini", "gemini_api_key", chosen_name, provider, model_id)
-                    return
-                elif provider == "claude" and not self.config_data.get("claude_api_key"):
-                    self.prompt_missing_key("Anthropic Claude", "claude_api_key", chosen_name, provider, model_id)
-                    return
-                elif provider == "openai" and not self.config_data.get("openai_api_key"):
-                    self.prompt_missing_key("OpenAI", "openai_api_key", chosen_name, provider, model_id)
-                    return
-                elif provider == "deepseek" and not self.config_data.get("deepseek_api_key"):
-                    self.prompt_missing_key("DeepSeek", "deepseek_api_key", chosen_name, provider, model_id)
-                    return
-                elif provider == "groq" and not self.config_data.get("groq_api_key"):
-                    self.prompt_missing_key("Groq", "groq_api_key", chosen_name, provider, model_id)
+                # Check if API key is missing for cloud providers
+                key_fields = {
+                    "gemini": "gemini_api_key",
+                    "claude": "claude_api_key",
+                    "openai": "openai_api_key",
+                    "deepseek": "deepseek_api_key",
+                    "groq": "groq_api_key"
+                }
+                if provider in key_fields and not self.config_data.get(key_fields[provider]):
+                    self.append_message("cephalon", f"◈ [ ! ] {provider.upper()} API key not configured.\nType in terminal: login {provider} <YOUR_KEY>")
+                    # Revert dropdown until logged in
+                    cur_model = self.config_data.get("active_model", "gally-cephalon-ai")
+                    for (n, _, m_id) in gally_ai_router.AVAILABLE_MODELS:
+                        if m_id == cur_model:
+                            self.opt_model.set(n)
+                            break
                     return
 
                 self.config_data["active_provider"] = provider
                 self.config_data["active_model"] = model_id
                 gally_ai_router.save_ai_config(self.config_data)
                 
+                self.cur_model_name = chosen_name
                 self.lbl_progress.configure(text=f"⚡ ACTIVE MODEL: {chosen_name}")
                 msg = f"◈ Active Neural Engine switched to [{chosen_name}], Operator."
                 self.append_message("cephalon", msg)
                 speak_voice_neural_async(msg, self.voice_enabled, self.voice_name)
                 break
-
-    def prompt_missing_key(self, provider_name, key_field, chosen_name, provider, model_id):
-        key = ctk.CTkInputDialog(text=f"Enter your {provider_name} API Key to activate this model:",
-                                 title=f"{provider_name} Login Required").get_input()
-        if key and key.strip():
-            self.config_data[key_field] = key.strip()
-            self.config_data["active_provider"] = provider
-            self.config_data["active_model"] = model_id
-            gally_ai_router.save_ai_config(self.config_data)
-            self.lbl_progress.configure(text=f"⚡ ACTIVE MODEL: {chosen_name}")
-            msg = f"◈ {provider_name} API key verified. Switched to [{chosen_name}]."
-            self.append_message("cephalon", msg)
-            speak_voice_neural_async(msg, self.voice_enabled, self.voice_name)
-        else:
-            # Revert dropdown selection to current active model
-            cur_model = self.config_data.get("active_model", "gally-cephalon-ai")
-            for (n, _, m_id) in gally_ai_router.AVAILABLE_MODELS:
-                if m_id == cur_model:
-                    self.opt_model.set(n)
-                    break
 
     def update_toggle_buttons_ui(self):
         if self.internet_permitted:
@@ -796,6 +684,22 @@ class CephalonApp(ctk.CTk):
             
         self.append_message("operator", prompt)
         
+        # 1. In-Terminal Login & Model Switch Command Interpretation
+        handled, cli_msg, new_cfg = gally_ai_router.handle_terminal_command(prompt, self.config_data)
+        if handled:
+            self.config_data = new_cfg
+            # Update active model dropdown if model changed
+            cur_model = self.config_data.get("active_model", "gally-cephalon-ai")
+            for (n, _, m_id) in gally_ai_router.AVAILABLE_MODELS:
+                if m_id == cur_model:
+                    self.cur_model_name = n
+                    self.opt_model.set(n)
+                    self.lbl_progress.configure(text=f"⚡ ACTIVE MODEL: {n}")
+                    break
+            self.append_message("cephalon", cli_msg)
+            return
+
+        # 2. Browser Open Commands
         p_lower = prompt.lower()
         if p_lower.startswith("open ") and ("http" in p_lower or ".com" in p_lower or ".org" in p_lower or "youtube" in p_lower or "google" in p_lower):
             url = prompt[5:].strip()
@@ -809,6 +713,7 @@ class CephalonApp(ctk.CTk):
             self.append_message("cephalon", f"◈ Launching browser to '{url}' for Operator.")
             return
         
+        # 3. Memory Learning Directives
         if gally_memory_manager:
             mem_action = gally_memory_manager.check_for_memory_directives(prompt)
             if mem_action:

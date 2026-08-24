@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
 """
-Gally AI Router — Multi-Provider Inference Engine
-Seamless on-the-fly switching between:
-- Local Offline AI (gally-cephalon-ai via Ollama)
-- Google Gemini (Gemini 2.5 / 1.5 Flash & Pro)
-- Anthropic Claude 3.5 Sonnet / Opus
-- OpenAI GPT-4o / GPT-4o Mini
-- DeepSeek R1 / V3
-- Groq Llama 3.3 (Ultra Fast)
+Gally AI Router — Terminal-Native Multi-Provider Inference & Login Engine
+Supports in-terminal login, API key management, on-the-fly model switching,
+and real-time streaming for Local, Gemini, Claude, OpenAI, DeepSeek, and Groq.
 """
 
 import os
@@ -17,6 +12,7 @@ import urllib.request
 import urllib.parse
 
 CONFIG_PATH = os.path.expanduser("~/.config/gally/ai_config.json")
+HISTORY_PATH = os.path.expanduser("~/.config/gally/cephalon_history.json")
 
 DEFAULT_CONFIG = {
     "active_provider": "local_ollama",
@@ -59,8 +55,6 @@ def save_ai_config(cfg):
     with open(CONFIG_PATH, "w") as f:
         json.dump(cfg, f, indent=2)
 
-HISTORY_PATH = os.path.expanduser("~/.config/gally/cephalon_history.json")
-
 def load_history():
     if os.path.exists(HISTORY_PATH):
         try:
@@ -78,6 +72,166 @@ def save_history(history_list):
             json.dump(trimmed, f, indent=2)
     except Exception:
         pass
+
+def mask_key(key_str):
+    if not key_str or len(key_str) < 8:
+        return "[ NOT CONFIGURED ]"
+    return f"{key_str[:6]}...{key_str[-4:]}"
+
+def handle_terminal_command(raw_input, config):
+    """Interprets in-terminal login, API key commands, and model switching."""
+    cmd = raw_input.strip()
+    cmd_lower = cmd.lower()
+    
+    # 1. Login / Keys Overview Help
+    if cmd_lower in ["login", "keys", "api", "api-key", "apikey", "auth"]:
+        g_key = mask_key(config.get("gemini_api_key"))
+        c_key = mask_key(config.get("claude_api_key"))
+        o_key = mask_key(config.get("openai_api_key"))
+        d_key = mask_key(config.get("deepseek_api_key"))
+        q_key = mask_key(config.get("groq_api_key"))
+        
+        msg = f"""┌─────────────────────────────────────────────────────────────┐
+│ 🔑 CEPHALON CLOUD AI LOGIN & API KEY MATRIX                │
+├─────────────────────────────────────────────────────────────┤
+│ To register or update an API key, type in this terminal:    │
+│                                                             │
+│   login gemini <YOUR_KEY>                                   │
+│   login claude <YOUR_KEY>                                   │
+│   login openai <YOUR_KEY>                                   │
+│   login deepseek <YOUR_KEY>                                 │
+│   login groq <YOUR_KEY>                                     │
+│                                                             │
+│ CURRENT REGISTERED STATUS:                                  │
+│ • Google Gemini: {g_key}
+│ • Anthropic Claude: {c_key}
+│ • OpenAI GPT-4o: {o_key}
+│ • DeepSeek R1: {d_key}
+│ • Groq Cloud: {q_key}
+│                                                             │
+│ Switch models anytime: type 'model <name>' or 'models'      │
+└─────────────────────────────────────────────────────────────┘"""
+        return True, msg, config
+
+    # 2. Set / Login Key Directive
+    # Syntax: "login <provider> <key>" or "set key <provider> <key>"
+    parts = cmd.split()
+    if (len(parts) >= 3 and parts[0].lower() in ["login", "set"]) or (len(parts) >= 4 and parts[0].lower() == "set" and parts[1].lower() == "key"):
+        if parts[0].lower() == "set" and parts[1].lower() == "key":
+            provider = parts[2].lower()
+            key_val = parts[3].strip()
+        else:
+            provider = parts[1].lower()
+            key_val = parts[2].strip()
+
+        key_map = {
+            "gemini": ("gemini_api_key", "gemini", "gemini-1.5-flash", "✨ Google Gemini 1.5 Flash"),
+            "google": ("gemini_api_key", "gemini", "gemini-1.5-flash", "✨ Google Gemini 1.5 Flash"),
+            "claude": ("claude_api_key", "claude", "claude-3-5-sonnet-20241022", "🚀 Claude 3.5 Sonnet"),
+            "anthropic": ("claude_api_key", "claude", "claude-3-5-sonnet-20241022", "🚀 Claude 3.5 Sonnet"),
+            "antigravity": ("claude_api_key", "claude", "claude-3-5-sonnet-20241022", "🚀 Claude 3.5 Sonnet"),
+            "openai": ("openai_api_key", "openai", "gpt-4o", "🧠 OpenAI GPT-4o"),
+            "gpt": ("openai_api_key", "openai", "gpt-4o", "🧠 OpenAI GPT-4o"),
+            "gpt4": ("openai_api_key", "openai", "gpt-4o", "🧠 OpenAI GPT-4o"),
+            "deepseek": ("deepseek_api_key", "deepseek", "deepseek-chat", "🦙 DeepSeek Chat / R1"),
+            "groq": ("groq_api_key", "groq", "llama-3.3-70b-versatile", "⚡ Groq Llama 3.3 (300 t/s)")
+        }
+
+        if provider in key_map:
+            field, prov_name, mod_name, full_name = key_map[provider]
+            config[field] = key_val
+            config["active_provider"] = prov_name
+            config["active_model"] = mod_name
+            config["internet_permitted"] = True
+            save_ai_config(config)
+            
+            masked = mask_key(key_val)
+            msg = f"◈ [ OK ] {provider.upper()} API Key successfully saved and authenticated ({masked}).\n◈ Active Neural Engine switched to: [{full_name}]."
+            return True, msg, config
+        else:
+            return True, f"◈ Unknown provider '{provider}'. Supported: gemini, claude, openai, deepseek, groq.", config
+
+    # 3. Model Switcher Directive (e.g. "model gemini", "use claude", "model local")
+    if len(parts) >= 2 and parts[0].lower() in ["model", "use", "switch"]:
+        target = parts[1].lower()
+        if target in ["local", "offline", "gally", "ollama"]:
+            config["active_provider"] = "local_ollama"
+            config["active_model"] = "gally-cephalon-ai"
+            save_ai_config(config)
+            return True, "◈ Switched to: [ ⚡ Local: Cephalon Gally (100% Offline) ].", config
+            
+        elif target in ["gemini", "gemini-flash", "google"]:
+            if not config.get("gemini_api_key"):
+                return True, "◈ [ ! ] Google Gemini key missing. Type: login gemini <your_key>", config
+            config["active_provider"] = "gemini"
+            config["active_model"] = "gemini-1.5-flash"
+            save_ai_config(config)
+            return True, "◈ Switched to: [ ✨ Google Gemini 1.5 Flash ].", config
+
+        elif target in ["gemini-pro"]:
+            if not config.get("gemini_api_key"):
+                return True, "◈ [ ! ] Google Gemini key missing. Type: login gemini <your_key>", config
+            config["active_provider"] = "gemini"
+            config["active_model"] = "gemini-1.5-pro"
+            save_ai_config(config)
+            return True, "◈ Switched to: [ ✨ Google Gemini 1.5 Pro ].", config
+
+        elif target in ["claude", "anthropic", "antigravity", "sonnet"]:
+            if not config.get("claude_api_key"):
+                return True, "◈ [ ! ] Claude API key missing. Type: login claude <your_key>", config
+            config["active_provider"] = "claude"
+            config["active_model"] = "claude-3-5-sonnet-20241022"
+            save_ai_config(config)
+            return True, "◈ Switched to: [ 🚀 Claude 3.5 Sonnet ].", config
+
+        elif target in ["openai", "gpt", "gpt4", "gpt-4o"]:
+            if not config.get("openai_api_key"):
+                return True, "◈ [ ! ] OpenAI API key missing. Type: login openai <your_key>", config
+            config["active_provider"] = "openai"
+            config["active_model"] = "gpt-4o"
+            save_ai_config(config)
+            return True, "◈ Switched to: [ 🧠 OpenAI GPT-4o ].", config
+
+        elif target in ["deepseek", "r1"]:
+            if not config.get("deepseek_api_key"):
+                return True, "◈ [ ! ] DeepSeek API key missing. Type: login deepseek <your_key>", config
+            config["active_provider"] = "deepseek"
+            config["active_model"] = "deepseek-chat"
+            save_ai_config(config)
+            return True, "◈ Switched to: [ 🦙 DeepSeek Chat / R1 ].", config
+
+        elif target in ["groq", "llama"]:
+            if not config.get("groq_api_key"):
+                return True, "◈ [ ! ] Groq API key missing. Type: login groq <your_key>", config
+            config["active_provider"] = "groq"
+            config["active_model"] = "llama-3.3-70b-versatile"
+            save_ai_config(config)
+            return True, "◈ Switched to: [ ⚡ Groq Llama 3.3 (300 t/s) ].", config
+
+    # 4. List Models
+    if cmd_lower in ["models", "list models", "show models"]:
+        cur = config.get("active_model")
+        msg = "◈ AVAILABLE NEURAL ENGINES:\n"
+        for (name, _, m_id) in AVAILABLE_MODELS:
+            marker = " [ACTIVE ★]" if m_id == cur else ""
+            msg += f"  • {name}{marker}\n"
+        msg += "\nType 'model <name>' to switch (e.g. 'model local', 'model gemini', 'model claude')."
+        return True, msg, config
+
+    # 5. General Status
+    if cmd_lower in ["status", "info"]:
+        cur_p = config.get("active_provider", "local_ollama").upper()
+        cur_m = config.get("active_model", "gally-cephalon-ai")
+        mode = config.get("mode", "normal").upper()
+        msg = f"""◈ CEPHALON SYSTEM STATUS:
+  • Active Engine: {cur_p} ({cur_m})
+  • Operation Mode: [{mode}]
+  • Internet Sandbox: {'ALLOWED 🔓' if config.get('internet_permitted') else 'RESTRICTED 🔒'}
+  • User Documents: {'PERMITTED 📂' if config.get('document_access_permitted') else 'PROTECTED 🛡️'}
+  • Voice Synthesis: {'ON 🔊' if config.get('voice_enabled') else 'OFF 🔇'}"""
+        return True, msg, config
+
+    return False, None, config
 
 def stream_query(prompt, config, token_callback, complete_callback):
     """Routes query to selected provider with live streaming."""
@@ -103,7 +257,7 @@ def stream_query(prompt, config, token_callback, complete_callback):
         elif provider == "gemini":
             api_key = config.get("gemini_api_key", "").strip()
             if not api_key:
-                raise ValueError("Google Gemini API Key is missing. Click '🔑 API Keys & Login' to enter your key.")
+                raise ValueError("Google Gemini API Key is missing. Type in terminal: login gemini <YOUR_KEY>")
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent?alt=sse&key={api_key}"
             payload = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode("utf-8")
             req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
@@ -134,7 +288,7 @@ def stream_query(prompt, config, token_callback, complete_callback):
                 name = "Groq"
 
             if not api_key:
-                raise ValueError(f"{name} API Key is missing. Click '🔑 API Keys & Login' to enter your key.")
+                raise ValueError(f"{name} API Key is missing. Type in terminal: login {provider} <YOUR_KEY>")
 
             payload = json.dumps({
                 "model": model,
@@ -161,7 +315,7 @@ def stream_query(prompt, config, token_callback, complete_callback):
         elif provider == "claude":
             api_key = config.get("claude_api_key", "").strip()
             if not api_key:
-                raise ValueError("Claude / Anthropic API Key is missing. Click '🔑 API Keys & Login' to enter your key.")
+                raise ValueError("Claude / Anthropic API Key is missing. Type in terminal: login claude <YOUR_KEY>")
             url = "https://api.anthropic.com/v1/messages"
             payload = json.dumps({
                 "model": model,
@@ -189,11 +343,7 @@ def stream_query(prompt, config, token_callback, complete_callback):
         if not full_response:
             full_response = "Operator, model stream concluded with nominal status."
     except Exception as e:
-        full_response = f"\n◈ Anomaly communicating with [{provider.upper()}]: {e}\n(Tip: Ensure API key is valid or switch to Local Offline model)."
+        full_response = f"\n◈ Anomaly communicating with [{provider.upper()}]: {e}\n(Tip: Type 'login' in terminal to register or update your API key)."
         token_callback(full_response)
 
     complete_callback(full_response)
-
-if __name__ == "__main__":
-    cfg = load_ai_config()
-    print("AI Router initialized. Active model:", cfg.get("active_model"))
