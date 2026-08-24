@@ -58,6 +58,11 @@ fi
 sed -i 's/^#\[multilib\]/[multilib]/' "$SCRIPT_DIR/archiso/pacman.conf"
 sed -i '/^\[multilib\]/{n;s/^#Include/Include/}' "$SCRIPT_DIR/archiso/pacman.conf"
 
+# Refresh keyrings & remove corrupted package caches
+echo -e "\n${BOLD}[*] Refreshing Pacman Keyrings & Cleaning Cache...${RESET}"
+sudo rm -f /var/cache/pacman/pkg/gamescope-*.pkg.tar.zst* 2>/dev/null || true
+sudo pacman -Sy --needed --noconfirm archlinux-keyring 2>/dev/null || true
+
 # 5. Build the Bootable ISO
 echo -e "\n${BOLD}[5/5] Compiling Garchy Linux Live ISO with mkarchiso...${RESET}"
 sudo rm -rf "$WORK_DIR"
