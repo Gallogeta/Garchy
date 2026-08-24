@@ -15,6 +15,14 @@ fi
 echo "Found Garchy ISO: $ISO_FILE ($(du -h "$ISO_FILE" | cut -f1))"
 echo "Launching QEMU / KVM Virtual Machine with hardware acceleration..."
 
+# Do not run QEMU with sudo - drop to original user if invoked via sudo
+if [ "$EUID" -eq 0 ] && [ -n "$SUDO_USER" ]; then
+    echo "Re-launching as normal user ($SUDO_USER)..."
+    exec su "$SUDO_USER" -c "$0"
+fi
+
+export SDL_VIDEODRIVER=wayland
+
 # Authorize XWayland if needed
 if command -v xhost >/dev/null 2>&1; then
     xhost +SI:localuser:$(whoami) 2>/dev/null || true
