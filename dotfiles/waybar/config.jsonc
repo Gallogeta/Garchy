@@ -14,18 +14,15 @@
         "wlr/taskbar"
     ],
     "modules-center": [
+        "custom/minimized",
         "custom/btn-minimize",
         "custom/btn-maximize",
         "custom/btn-close",
-        "mpris",
         "clock"
     ],
     "modules-right": [
-        "custom/quick-ssh",
         "cpu",
-        "custom/gpu",
         "memory",
-        "temperature",
         "pulseaudio",
         "custom/ai-hub",
         "custom/theme",
@@ -77,6 +74,14 @@
         ]
     },
 
+    "custom/minimized": {
+        "exec": "/home/gallo/.config/hypr/scripts/minimized-status.sh",
+        "return-type": "json",
+        "interval": 2,
+        "on-click": "/home/gallo/.config/hypr/scripts/minimized-manager.py",
+        "tooltip": true
+    },
+
     "custom/btn-minimize": {
         "format": "",
         "tooltip-format": "Minimize Active Window (Left Click)\nRestore Last Window (Right Click)",
@@ -95,15 +100,6 @@
         "tooltip-format": "Close Active Window (Left Click)\nForce Kill Program (Right Click)",
         "on-click": "/home/gallo/.config/hypr/scripts/minimize-window.sh close-window",
         "on-click-right": "/home/gallo/.config/hypr/scripts/force-kill.sh"
-    },
-
-    "mpris": {
-        "format": " {title} - {artist}",
-        "format-paused": " {title} - {artist}",
-        "max-length": 26,
-        "tooltip-format": "{player}: {title} - {artist}",
-        "on-click": "playerctl play-pause",
-        "on-click-right": "playerctl next"
     },
 
     "clock": {
@@ -130,38 +126,15 @@
         }
     },
 
-    "custom/quick-ssh": {
-        "format": "󰢹 SSH",
-        "tooltip-format": "SSH Servers & Quick Connect",
-        "on-click": "/home/gallo/.config/hypr/scripts/quick-ssh.sh"
-    },
-
     "cpu": {
         "format": " {usage}%",
-        "tooltip-format": "Ryzen 9 5900X (24 Threads)\nUsage: {usage}%\nLoad: {load}",
+        "tooltip-format": "CPU Usage: {usage}%\nLoad: {load}",
         "interval": 2
-    },
-
-    "custom/gpu": {
-        "exec": "/home/gallo/.config/hypr/scripts/gpu_usage.sh",
-        "return-type": "json",
-        "format": "{}",
-        "interval": 2,
-        "tooltip": true
     },
 
     "memory": {
         "format": " {percentage}%",
         "tooltip-format": "RAM Used: {used:0.1f}G / {total:0.1f}G ({percentage}%)",
-        "interval": 2
-    },
-
-    "temperature": {
-        "hwmon-path": "/sys/class/hwmon/hwmon1/temp1_input",
-        "critical-threshold": 80,
-        "format": " {temperatureC}°C",
-        "format-critical": " {temperatureC}°C",
-        "tooltip-format": "CPU Temperature: {temperatureC}°C",
         "interval": 2
     },
 

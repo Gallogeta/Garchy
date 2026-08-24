@@ -1,6 +1,5 @@
 /**
- * Gally OS - Modern App & Command Launcher
- * Fully Responsive, Theme-Aware, with Mouse Hover Selection and Scrollbar
+ * Gally OS - Modern App Launcher & Command Runner
  */
 
 @import "colors.rasi"
@@ -21,9 +20,8 @@ configuration {
     sorting-method: "normal";
     click-to-exit: true;
 
-    /* Mouse Hover & Follow Behavior */
     hover-select: true;
-    me-select-entry: "";
+    me-select-entry: "MouseSecondary";
     me-accept-entry: "MousePrimary";
 
     display-drun: "󰀻  Apps";
@@ -47,33 +45,33 @@ configuration {
 window {
     location: center;
     anchor: center;
-    width: 740px;
-    height: 520px;
+    width: 720px;
+    height: 500px;
     background-color: @bg;
     border: 2px solid;
     border-color: @border-accent;
     border-radius: @radius;
-    padding: 18px;
+    padding: 16px;
     cursor: "default";
 }
 
 mainbox {
     orientation: vertical;
     background-color: transparent;
-    spacing: 14px;
+    spacing: 12px;
     children: [ mode-switcher, inputbar, listview, message ];
 }
 
 mode-switcher {
-    spacing: 10px;
+    spacing: 8px;
     background-color: transparent;
 }
 
 button {
-    padding: 8px 14px;
+    padding: 7px 14px;
     background-color: @bg-alt;
     text-color: @fg-muted;
-    border-radius: 12px;
+    border-radius: 10px;
     border: 1px solid @border-col;
     cursor: pointer;
     font: "JetBrainsMono Nerd Font Bold 11";
@@ -91,9 +89,9 @@ button:hover {
 }
 
 inputbar {
-    padding: 10px 16px;
+    padding: 10px 14px;
     background-color: @bg-alt;
-    border-radius: 12px;
+    border-radius: 10px;
     border: 1px solid @border-accent;
     children: [ prompt, entry ];
     spacing: 10px;
@@ -135,11 +133,11 @@ scrollbar {
 }
 
 element {
-    padding: 10px 14px;
-    border-radius: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
     background-color: transparent;
     text-color: @fg;
-    spacing: 12px;
+    spacing: 10px;
     cursor: pointer;
 }
 
@@ -152,16 +150,11 @@ element selected.normal,
 element:hover {
     background-color: @accent;
     text-color: @fg-active;
-    border-radius: 10px;
-}
-
-element selected.active {
-    background-color: @yellow;
-    text-color: @bg;
+    border-radius: 8px;
 }
 
 element-icon {
-    size: 24px;
+    size: 22px;
     cursor: inherit;
     vertical-align: 0.5;
 }
@@ -174,8 +167,8 @@ element-text {
 }
 
 message {
-    padding: 10px;
-    border-radius: 10px;
+    padding: 8px;
+    border-radius: 8px;
     background-color: @bg-alt;
     border: 1px solid @border-col;
 }

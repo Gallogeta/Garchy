@@ -8,7 +8,7 @@ configuration {
     show-icons: true;
     font: "JetBrainsMono Nerd Font 11";
     hover-select: true;
-    me-select-entry: "";
+    me-select-entry: "MouseSecondary";
     me-accept-entry: "MousePrimary";
 }
 
@@ -23,8 +23,8 @@ configuration {
 window {
     location: center;
     anchor: center;
-    width: 640px;
-    height: 440px;
+    width: 620px;
+    height: 420px;
     background-color: @bg;
     border: 2px solid;
     border-color: @accent;
@@ -52,7 +52,7 @@ prompt {
 }
 
 entry {
-    placeholder: "Filter desktop themes...";
+    placeholder: "Click or search theme...";
     placeholder-color: @fg-muted;
     text-color: @fg;
 }
@@ -60,8 +60,6 @@ entry {
 listview {
     columns: 1;
     lines: 6;
-    cycle: true;
-    dynamic: true;
     scrollbar: true;
     spacing: 6px;
 }
@@ -75,7 +73,7 @@ scrollbar {
 }
 
 element {
-    padding: 10px 14px;
+    padding: 10px 12px;
     border-radius: 8px;
     cursor: pointer;
 }
@@ -87,7 +85,7 @@ element:hover {
 }
 
 element-icon {
-    size: 24px;
+    size: 22px;
     margin: 0 10px 0 0;
 }
 

@@ -191,7 +191,7 @@ def main():
     elif action == "close-window":
         do_close()
     elif action == "menu":
-        subprocess.Popen(['/home/gallo/.config/hypr/scripts/window-switch.sh'])
+        subprocess.Popen(['/home/gallo/.config/hypr/scripts/minimized-manager.py'])
     else:
         do_minimize()
 

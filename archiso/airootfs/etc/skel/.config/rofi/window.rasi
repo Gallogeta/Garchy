@@ -1,5 +1,5 @@
 /**
- * Gally OS - Interactive Window Switcher
+ * Gally OS - Window & Minimized Manager Menu
  */
 
 @import "colors.rasi"
@@ -8,7 +8,7 @@ configuration {
     show-icons: true;
     font: "JetBrainsMono Nerd Font 11";
     hover-select: true;
-    me-select-entry: "";
+    me-select-entry: "MouseSecondary";
     me-accept-entry: "MousePrimary";
 }
 
@@ -23,7 +23,7 @@ configuration {
 window {
     location: center;
     anchor: center;
-    width: 700px;
+    width: 720px;
     height: 480px;
     background-color: @bg;
     border: 2px solid;
@@ -52,7 +52,7 @@ prompt {
 }
 
 entry {
-    placeholder: "Search running windows...";
+    placeholder: "Click any item to restore or close...";
     placeholder-color: @fg-muted;
     text-color: @fg;
 }
@@ -73,7 +73,7 @@ scrollbar {
 }
 
 element {
-    padding: 10px 14px;
+    padding: 10px 12px;
     border-radius: 8px;
     cursor: pointer;
 }
@@ -85,8 +85,8 @@ element:hover {
 }
 
 element-icon {
-    size: 26px;
-    margin: 0 12px 0 0;
+    size: 24px;
+    margin: 0 10px 0 0;
 }
 
 element-text {
