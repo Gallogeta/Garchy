@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
 Cephalon Gally — Ultra-Modern CustomTkinter AI System Core (Warframe Aesthetic)
-Native Rounded Glass Cards, Smooth Pill Buttons, 3D Holographic Particle Core,
-Dynamic Theme Integration, Full Uncut Neural Voice, and Thread-Safe Queue Streaming.
+On-The-Fly Model Switcher (Local, Gemini, Claude, OpenAI, DeepSeek, Groq),
+API Key Login Manager, Native Rounded Glass UI, High-Graphics 3D Hologram,
+3 Persona Modes (Child, Normal, Pro Sudo), and Uncut Neural Voice.
 """
 
 import os
@@ -22,69 +23,27 @@ from tkinter import messagebox
 
 import customtkinter as ctk
 
-CONFIG_PATH = os.path.expanduser("~/.config/gally/ai_config.json")
-HISTORY_PATH = os.path.expanduser("~/.config/gally/cephalon_history.json")
+# Import Memory, Router & Theme Helpers
+sys.path.insert(0, os.path.expanduser("~/.config/hypr/scripts"))
+import gally_ai_router
+import gally_theme_helper
+import gally_memory_manager
 
 CURRENT_TTS_PROC = None
 
-# Import Memory & Theme Helpers
-sys.path.insert(0, os.path.expanduser("~/.config/hypr/scripts"))
-try:
-    import gally_theme_helper
-except Exception:
-    gally_theme_helper = None
-
-try:
-    import gally_memory_manager
-except Exception:
-    gally_memory_manager = None
-
 def get_theme_colors():
-    if gally_theme_helper:
-        t = gally_theme_helper.get_active_theme()
-        return {
-            "bg": t.get("bg", "#0a0f1d"),
-            "bg_card": t.get("bg_card", "#0f172a"),
-            "bg_input": t.get("bg_input", "#1e293b"),
-            "fg": t.get("fg", "#f1f5f9"),
-            "fg_muted": t.get("fg_muted", "#94a3b8"),
-            "accent": t.get("accent", "#38bdf8"),
-            "accent_alt": t.get("accent_alt", "#fbbf24"),
-            "border": t.get("border_col", "#1e293b"),
-            "radius": max(12, int(t.get("rounding", 14)))
-        }
+    t = gally_theme_helper.get_active_theme()
     return {
-        "bg": "#070c1e", "bg_card": "#0d1738", "bg_input": "#13214d",
-        "fg": "#f1f5f9", "fg_muted": "#94a3b8", "accent": "#00f0ff",
-        "accent_alt": "#fbbf24", "border": "#0284c7", "radius": 16
+        "bg": t.get("bg", "#0a0f1d"),
+        "bg_card": t.get("bg_card", "#0f172a"),
+        "bg_input": t.get("bg_input", "#1e293b"),
+        "fg": t.get("fg", "#f1f5f9"),
+        "fg_muted": t.get("fg_muted", "#94a3b8"),
+        "accent": t.get("accent", "#38bdf8"),
+        "accent_alt": t.get("accent_alt", "#fbbf24"),
+        "border": t.get("border_col", "#1e293b"),
+        "radius": max(12, int(t.get("rounding", 14)))
     }
-
-def load_config():
-    if gally_memory_manager:
-        return gally_memory_manager.load_config()
-    return {}
-
-def save_config(cfg):
-    if gally_memory_manager:
-        gally_memory_manager.save_config(cfg)
-
-def load_history():
-    if os.path.exists(HISTORY_PATH):
-        try:
-            with open(HISTORY_PATH, "r") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return []
-
-def save_history(history_list):
-    try:
-        os.makedirs(os.path.dirname(HISTORY_PATH), exist_ok=True)
-        trimmed = history_list[-100:]
-        with open(HISTORY_PATH, "w") as f:
-            json.dump(trimmed, f, indent=2)
-    except Exception:
-        pass
 
 def stop_active_tts():
     global CURRENT_TTS_PROC
@@ -146,7 +105,7 @@ def speak_voice_neural_async(text, enabled=True, voice="en-US-AriaNeural"):
     threading.Thread(target=run_tts, daemon=True).start()
 
 class HighGraphicsCephalonMatrix(tk.Canvas):
-    def __init__(self, parent, width=280, height=210, bg_color="#0d1738", accent_color="#00f0ff"):
+    def __init__(self, parent, width=280, height=180, bg_color="#0f172a", accent_color="#00f0ff"):
         super().__init__(parent, width=width, height=height, bg=bg_color, highlightthickness=0)
         self.w = width
         self.h = height
@@ -163,14 +122,13 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
         self.accent_color = accent_color
         
         phi = (1.0 + math.sqrt(5.0)) / 2.0
-        scale = 35.0
+        scale = 32.0
         self.raw_outer_verts = [
             (-1,  phi,  0), ( 1,  phi,  0), (-1, -phi,  0), ( 1, -phi,  0),
             ( 0, -1,  phi), ( 0,  1,  phi), ( 0, -1, -phi), ( 0,  1, -phi),
             ( phi,  0, -1), ( phi,  0,  1), (-phi,  0, -1), (-phi,  0,  1)
         ]
         self.outer_verts = [(x * scale, y * scale, z * scale) for (x, y, z) in self.raw_outer_verts]
-        
         self.outer_edges = [
             (0, 1), (0, 5), (0, 7), (0, 10), (0, 11),
             (1, 5), (1, 7), (1, 8), (1, 9),
@@ -183,7 +141,7 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
             (8, 9), (10, 11)
         ]
 
-        in_s = 18.0
+        in_s = 16.0
         self.inner_verts = [
             (0, -in_s*1.6, 0), (in_s, 0, 0), (0, 0, in_s),
             (-in_s, 0, 0), (0, 0, -in_s), (0, in_s*1.6, 0)
@@ -195,14 +153,14 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
         ]
 
         self.particles = []
-        for i in range(40):
+        for i in range(35):
             self.particles.append({
-                "r": random.uniform(65, 120),
+                "r": random.uniform(55, 105),
                 "theta": random.uniform(0, 2 * math.pi),
                 "phi": random.uniform(-0.8, 0.8),
                 "speed": random.uniform(0.015, 0.035) * random.choice([1, -1]),
-                "size": random.uniform(1.2, 3.2),
-                "color": random.choice([self.accent_color, "#fbbf24", "#c084fc", "#38bdf8", "#f43f5e"])
+                "size": random.uniform(1.2, 3.0),
+                "color": random.choice([self.accent_color, "#fbbf24", "#c084fc", "#38bdf8"])
             })
         
         self.animate()
@@ -230,8 +188,8 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
         pulse_scale = 1.0 + amp * math.sin(self.pulse)
         
         # Orbital Rings
-        r_inner = 75 * pulse_scale
-        r_outer = 95 * pulse_scale
+        r_inner = 68 * pulse_scale
+        r_outer = 85 * pulse_scale
         self.create_oval(self.cx - r_inner, self.cy - r_inner, self.cx + r_inner, self.cy + r_inner,
                           outline="#1e3a5f", width=1, dash=(3, 6))
         self.create_oval(self.cx - r_outer, self.cy - r_outer, self.cx + r_outer, self.cy + r_outer,
@@ -242,9 +200,9 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
             num_bands = 24
             for i in range(num_bands):
                 ang = i * (2 * math.pi / num_bands) + (self.pulse * 0.4)
-                wave = math.sin(self.pulse * 3.5 + i * 1.5) * 22 + math.cos(self.pulse * 2 + i * 0.8) * 8
-                r1 = 78 * pulse_scale
-                r2 = 85 * pulse_scale + max(3, wave)
+                wave = math.sin(self.pulse * 3.5 + i * 1.5) * 18 + math.cos(self.pulse * 2 + i * 0.8) * 6
+                r1 = 70 * pulse_scale
+                r2 = 76 * pulse_scale + max(3, wave)
                 x1 = self.cx + r1 * math.cos(ang)
                 y1 = self.cy + r1 * math.sin(ang)
                 x2 = self.cx + r2 * math.cos(ang)
@@ -252,7 +210,7 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
                 col = self.accent_color if i % 2 == 0 else self.core_color
                 self.create_line(x1, y1, x2, y2, fill=col, width=2)
 
-        # 40-Particle Swarm
+        # 35-Particle Swarm
         for p in self.particles:
             p["theta"] += p["speed"]
             px3 = p["r"] * math.cos(p["theta"]) * math.cos(p["phi"])
@@ -261,13 +219,13 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
             
             px = px3 * math.cos(self.rot_y) + pz3 * math.sin(self.rot_y)
             pz = -px3 * math.sin(self.rot_y) + pz3 * math.cos(self.rot_y)
-            py = py3 + 8 * math.sin(self.pulse + p["theta"])
+            py = py3 + 6 * math.sin(self.pulse + p["theta"])
             
-            fov = 220
-            dist = fov / (fov + pz + 120)
+            fov = 200
+            dist = fov / (fov + pz + 100)
             scr_x = self.cx + px * dist * 1.3
             scr_y = self.cy + py * dist * 1.3
-            ps = p["size"] * dist * (1.6 if self.is_speaking else 1.1)
+            ps = p["size"] * dist * (1.5 if self.is_speaking else 1.0)
             self.create_oval(scr_x - ps, scr_y - ps, scr_x + ps, scr_y + ps, fill=p["color"], outline="")
 
         # 3D Project Outer & Inner Meshes
@@ -281,10 +239,10 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
                 x2 = x1
                 y2 = y1 * math.cos(rx) - z1 * math.sin(rx)
                 z2 = y1 * math.sin(rx) + z1 * math.cos(rx)
-                fov = 220
-                dist = fov / (fov + z2 + 120)
-                px = self.cx + x2 * dist * 1.4
-                py = self.cy + y2 * dist * 1.4
+                fov = 200
+                dist = fov / (fov + z2 + 100)
+                px = self.cx + x2 * dist * 1.3
+                py = self.cy + y2 * dist * 1.3
                 proj.append((px, py, z2))
             return proj
 
@@ -307,7 +265,7 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
             if z > -20:
                 self.create_oval(px - 2, py - 2, px + 2, py + 2, fill=self.accent_color, outline="")
 
-        core_r = 7 if not self.is_speaking else 11 + 3 * math.sin(self.pulse * 2.5)
+        core_r = 6 if not self.is_speaking else 10 + 2 * math.sin(self.pulse * 2.5)
         self.create_oval(self.cx - core_r - 4, self.cy - core_r - 4,
                           self.cx + core_r + 4, self.cy + core_r + 4,
                           outline="#c084fc", width=1)
@@ -317,25 +275,108 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
         
         self.after(22, self.animate)
 
+class ApiKeyManagerDialog(ctk.CTkToplevel):
+    """Modal for logging in and configuring Cloud AI Model API Keys"""
+    def __init__(self, parent, config, on_saved_callback):
+        super().__init__(parent)
+        self.parent = parent
+        self.config = config
+        self.on_saved = on_saved_callback
+        
+        self.title("AI Cloud Providers & API Key Manager")
+        self.geometry("540x500")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+        
+        colors = get_theme_colors()
+        self.configure(fg_color=colors["bg"])
+        
+        # Header
+        hdr = ctk.CTkFrame(self, fg_color=colors["bg_card"], corner_radius=12,
+                           border_width=1, border_color=colors["accent"])
+        hdr.pack(fill="x", padx=16, pady=12)
+        
+        lbl_h = ctk.CTkLabel(hdr, text="🔑 Cloud AI Model Keys & Login",
+                             font=ctk.CTkFont(family="Sans", size=15, weight="bold"),
+                             text_color=colors["accent"])
+        lbl_h.pack(padx=12, pady=(8, 2))
+        lbl_sub = ctk.CTkLabel(hdr, text="Keys are stored securely in ~/.config/gally/ai_config.json",
+                              font=ctk.CTkFont(family="Sans", size=10), text_color=colors["fg_muted"])
+        lbl_sub.pack(padx=12, pady=(0, 8))
+        
+        # Fields Container
+        fields_frame = ctk.CTkFrame(self, fg_color=colors["bg_card"], corner_radius=12)
+        fields_frame.pack(fill="both", expand=True, padx=16, pady=(0, 12))
+        
+        self.entries = {}
+        providers = [
+            ("✨ Google Gemini API Key", "gemini_api_key", "AIzaSy..."),
+            ("🚀 Anthropic Claude Key", "claude_api_key", "sk-ant-..."),
+            ("🧠 OpenAI GPT-4o Key", "openai_api_key", "sk-..."),
+            ("🦙 DeepSeek API Key", "deepseek_api_key", "sk-..."),
+            ("⚡ Groq Cloud API Key", "groq_api_key", "gsk_...")
+        ]
+        
+        for label, key_name, placeholder in providers:
+            row = ctk.CTkFrame(fields_frame, fg_color="transparent")
+            row.pack(fill="x", padx=14, pady=6)
+            
+            lbl = ctk.CTkLabel(row, text=label, font=ctk.CTkFont(size=11, weight="bold"),
+                              text_color=colors["fg"], width=180, anchor="w")
+            lbl.pack(side="left")
+            
+            ent = ctk.CTkEntry(row, placeholder_text=placeholder, show="*",
+                              fg_color=colors["bg_input"], border_width=1, border_color=colors["border"],
+                              font=ctk.CTkFont(size=11), height=28)
+            ent.pack(side="right", fill="x", expand=True, padx=(4, 0))
+            
+            # Preload existing key
+            val = self.config.get(key_name, "")
+            if val:
+                ent.insert(0, val)
+            self.entries[key_name] = ent
+            
+        # Action Buttons
+        btn_row = ctk.CTkFrame(self, fg_color="transparent")
+        btn_row.pack(fill="x", padx=16, pady=(0, 14))
+        
+        btn_cancel = ctk.CTkButton(btn_row, text="Cancel", fg_color=colors["bg_input"],
+                                   hover_color="#334155", corner_radius=12, width=100,
+                                   command=self.destroy)
+        btn_cancel.pack(side="left")
+        
+        btn_save = ctk.CTkButton(btn_row, text="💾 Save Keys & Login", fg_color=colors["accent"],
+                                 text_color="#000", hover_color=colors["accent_alt"],
+                                 corner_radius=12, font=ctk.CTkFont(size=11, weight="bold"),
+                                 command=self.save_keys)
+        btn_save.pack(side="right")
+
+    def save_keys(self):
+        for key_name, ent in self.entries.items():
+            self.config[key_name] = ent.get().strip()
+        gally_ai_router.save_ai_config(self.config)
+        self.on_saved(self.config)
+        messagebox.showinfo("Keys Saved", "✨ Cloud Model API Keys saved and activated successfully!", parent=self)
+        self.destroy()
+
 class CephalonApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         
         ctk.set_appearance_mode("dark")
-        ctk.set_default_color_theme("blue")
-        
         self.theme_colors = get_theme_colors()
         
-        self.title("Cephalon Gally — Glassmorphic AI System Core")
-        self.geometry("1060x750")
+        self.title("Cephalon Gally — Multi-Model AI System Core")
+        self.geometry("1080x760")
         self.configure(fg_color=self.theme_colors["bg"])
-        self.minsize(920, 640)
+        self.minsize(940, 660)
         
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         
         self.msg_queue = queue.Queue()
-        self.config_data = load_config()
-        self.history = load_history()
+        self.config_data = gally_ai_router.load_ai_config()
+        self.history = gally_ai_router.load_history()
         self.mode = self.config_data.get("mode", "normal")
         self.voice_enabled = self.config_data.get("voice_enabled", True)
         self.voice_name = self.config_data.get("voice_name", "en-US-AriaNeural")
@@ -343,109 +384,134 @@ class CephalonApp(ctk.CTk):
         self.document_permitted = self.config_data.get("document_access_permitted", False)
         self.sudo_unlocked = False
 
-        # 1. Top Glass Header Card (Rounded 16px)
+        # --- 1. Top Glass Header Card ---
         self.hdr_frame = ctk.CTkFrame(self, fg_color=self.theme_colors["bg_card"],
                                       corner_radius=self.theme_colors["radius"],
                                       border_width=1, border_color=self.theme_colors["accent"])
-        self.hdr_frame.pack(fill="x", padx=16, pady=(14, 8))
+        self.hdr_frame.pack(fill="x", padx=16, pady=(12, 6))
         
         hdr_inner = ctk.CTkFrame(self.hdr_frame, fg_color="transparent")
-        hdr_inner.pack(fill="x", padx=16, pady=10)
+        hdr_inner.pack(fill="x", padx=14, pady=8)
         
+        # Left: Title
         lbl_title = ctk.CTkLabel(hdr_inner, text="🌌 CEPHALON GALLY",
-                                 font=ctk.CTkFont(family="Sans", size=18, weight="bold"),
+                                 font=ctk.CTkFont(family="Sans", size=16, weight="bold"),
                                  text_color=self.theme_colors["accent"])
         lbl_title.pack(side="left")
         
-        self.lbl_mode_badge = ctk.CTkLabel(hdr_inner, text="",
+        # Center: Live Model Switcher Dropdown
+        model_names = [name for (name, _, _) in gally_ai_router.AVAILABLE_MODELS]
+        cur_model = self.config_data.get("active_model", "gally-cephalon-ai")
+        cur_name = model_names[0]
+        for (name, _, m_id) in gally_ai_router.AVAILABLE_MODELS:
+            if m_id == cur_model:
+                cur_name = name
+                break
+                
+        self.opt_model = ctk.CTkOptionMenu(hdr_inner, values=model_names,
                                            font=ctk.CTkFont(family="Sans", size=11, weight="bold"),
-                                           corner_radius=12, padx=12, pady=4)
-        self.lbl_mode_badge.pack(side="left", padx=14)
-        self.update_mode_badge_ui()
+                                           fg_color=self.theme_colors["bg_input"],
+                                           button_color=self.theme_colors["accent"],
+                                           button_hover_color=self.theme_colors["accent_alt"],
+                                           text_color=self.theme_colors["fg"],
+                                           corner_radius=12, width=240, height=28,
+                                           command=self.on_model_changed)
+        self.opt_model.set(cur_name)
+        self.opt_model.pack(side="left", padx=14)
         
-        self.lbl_telemetry = ctk.CTkLabel(hdr_inner, text="⚡ RYZEN 9 5900X (24T) | RTX GPU | DUAL 144Hz",
-                                          font=ctk.CTkFont(family="Sans", size=11, weight="bold"),
+        # Right: API Keys Login Button & Hardware Badge
+        self.btn_api_keys = ctk.CTkButton(hdr_inner, text="🔑 API Keys & Login",
+                                          font=ctk.CTkFont(size=10, weight="bold"),
+                                          fg_color=self.theme_colors["bg_input"],
+                                          hover_color=self.theme_colors["accent"],
+                                          corner_radius=12, height=28, width=130,
+                                          command=self.open_api_key_manager)
+        self.btn_api_keys.pack(side="right", padx=(8, 0))
+
+        self.lbl_telemetry = ctk.CTkLabel(hdr_inner, text="⚡ RYZEN 9 5900X (24T)",
+                                          font=ctk.CTkFont(family="Sans", size=10, weight="bold"),
                                           text_color=self.theme_colors["accent_alt"],
-                                          fg_color=self.theme_colors["bg_input"], corner_radius=12, padx=14, pady=5)
+                                          fg_color=self.theme_colors["bg_input"],
+                                          corner_radius=12, padx=10, pady=4)
         self.lbl_telemetry.pack(side="right")
 
-        # 2. Main Content Layout
+        # --- 2. Main Content Layout ---
         main_content = ctk.CTkFrame(self, fg_color="transparent")
         main_content.pack(fill="both", expand=True, padx=16, pady=4)
         
-        # Left Panel (Rounded Glass Card)
+        # Left Panel (Width 300px)
         left_panel = ctk.CTkFrame(main_content, fg_color=self.theme_colors["bg_card"],
-                                  corner_radius=self.theme_colors["radius"], width=310,
+                                  corner_radius=self.theme_colors["radius"], width=300,
                                   border_width=1, border_color=self.theme_colors["accent"])
-        left_panel.pack(side="left", fill="y", padx=(0, 12), pady=(0, 10))
+        left_panel.pack(side="left", fill="y", padx=(0, 10), pady=(0, 8))
         left_panel.pack_propagate(False)
         
         # 3D Matrix Canvas
-        self.matrix_canvas = HighGraphicsCephalonMatrix(left_panel, width=280, height=190,
+        self.matrix_canvas = HighGraphicsCephalonMatrix(left_panel, width=280, height=175,
                                                         bg_color=self.theme_colors["bg_card"],
                                                         accent_color=self.theme_colors["accent"])
-        self.matrix_canvas.pack(pady=(10, 2))
+        self.matrix_canvas.pack(pady=(8, 2))
         self.matrix_canvas.set_mode_color(self.mode)
         
         self.lbl_status = ctk.CTkLabel(left_panel, text="● CEPHALON ONLINE",
-                                       font=ctk.CTkFont(family="Sans", size=11, weight="bold"),
+                                       font=ctk.CTkFont(family="Sans", size=10, weight="bold"),
                                        text_color="#22c55e")
-        self.lbl_status.pack(pady=(2, 6))
+        self.lbl_status.pack(pady=(1, 4))
         
-        # Mode Selection Pill Buttons
+        # Persona Mode Pill Row
         lbl_p = ctk.CTkLabel(left_panel, text="◈ OPERATION PERSONA ◈",
-                             font=ctk.CTkFont(family="Sans", size=10, weight="bold"),
+                             font=ctk.CTkFont(family="Sans", size=9, weight="bold"),
                              text_color=self.theme_colors["accent_alt"])
-        lbl_p.pack(pady=(4, 4))
+        lbl_p.pack(pady=(2, 2))
         
         mode_btn_row = ctk.CTkFrame(left_panel, fg_color="transparent")
-        mode_btn_row.pack(fill="x", padx=10, pady=2)
+        mode_btn_row.pack(fill="x", padx=10, pady=1)
         
-        self.btn_mode_child = ctk.CTkButton(mode_btn_row, text="🧸 Child", font=ctk.CTkFont(size=10, weight="bold"),
+        self.btn_mode_child = ctk.CTkButton(mode_btn_row, text="🧸 Child", font=ctk.CTkFont(size=9, weight="bold"),
                                             fg_color=self.theme_colors["bg_input"], hover_color="#f472b6",
-                                            corner_radius=14, height=28,
+                                            corner_radius=12, height=26,
                                             command=lambda: self.switch_mode("child"))
-        self.btn_mode_child.pack(side="left", fill="x", expand=True, padx=2)
+        self.btn_mode_child.pack(side="left", fill="x", expand=True, padx=1)
         
-        self.btn_mode_normal = ctk.CTkButton(mode_btn_row, text="🚀 Normal", font=ctk.CTkFont(size=10, weight="bold"),
+        self.btn_mode_normal = ctk.CTkButton(mode_btn_row, text="🚀 Normal", font=ctk.CTkFont(size=9, weight="bold"),
                                              fg_color=self.theme_colors["bg_input"], hover_color=self.theme_colors["accent"],
-                                             corner_radius=14, height=28,
+                                             corner_radius=12, height=26,
                                              command=lambda: self.switch_mode("normal"))
-        self.btn_mode_normal.pack(side="left", fill="x", expand=True, padx=2)
+        self.btn_mode_normal.pack(side="left", fill="x", expand=True, padx=1)
         
-        self.btn_mode_sudo = ctk.CTkButton(mode_btn_row, text="⚡ Sudo", font=ctk.CTkFont(size=10, weight="bold"),
+        self.btn_mode_sudo = ctk.CTkButton(mode_btn_row, text="⚡ Sudo", font=ctk.CTkFont(size=9, weight="bold"),
                                            fg_color=self.theme_colors["bg_input"], hover_color="#ef4444",
-                                           corner_radius=14, height=28,
+                                           corner_radius=12, height=26,
                                            command=lambda: self.switch_mode("professional_sudo"))
-        self.btn_mode_sudo.pack(side="left", fill="x", expand=True, padx=2)
+        self.btn_mode_sudo.pack(side="left", fill="x", expand=True, padx=1)
         
         # Privacy & Sandboxing Controls
         lbl_priv = ctk.CTkLabel(left_panel, text="─ PRIVACY & SANDBOX ─",
-                                font=ctk.CTkFont(family="Sans", size=10, weight="bold"),
+                                font=ctk.CTkFont(family="Sans", size=9, weight="bold"),
                                 text_color=self.theme_colors["fg_muted"])
-        lbl_priv.pack(pady=(10, 4))
+        lbl_priv.pack(pady=(6, 2))
         
-        self.btn_internet = ctk.CTkButton(left_panel, text="", font=ctk.CTkFont(size=11, weight="bold"),
-                                          fg_color=self.theme_colors["bg_input"], corner_radius=14, height=30,
+        self.btn_internet = ctk.CTkButton(left_panel, text="", font=ctk.CTkFont(size=10, weight="bold"),
+                                          fg_color=self.theme_colors["bg_input"], corner_radius=12, height=26,
                                           anchor="w", command=self.toggle_internet_permission)
-        self.btn_internet.pack(fill="x", padx=12, pady=2)
+        self.btn_internet.pack(fill="x", padx=10, pady=2)
         
-        self.btn_doc = ctk.CTkButton(left_panel, text="", font=ctk.CTkFont(size=11, weight="bold"),
-                                     fg_color=self.theme_colors["bg_input"], corner_radius=14, height=30,
+        self.btn_doc = ctk.CTkButton(left_panel, text="", font=ctk.CTkFont(size=10, weight="bold"),
+                                     fg_color=self.theme_colors["bg_input"], corner_radius=12, height=26,
                                      anchor="w", command=self.toggle_document_permission)
-        self.btn_doc.pack(fill="x", padx=12, pady=2)
+        self.btn_doc.pack(fill="x", padx=10, pady=2)
         
-        self.btn_voice = ctk.CTkButton(left_panel, text="", font=ctk.CTkFont(size=11, weight="bold"),
-                                       fg_color=self.theme_colors["bg_input"], corner_radius=14, height=30,
+        self.btn_voice = ctk.CTkButton(left_panel, text="", font=ctk.CTkFont(size=10, weight="bold"),
+                                       fg_color=self.theme_colors["bg_input"], corner_radius=12, height=26,
                                        anchor="w", command=self.toggle_voice)
-        self.btn_voice.pack(fill="x", padx=12, pady=2)
+        self.btn_voice.pack(fill="x", padx=10, pady=2)
         self.update_toggle_buttons_ui()
 
         # Directives
-        lbl_dir = ctk.CTkLabel(left_panel, text="─ CEPHALON DIRECTIVES ─",
-                               font=ctk.CTkFont(family="Sans", size=10, weight="bold"),
+        lbl_dir = ctk.CTkLabel(left_panel, text="─ DIRECTIVES ─",
+                               font=ctk.CTkFont(family="Sans", size=9, weight="bold"),
                                text_color=self.theme_colors["fg_muted"])
-        lbl_dir.pack(pady=(10, 4))
+        lbl_dir.pack(pady=(6, 2))
         
         directives = [
             ("🛡️ Full System Scan", "run_diagnostics"),
@@ -454,77 +520,127 @@ class CephalonApp(ctk.CTk):
             ("🌐 Open Web Link...", "open_web_prompt")
         ]
         for name, act in directives:
-            btn = ctk.CTkButton(left_panel, text=name, font=ctk.CTkFont(size=11),
+            btn = ctk.CTkButton(left_panel, text=name, font=ctk.CTkFont(size=10),
                                 fg_color=self.theme_colors["bg_input"], hover_color=self.theme_colors["accent"],
-                                corner_radius=14, height=28, anchor="w",
+                                corner_radius=12, height=26, anchor="w",
                                 command=lambda a=act, n=name: self.handle_directive_click(n, a))
-            btn.pack(fill="x", padx=12, pady=2)
+            btn.pack(fill="x", padx=10, pady=1)
 
-        btn_clear = ctk.CTkButton(left_panel, text="🗑️ Clear Console History", font=ctk.CTkFont(size=10),
+        btn_clear = ctk.CTkButton(left_panel, text="🗑️ Clear History", font=ctk.CTkFont(size=9),
                                   fg_color="#1e1e2e", hover_color="#f43f5e",
-                                  corner_radius=14, height=28,
+                                  corner_radius=12, height=26,
                                   command=self.clear_console_history)
-        btn_clear.pack(fill="x", padx=12, pady=(10, 12), side="bottom")
+        btn_clear.pack(fill="x", padx=10, pady=(6, 8), side="bottom")
 
-        # Right Panel: Glowing Chat Console Card
+        # Right Panel: Chat Console & Progress Card
         right_panel = ctk.CTkFrame(main_content, fg_color="transparent")
-        right_panel.pack(side="right", fill="both", expand=True, pady=(0, 10))
+        right_panel.pack(side="right", fill="both", expand=True, pady=(0, 8))
         
-        # Telemetry Progress Bar Card
+        # Telemetry Progress Card
         self.progress_frame = ctk.CTkFrame(right_panel, fg_color=self.theme_colors["bg_card"],
-                                           corner_radius=14, border_width=1, border_color=self.theme_colors["accent"])
-        self.progress_frame.pack(fill="x", pady=(0, 8))
+                                           corner_radius=12, border_width=1, border_color=self.theme_colors["accent"])
+        self.progress_frame.pack(fill="x", pady=(0, 6))
         
-        self.lbl_progress = ctk.CTkLabel(self.progress_frame, text="⚡ SYSTEM TELEMETRY: READY",
+        self.lbl_progress = ctk.CTkLabel(self.progress_frame, text=f"⚡ ACTIVE MODEL: {cur_name}",
                                          font=ctk.CTkFont(family="Sans", size=10, weight="bold"),
                                          text_color=self.theme_colors["accent"])
-        self.lbl_progress.pack(anchor="w", padx=12, pady=(4, 2))
+        self.lbl_progress.pack(anchor="w", padx=12, pady=(3, 1))
         
-        self.prog_bar = ctk.CTkProgressBar(self.progress_frame, progress_color=self.theme_colors["accent"], height=6)
-        self.prog_bar.pack(fill="x", padx=12, pady=(0, 6))
+        self.prog_bar = ctk.CTkProgressBar(self.progress_frame, progress_color=self.theme_colors["accent"], height=5)
+        self.prog_bar.pack(fill="x", padx=12, pady=(0, 5))
         self.prog_bar.set(1.0)
 
-        # Rounded Chat Box Textbox
+        # Rounded Chat Box
         self.txt_chat = ctk.CTkTextbox(right_panel, fg_color=self.theme_colors["bg_card"],
                                       text_color=self.theme_colors["fg"],
                                       corner_radius=self.theme_colors["radius"],
                                       border_width=1, border_color=self.theme_colors["accent"],
-                                      font=ctk.CTkFont(family="Sans", size=13),
+                                      font=ctk.CTkFont(family="Sans", size=12),
                                       wrap="word")
-        self.txt_chat.pack(fill="both", expand=True, pady=(0, 8))
+        self.txt_chat.pack(fill="both", expand=True, pady=(0, 6))
         
         # Rounded Input Bar
         input_bar = ctk.CTkFrame(right_panel, fg_color=self.theme_colors["bg_card"],
-                                 corner_radius=16, border_width=1, border_color=self.theme_colors["accent"])
+                                 corner_radius=14, border_width=1, border_color=self.theme_colors["accent"])
         input_bar.pack(fill="x")
         
         self.ent_query = ctk.CTkEntry(input_bar, fg_color="transparent", border_width=0,
                                       placeholder_text="Transmute a directive to Cephalon Gally... (Enter)",
-                                      text_color="#ffffff", font=ctk.CTkFont(family="Sans", size=13))
-        self.ent_query.pack(side="left", fill="x", expand=True, padx=12, pady=6)
+                                      text_color="#ffffff", font=ctk.CTkFont(family="Sans", size=12))
+        self.ent_query.pack(side="left", fill="x", expand=True, padx=10, pady=5)
         self.ent_query.bind("<Return>", lambda e: self.send_query())
         self.ent_query.focus_set()
         
         self.btn_send = ctk.CTkButton(input_bar, text="Transmute ↵",
-                                      font=ctk.CTkFont(family="Sans", size=12, weight="bold"),
+                                      font=ctk.CTkFont(family="Sans", size=11, weight="bold"),
                                       fg_color=self.theme_colors["accent"], text_color="#000000",
                                       hover_color=self.theme_colors["accent_alt"],
-                                      corner_radius=14, height=32, width=120,
+                                      corner_radius=12, height=30, width=110,
                                       command=self.send_query)
-        self.btn_send.pack(side="right", padx=8, pady=6)
+        self.btn_send.pack(side="right", padx=6, pady=5)
         
         self.bind("<Escape>", lambda e: self.on_close())
         
         self.render_history()
         self.poll_msg_queue()
 
-    def update_mode_badge_ui(self):
-        if self.mode == "child":
-            self.lbl_mode_badge.configure(text="[ 🧸 CHILD MODE: SAFE & SIMPLE ]", fg_color="#f472b6", text_color="#000000")
-        elif self.mode == "professional_sudo":
-            self.lbl_mode_badge.configure(text="[ ⚡ PRO SUDO MODE: SYSADMIN ]", fg_color="#ef4444", text_color="#ffffff")
+    def open_api_key_manager(self):
+        ApiKeyManagerDialog(self, self.config_data, self.on_api_keys_updated)
+
+    def on_api_keys_updated(self, new_cfg):
+        self.config_data = new_cfg
+        msg = "◈ Cloud AI API keys updated and registered, Operator."
+        self.append_message("cephalon", msg)
+
+    def on_model_changed(self, chosen_name):
+        for (name, provider, model_id) in gally_ai_router.AVAILABLE_MODELS:
+            if name == chosen_name:
+                # Check if API key is present for cloud models
+                if provider == "gemini" and not self.config_data.get("gemini_api_key"):
+                    self.prompt_missing_key("Google Gemini", "gemini_api_key", chosen_name, provider, model_id)
+                    return
+                elif provider == "claude" and not self.config_data.get("claude_api_key"):
+                    self.prompt_missing_key("Anthropic Claude", "claude_api_key", chosen_name, provider, model_id)
+                    return
+                elif provider == "openai" and not self.config_data.get("openai_api_key"):
+                    self.prompt_missing_key("OpenAI", "openai_api_key", chosen_name, provider, model_id)
+                    return
+                elif provider == "deepseek" and not self.config_data.get("deepseek_api_key"):
+                    self.prompt_missing_key("DeepSeek", "deepseek_api_key", chosen_name, provider, model_id)
+                    return
+                elif provider == "groq" and not self.config_data.get("groq_api_key"):
+                    self.prompt_missing_key("Groq", "groq_api_key", chosen_name, provider, model_id)
+                    return
+
+                self.config_data["active_provider"] = provider
+                self.config_data["active_model"] = model_id
+                gally_ai_router.save_ai_config(self.config_data)
+                
+                self.lbl_progress.configure(text=f"⚡ ACTIVE MODEL: {chosen_name}")
+                msg = f"◈ Active Neural Engine switched to [{chosen_name}], Operator."
+                self.append_message("cephalon", msg)
+                speak_voice_neural_async(msg, self.voice_enabled, self.voice_name)
+                break
+
+    def prompt_missing_key(self, provider_name, key_field, chosen_name, provider, model_id):
+        key = ctk.CTkInputDialog(text=f"Enter your {provider_name} API Key to activate this model:",
+                                 title=f"{provider_name} Login Required").get_input()
+        if key and key.strip():
+            self.config_data[key_field] = key.strip()
+            self.config_data["active_provider"] = provider
+            self.config_data["active_model"] = model_id
+            gally_ai_router.save_ai_config(self.config_data)
+            self.lbl_progress.configure(text=f"⚡ ACTIVE MODEL: {chosen_name}")
+            msg = f"◈ {provider_name} API key verified. Switched to [{chosen_name}]."
+            self.append_message("cephalon", msg)
+            speak_voice_neural_async(msg, self.voice_enabled, self.voice_name)
         else:
-            self.lbl_mode_badge.configure(text="[ 🚀 NORMAL MODE: CEPHALON COPILOT ]", fg_color=self.theme_colors["accent_alt"], text_color="#000000")
+            # Revert dropdown selection to current active model
+            cur_model = self.config_data.get("active_model", "gally-cephalon-ai")
+            for (n, _, m_id) in gally_ai_router.AVAILABLE_MODELS:
+                if m_id == cur_model:
+                    self.opt_model.set(n)
+                    break
 
     def update_toggle_buttons_ui(self):
         if self.internet_permitted:
@@ -557,8 +673,7 @@ class CephalonApp(ctk.CTk):
 
         self.mode = target_mode
         self.config_data["mode"] = self.mode
-        save_config(self.config_data)
-        self.update_mode_badge_ui()
+        gally_ai_router.save_ai_config(self.config_data)
         self.matrix_canvas.set_mode_color(self.mode)
         
         msg = f"◈ Operation Mode switched to [{self.mode.upper()}], Operator."
@@ -568,7 +683,7 @@ class CephalonApp(ctk.CTk):
     def toggle_internet_permission(self):
         if not self.internet_permitted:
             ans = messagebox.askyesno("Grant Internet Permission?",
-                                      "Operator, do you grant Cephalon permission to access the Internet for queries, package lookups, and downloads?",
+                                      "Operator, do you grant Cephalon permission to access the Internet for cloud models and web lookups?",
                                       parent=self)
             if not ans:
                 return
@@ -577,7 +692,7 @@ class CephalonApp(ctk.CTk):
             self.internet_permitted = False
             
         self.config_data["internet_permitted"] = self.internet_permitted
-        save_config(self.config_data)
+        gally_ai_router.save_ai_config(self.config_data)
         self.update_toggle_buttons_ui()
         status_msg = "Internet access GRANTED by Operator." if self.internet_permitted else "Internet access RESTRICTED to offline only."
         self.append_message("cephalon", f"◈ Policy update: {status_msg}")
@@ -585,7 +700,7 @@ class CephalonApp(ctk.CTk):
     def toggle_document_permission(self):
         if not self.document_permitted:
             ans = messagebox.askyesno("Grant Document Folder Access?",
-                                      "Operator, do you grant Cephalon permission to view and inspect files in your ~/Documents and personal workspace?",
+                                      "Operator, do you grant Cephalon permission to inspect files in your ~/Documents and personal workspace?",
                                       parent=self)
             if not ans:
                 return
@@ -594,7 +709,7 @@ class CephalonApp(ctk.CTk):
             self.document_permitted = False
             
         self.config_data["document_access_permitted"] = self.document_permitted
-        save_config(self.config_data)
+        gally_ai_router.save_ai_config(self.config_data)
         self.update_toggle_buttons_ui()
         status_msg = "Document access PERMITTED." if self.document_permitted else "Documents SANDBOXED and protected."
         self.append_message("cephalon", f"◈ Privacy update: {status_msg}")
@@ -602,7 +717,7 @@ class CephalonApp(ctk.CTk):
     def toggle_voice(self):
         self.voice_enabled = not self.voice_enabled
         self.config_data["voice_enabled"] = self.voice_enabled
-        save_config(self.config_data)
+        gally_ai_router.save_ai_config(self.config_data)
         self.update_toggle_buttons_ui()
         if not self.voice_enabled:
             stop_active_tts()
@@ -701,8 +816,7 @@ class CephalonApp(ctk.CTk):
                 speak_voice_neural_async(mem_action, self.voice_enabled, self.voice_name)
                 return
 
-        self.lbl_status.configure(text="● STREAMING NEURAL MATRIX...", text_color=self.theme_colors["accent_alt"])
-        self.lbl_progress.configure(text=f"⚡ [{self.mode.upper()}] INFERENCE STREAMING...")
+        self.lbl_status.configure(text="● STREAMING INFERENCE...", text_color=self.theme_colors["accent_alt"])
         self.prog_bar.set(0.3)
         self.matrix_canvas.set_speaking_state(True)
         self.btn_send.configure(state="disabled")
@@ -714,40 +828,19 @@ class CephalonApp(ctk.CTk):
 
     def stream_cephalon_thread(self, prompt):
         try:
-            if gally_memory_manager:
-                full_prompt = gally_memory_manager.build_mode_system_prompt(
-                    prompt, mode=self.mode, internet_ok=self.internet_permitted, doc_ok=self.document_permitted
-                )
-            else:
-                full_prompt = prompt
+            full_prompt = gally_memory_manager.build_mode_system_prompt(
+                prompt, mode=self.mode, internet_ok=self.internet_permitted, doc_ok=self.document_permitted
+            )
         except Exception:
             full_prompt = prompt
 
-        collected_tokens = []
-        try:
-            url = "http://127.0.0.1:11434/api/generate"
-            payload = json.dumps({
-                "model": "gally-cephalon-ai",
-                "prompt": full_prompt,
-                "stream": True
-            }).encode("utf-8")
-            
-            req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                for line in resp:
-                    if line:
-                        data = json.loads(line.decode("utf-8"))
-                        token = data.get("response", "")
-                        if token:
-                            collected_tokens.append(token)
-                            self.msg_queue.put(("token", token))
-                            
-            full_response = "".join(collected_tokens)
-        except Exception as e:
-            full_response = f"\nOperator, local matrix encountered an anomaly: {e}\nEnsure local ollama daemon is running."
-            self.msg_queue.put(("token", full_response))
-            
-        self.msg_queue.put(("complete", full_response))
+        def on_token(token):
+            self.msg_queue.put(("token", token))
+
+        def on_complete(full_resp):
+            self.msg_queue.put(("complete", full_resp))
+
+        gally_ai_router.stream_query(full_prompt, self.config_data, on_token, on_complete)
 
     def poll_msg_queue(self):
         try:
@@ -760,9 +853,8 @@ class CephalonApp(ctk.CTk):
                     self.txt_chat.insert(tk.END, "\n")
                     self.txt_chat.see(tk.END)
                     self.history.append({"role": "cephalon", "text": payload, "time": time.time()})
-                    save_history(self.history)
+                    gally_ai_router.save_history(self.history)
                     self.lbl_status.configure(text="● CEPHALON READY", text_color="#22c55e")
-                    self.lbl_progress.configure(text="⚡ INFERENCE COMPLETE (100%)")
                     self.prog_bar.set(1.0)
                     self.matrix_canvas.set_speaking_state(False)
                     self.btn_send.configure(state="normal")
@@ -796,7 +888,7 @@ class CephalonApp(ctk.CTk):
                 "All 24 threads on your Ryzen 9 5900X and Dual 144Hz displays are running nominal. How may I assist you?"
             )
             self.append_message("cephalon", welcome)
-            save_history(self.history)
+            gally_ai_router.save_history(self.history)
         else:
             for item in self.history:
                 role = item.get("role")
@@ -809,7 +901,7 @@ class CephalonApp(ctk.CTk):
 
     def append_message(self, role, text):
         self.history.append({"role": role, "text": text, "time": time.time()})
-        save_history(self.history)
+        gally_ai_router.save_history(self.history)
         if role == "operator":
             self.txt_chat.insert(tk.END, f"\n\n◈ OPERATOR: {text}\n")
         elif role == "cephalon":
@@ -818,7 +910,7 @@ class CephalonApp(ctk.CTk):
 
     def clear_console_history(self):
         self.history = []
-        save_history(self.history)
+        gally_ai_router.save_history(self.history)
         self.txt_chat.delete("1.0", tk.END)
         welcome = f"◈ Console history purged, Operator. All systems recalibrated in [{self.mode.upper()}] mode."
         self.append_message("cephalon", welcome)

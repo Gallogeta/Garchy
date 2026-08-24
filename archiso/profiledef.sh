@@ -61,5 +61,6 @@ file_permissions=(
   ["/etc/skel/.config/hypr/scripts/active-window-status.py"]="0:0:755"
   ["/etc/skel/.config/hypr/scripts/gally-ai-hud.sh"]="0:0:755"
   ["/etc/skel/.config/hypr/scripts/gally_memory_manager.py"]="0:0:755"
+  ["/etc/skel/.config/hypr/scripts/gally_ai_router.py"]="0:0:755"
   ["/etc/skel/.config/hypr/scripts/gally-ai-hud.py"]="0:0:755"
 )
