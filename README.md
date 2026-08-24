@@ -1,4 +1,4 @@
-# 🌌 Garchy Linux
+# 🌌 Garchy Linux "COMING SOON"
 
 <div align="center">
 
@@ -39,7 +39,7 @@
 If you already have a clean Arch Linux install, you can deploy the full **Garchy** desktop, AI assistant, and gaming/dev environment with one command:
 
 ```bash
-curl -sS https://raw.githubusercontent.com/Gallogeta/Garchy/main/install.sh | bash
+COMING DOOM
 ```
 
 ---
@@ -59,17 +59,7 @@ curl -sS https://raw.githubusercontent.com/Gallogeta/Garchy/main/install.sh | ba
 Garchy comes with an autonomous system diagnostic and troubleshooting engine:
 
 ```bash
-# Check full system telemetry (Kernel, RAM, GPU, Hyprland, Systemd units)
-garchy-ai status
-
-# Deep diagnostic scan (detects failed services, audio issues, config errors)
-garchy-ai troubleshoot
-
-# Apply performance optimizations (gaming, gpu, audio, storage)
-garchy-ai optimize gaming
-
-# Ask the AI copilot any Linux or administration question
-garchy-ai ask "how do I configure isolated bridge networking for KVM?"
+WILL COME WROOM
 ```
 
 ---
@@ -103,9 +93,7 @@ garchy-ai ask "how do I configure isolated bridge networking for KVM?"
 To build your own customized ISO image locally:
 
 ```bash
-git clone https://github.com/Gallogeta/Garchy.git
-cd Garchy
-./build-iso.sh
+WAIT FOR SHROOMS
 ```
 
 The output bootable `.iso` will be generated in `./out/`.
