@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
 Cephalon Gally — Holographic AI System Core (Warframe Aesthetic)
-Real-time Token Streaming, 3 Persona Modes (Child, Normal, Professional Sudo),
-Sudo Password Unlock, Internet Permission Sandbox, Document Privacy Guard & Neural Voice.
+Thread-Safe Real-time Streaming (Queue Event Pump for Python 3.14+),
+3 Persona Modes (Child, Normal, Professional Sudo), Sudo Password Unlock,
+Internet Permission Sandbox, Document Privacy Guard & Neural Voice.
 """
 
 import os
@@ -10,6 +11,7 @@ import sys
 import math
 import json
 import time
+import queue
 import random
 import asyncio
 import subprocess
@@ -124,7 +126,7 @@ def speak_voice_neural_async(text, enabled=True, voice="en-US-AriaNeural"):
     threading.Thread(target=run_tts, daemon=True).start()
 
 class CephalonGlowingMatrix(tk.Canvas):
-    def __init__(self, parent, width=280, height=240):
+    def __init__(self, parent, width=280, height=230):
         super().__init__(parent, width=width, height=height, bg=BG_CARD, highlightthickness=0)
         self.w = width
         self.h = height
@@ -262,6 +264,9 @@ class CephalonApp(tk.Tk):
         
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         
+        # Thread-safe queue for streaming tokens and terminal updates
+        self.msg_queue = queue.Queue()
+        
         self.config_data = load_config()
         self.history = load_history()
         self.mode = self.config_data.get("mode", "normal")
@@ -280,7 +285,6 @@ class CephalonApp(tk.Tk):
         
         tk.Label(top_row, text="🌌 CEPHALON GALLY", font=("Sans", 16, "bold"), fg=ACCENT_CYAN, bg=BG_MAIN).pack(side="left")
         
-        # Mode Badge
         self.lbl_mode_badge = tk.Label(top_row, text="", font=("Sans", 9, "bold"), padx=10, pady=2)
         self.lbl_mode_badge.pack(side="left", padx=10)
         self.update_mode_badge_ui()
@@ -303,12 +307,15 @@ class CephalonApp(tk.Tk):
         left_panel.pack_propagate(False)
         
         # 3D Matrix
-        self.matrix_canvas = CephalonGlowingMatrix(left_panel, width=270, height=200)
+        self.matrix_canvas = CephalonGlowingMatrix(left_panel, width=270, height=190)
         self.matrix_canvas.pack()
         self.matrix_canvas.set_mode_color(self.mode)
         
+        self.lbl_status = tk.Label(left_panel, text="● CEPHALON READY", font=("Sans", 8, "bold"), fg=ACCENT_GREEN, bg=BG_CARD)
+        self.lbl_status.pack(pady=(2, 4))
+        
         # --- Mode Selector Section ---
-        tk.Label(left_panel, text="◈ OPERATION PERSONA ◈", font=("Sans", 8, "bold"), fg=ACCENT_GOLD, bg=BG_CARD).pack(pady=(4, 2))
+        tk.Label(left_panel, text="◈ OPERATION PERSONA ◈", font=("Sans", 8, "bold"), fg=ACCENT_GOLD, bg=BG_CARD).pack(pady=(2, 2))
         
         mode_btn_row = tk.Frame(left_panel, bg=BG_CARD)
         mode_btn_row.pack(fill="x", pady=2)
@@ -423,6 +430,46 @@ class CephalonApp(tk.Tk):
         self.btn_send.pack(side="right")
         
         self.bind("<Escape>", lambda e: self.on_close())
+        
+        # Start Main Event Pump for Thread-safe Queue
+        self.poll_msg_queue()
+
+    def poll_msg_queue(self):
+        try:
+            while True:
+                msg_type, payload = self.msg_queue.get_nowait()
+                if msg_type == "token":
+                    self.txt_chat.insert(tk.END, payload, "body")
+                    self.txt_chat.see(tk.END)
+                elif msg_type == "complete":
+                    self.txt_chat.insert(tk.END, "\n")
+                    self.txt_chat.see(tk.END)
+                    self.history.append({"role": "cephalon", "text": payload, "time": time.time()})
+                    save_history(self.history)
+                    self.lbl_status.config(text="● CEPHALON READY", fg=ACCENT_GREEN)
+                    self.lbl_progress.config(text="⚡ INFERENCE COMPLETE (100%)")
+                    self.prog_bar["value"] = 100
+                    self.matrix_canvas.set_speaking_state(False)
+                    self.btn_send.config(state="normal")
+                    speak_voice_neural_async(payload, self.voice_enabled, self.voice_name)
+                elif msg_type == "progress":
+                    val, msg = payload
+                    self.prog_bar["value"] = val
+                    self.lbl_progress.config(text=f"⚡ {msg} ({val}%)")
+                elif msg_type == "terminal":
+                    cmd_str, out_str = payload
+                    self.txt_chat.insert(tk.END, f"\n$ {cmd_str}\n", "term_header")
+                    self.txt_chat.insert(tk.END, f"{out_str}\n", "term_out")
+                    self.txt_chat.see(tk.END)
+                elif msg_type == "directive_complete":
+                    self.append_message("cephalon", payload)
+                    self.lbl_status.config(text="● CEPHALON READY", fg=ACCENT_GREEN)
+                    self.matrix_canvas.set_speaking_state(False)
+                    self.btn_send.config(state="normal")
+                    speak_voice_neural_async(payload, self.voice_enabled, self.voice_name)
+        except queue.Empty:
+            pass
+        self.after(20, self.poll_msg_queue)
 
     def update_mode_badge_ui(self):
         if self.mode == "child":
@@ -533,63 +580,47 @@ class CephalonApp(tk.Tk):
         threading.Thread(target=self.run_live_terminal_task, args=(name, action_type), daemon=True).start()
 
     def run_live_terminal_task(self, name, action_type):
-        def update_ui_prog(val, msg):
-            self.prog_bar["value"] = val
-            self.lbl_progress.config(text=f"⚡ {msg} ({val}%)")
-            
-        def log_terminal(cmd_str, output_str):
-            self.txt_chat.insert(tk.END, f"\n$ {cmd_str}\n", "term_header")
-            self.txt_chat.insert(tk.END, f"{output_str}\n", "term_out")
-            self.txt_chat.see(tk.END)
-
         if action_type == "run_diagnostics":
-            self.after(0, update_ui_prog, 20, "Scanning Systemd Journal & Kernel Logs")
+            self.msg_queue.put(("progress", (20, "Scanning Systemd Journal & Kernel Logs")))
             res1 = subprocess.getoutput("journalctl -p 3 -xb -n 6 --no-pager")
-            self.after(0, log_terminal, "journalctl -p 3 -xb -n 6", res1 if res1 else "[ OK ] Zero critical errors in journal.")
+            self.msg_queue.put(("terminal", ("journalctl -p 3 -xb -n 6", res1 if res1 else "[ OK ] Zero critical errors in journal.")))
             
-            self.after(0, update_ui_prog, 50, "Probing GPU & NVIDIA Telemetry")
+            self.msg_queue.put(("progress", (50, "Probing GPU & NVIDIA Telemetry")))
             res2 = subprocess.getoutput("nvidia-smi --query-gpu=name,driver_version,temperature.gpu,utilization.gpu --format=csv,noheader 2>/dev/null || lspci -k | grep -A 2 -E '(VGA|3D)'")
-            self.after(0, log_terminal, "gpu-telemetry-probe", res2)
+            self.msg_queue.put(("terminal", ("gpu-telemetry-probe", res2)))
             
-            self.after(0, update_ui_prog, 80, "Checking Memory & Storage Subsystems")
+            self.msg_queue.put(("progress", (80, "Checking Memory & Storage Subsystems")))
             res3 = subprocess.getoutput("df -h / | awk 'NR==2 {print \"Root partition: \" $3 \" used of \" $2 \" (\" $5 \" used)\"}'")
-            self.after(0, log_terminal, "storage-health-check", res3)
+            self.msg_queue.put(("terminal", ("storage-health-check", res3)))
             
-            self.after(0, update_ui_prog, 100, "Diagnostics Complete")
+            self.msg_queue.put(("progress", (100, "Diagnostics Complete")))
             summary = "Operator, full diagnostic sweep complete. Kernel logs are clean, NVIDIA GPU acceleration is active, and storage matrices are nominal."
 
         elif action_type == "boost_gaming":
-            self.after(0, update_ui_prog, 30, "Activating GameMode Daemon")
+            self.msg_queue.put(("progress", (30, "Activating GameMode Daemon")))
             res1 = subprocess.getoutput("gamemoded -s 2>/dev/null || echo 'GameMode daemon ready'")
-            self.after(0, log_terminal, "gamemoded -s", res1)
+            self.msg_queue.put(("terminal", ("gamemoded -s", res1)))
             
-            self.after(0, update_ui_prog, 70, "Checking NVENC & NVIDIA Performance State")
+            self.msg_queue.put(("progress", (70, "Checking NVENC & NVIDIA Performance State")))
             res2 = subprocess.getoutput("nvidia-smi -q -d PERFORMANCE 2>/dev/null | grep 'Performance State' || echo 'P0 Performance Mode'")
-            self.after(0, log_terminal, "nvidia-perf-query", res2)
+            self.msg_queue.put(("terminal", ("nvidia-perf-query", res2)))
             
-            self.after(0, update_ui_prog, 100, "Gaming Matrix Boosted")
+            self.msg_queue.put(("progress", (100, "Gaming Matrix Boosted")))
             summary = "Operator, gaming performance matrices are maximized. Dual 144Hz displays and GameMode high-priority scheduling are engaged."
 
         elif action_type == "repair_audio":
-            self.after(0, update_ui_prog, 30, "Probing PipeWire & WirePlumber Status")
+            self.msg_queue.put(("progress", (30, "Probing PipeWire & WirePlumber Status")))
             res1 = subprocess.getoutput("systemctl --user is-active pipewire wireplumber pipewire-pulse")
-            self.after(0, log_terminal, "systemctl --user status pipewire", res1)
+            self.msg_queue.put(("terminal", ("systemctl --user status pipewire", res1)))
             
-            self.after(0, update_ui_prog, 70, "Re-initializing Audio Sinks")
+            self.msg_queue.put(("progress", (70, "Re-initializing Audio Sinks")))
             res2 = subprocess.getoutput("wpctl status | grep -A 5 'Sinks:' || echo 'Audio sinks active'")
-            self.after(0, log_terminal, "wpctl status (Sinks)", res2)
+            self.msg_queue.put(("terminal", ("wpctl status (Sinks)", res2)))
             
-            self.after(0, update_ui_prog, 100, "Audio Subsystem Harmonized")
+            self.msg_queue.put(("progress", (100, "Audio Subsystem Harmonized")))
             summary = "Operator, PipeWire audio routing and WirePlumber nodes have been verified and re-harmonized."
 
-        self.after(0, self.on_directive_complete, summary)
-
-    def on_directive_complete(self, summary):
-        self.append_message("cephalon", summary)
-        self.lbl_status.config(text="● CEPHALON READY", fg=ACCENT_GREEN)
-        self.matrix_canvas.set_speaking_state(False)
-        self.btn_send.config(state="normal")
-        speak_voice_neural_async(summary, self.voice_enabled, self.voice_name)
+        self.msg_queue.put(("directive_complete", summary))
 
     def send_query(self):
         prompt = self.ent_query.get().strip()
@@ -604,7 +635,6 @@ class CephalonApp(tk.Tk):
             
         self.append_message("operator", prompt)
         
-        # Check for browser open requests
         p_lower = prompt.lower()
         if p_lower.startswith("open ") and ("http" in p_lower or ".com" in p_lower or ".org" in p_lower or "youtube" in p_lower or "google" in p_lower):
             url = prompt[5:].strip()
@@ -631,7 +661,6 @@ class CephalonApp(tk.Tk):
         self.matrix_canvas.set_speaking_state(True)
         self.btn_send.config(state="disabled")
         
-        # Start response tag in console
         tag = "cephalon_child" if self.mode == "child" else ("cephalon_sudo" if self.mode == "professional_sudo" else "cephalon")
         self.txt_chat.insert(tk.END, "\n◈ CEPHALON GALLY: ", tag)
         self.txt_chat.see(tk.END)
@@ -666,31 +695,14 @@ class CephalonApp(tk.Tk):
                         token = data.get("response", "")
                         if token:
                             collected_tokens.append(token)
-                            self.after(0, self.on_token_received, token)
+                            self.msg_queue.put(("token", token))
                             
             full_response = "".join(collected_tokens)
         except Exception as e:
             full_response = f"\nOperator, local matrix encountered an anomaly: {e}\nEnsure local ollama daemon is running."
-            self.after(0, self.on_token_received, full_response)
+            self.msg_queue.put(("token", full_response))
             
-        self.after(0, self.on_stream_complete, full_response)
-
-    def on_token_received(self, token):
-        self.txt_chat.insert(tk.END, token, "body")
-        self.txt_chat.see(tk.END)
-
-    def on_stream_complete(self, full_response):
-        self.txt_chat.insert(tk.END, "\n")
-        self.txt_chat.see(tk.END)
-        self.history.append({"role": "cephalon", "text": full_response, "time": time.time()})
-        save_history(self.history)
-        
-        self.lbl_status.config(text="● CEPHALON READY", fg=ACCENT_GREEN)
-        self.lbl_progress.config(text="⚡ INFERENCE COMPLETE (100%)")
-        self.prog_bar["value"] = 100
-        self.matrix_canvas.set_speaking_state(False)
-        self.btn_send.config(state="normal")
-        speak_voice_neural_async(full_response, self.voice_enabled, self.voice_name)
+        self.msg_queue.put(("complete", full_response))
 
     def on_close(self):
         stop_active_tts()
