@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Cephalon Gally — Holographic AI System Core (Warframe Aesthetic)
-3 Persona Modes (Child, Normal, Professional Sudo), Sudo Password Unlock,
-Internet Permission Sandbox, Document Privacy Guard & High-Quality Neural Voice.
+Real-time Token Streaming, 3 Persona Modes (Child, Normal, Professional Sudo),
+Sudo Password Unlock, Internet Permission Sandbox, Document Privacy Guard & Neural Voice.
 """
 
 import os
@@ -124,7 +124,7 @@ def speak_voice_neural_async(text, enabled=True, voice="en-US-AriaNeural"):
     threading.Thread(target=run_tts, daemon=True).start()
 
 class CephalonGlowingMatrix(tk.Canvas):
-    def __init__(self, parent, width=280, height=250):
+    def __init__(self, parent, width=280, height=240):
         super().__init__(parent, width=width, height=height, bg=BG_CARD, highlightthickness=0)
         self.w = width
         self.h = height
@@ -170,11 +170,11 @@ class CephalonGlowingMatrix(tk.Canvas):
 
     def set_mode_color(self, mode):
         if mode == "child":
-            self.core_color = "#f472b6" # Friendly Pink
+            self.core_color = "#f472b6"
         elif mode == "professional_sudo":
-            self.core_color = "#ef4444" # Sudo Red/Crimson
+            self.core_color = "#ef4444"
         else:
-            self.core_color = ACCENT_GOLD # Cephalon Gold
+            self.core_color = ACCENT_GOLD
 
     def animate(self):
         self.delete("all")
@@ -303,7 +303,7 @@ class CephalonApp(tk.Tk):
         left_panel.pack_propagate(False)
         
         # 3D Matrix
-        self.matrix_canvas = CephalonGlowingMatrix(left_panel, width=270, height=210)
+        self.matrix_canvas = CephalonGlowingMatrix(left_panel, width=270, height=200)
         self.matrix_canvas.pack()
         self.matrix_canvas.set_mode_color(self.mode)
         
@@ -329,26 +329,26 @@ class CephalonApp(tk.Tk):
         self.btn_mode_sudo.pack(side="left", fill="x", expand=True, padx=1)
         
         # --- Privacy & Sandboxing Controls ---
-        tk.Label(left_panel, text="─ PRIVACY & GUARDRAILS ─", font=("Sans", 8, "bold"), fg=FG_MUTED, bg=BG_CARD).pack(pady=(8, 2))
+        tk.Label(left_panel, text="─ PRIVACY & GUARDRAILS ─", font=("Sans", 8, "bold"), fg=FG_MUTED, bg=BG_CARD).pack(pady=(6, 2))
         
         self.btn_internet = tk.Button(left_panel, text="", font=("Sans", 8, "bold"),
-                                      bg=BG_INPUT, relief="flat", padx=6, pady=4, cursor="hand2", anchor="w",
+                                      bg=BG_INPUT, relief="flat", padx=6, pady=3, cursor="hand2", anchor="w",
                                       command=self.toggle_internet_permission)
-        self.btn_internet.pack(fill="x", pady=2)
+        self.btn_internet.pack(fill="x", pady=1)
         
         self.btn_doc = tk.Button(left_panel, text="", font=("Sans", 8, "bold"),
-                                 bg=BG_INPUT, relief="flat", padx=6, pady=4, cursor="hand2", anchor="w",
+                                 bg=BG_INPUT, relief="flat", padx=6, pady=3, cursor="hand2", anchor="w",
                                  command=self.toggle_document_permission)
-        self.btn_doc.pack(fill="x", pady=2)
+        self.btn_doc.pack(fill="x", pady=1)
         
         self.btn_voice = tk.Button(left_panel, text="", font=("Sans", 8, "bold"),
-                                   bg=BG_INPUT, relief="flat", padx=6, pady=4, cursor="hand2", anchor="w",
+                                   bg=BG_INPUT, relief="flat", padx=6, pady=3, cursor="hand2", anchor="w",
                                    command=self.toggle_voice)
-        self.btn_voice.pack(fill="x", pady=2)
+        self.btn_voice.pack(fill="x", pady=1)
         self.update_toggle_buttons_ui()
 
         # Directives
-        tk.Label(left_panel, text="─ DIRECTIVES ─", font=("Sans", 8, "bold"), fg=FG_MUTED, bg=BG_CARD).pack(pady=(8, 2))
+        tk.Label(left_panel, text="─ DIRECTIVES ─", font=("Sans", 8, "bold"), fg=FG_MUTED, bg=BG_CARD).pack(pady=(6, 2))
         
         directives = [
             ("🛡️ Full System Scan", "run_diagnostics"),
@@ -367,7 +367,7 @@ class CephalonApp(tk.Tk):
                               bg="#1e1e2e", fg=FG_MUTED, activebackground=ACCENT_ROSE, activeforeground="#fff",
                               relief="flat", padx=6, pady=3, cursor="hand2", anchor="center",
                               command=self.clear_console_history)
-        btn_clear.pack(fill="x", pady=(6, 0), side="bottom")
+        btn_clear.pack(fill="x", pady=(4, 0), side="bottom")
 
         # Right Panel: Chat Console + Mini Terminal Progress
         right_panel = tk.Frame(main_content, bg=BG_MAIN)
@@ -433,19 +433,16 @@ class CephalonApp(tk.Tk):
             self.lbl_mode_badge.config(text="[ 🚀 NORMAL MODE: CEPHALON COPILOT ]", fg="#000", bg=ACCENT_GOLD)
 
     def update_toggle_buttons_ui(self):
-        # Internet
         if self.internet_permitted:
             self.btn_internet.config(text="🌐 Internet: ALLOWED 🔓", fg=ACCENT_GREEN)
         else:
             self.btn_internet.config(text="🌐 Internet: BLOCKED 🔒", fg=FG_MUTED)
             
-        # Documents
         if self.document_permitted:
             self.btn_doc.config(text="📁 User Docs: PERMITTED 📂", fg=ACCENT_CYAN)
         else:
             self.btn_doc.config(text="📁 User Docs: PROTECTED 🛡️", fg=FG_MUTED)
             
-        # Voice
         if self.voice_enabled:
             self.btn_voice.config(text="✨ Neural Voice: ON 🔊", fg=ACCENT_GOLD)
         else:
@@ -607,7 +604,7 @@ class CephalonApp(tk.Tk):
             
         self.append_message("operator", prompt)
         
-        # Check for browser open requests (e.g. "open youtube" or "go to google.com")
+        # Check for browser open requests
         p_lower = prompt.lower()
         if p_lower.startswith("open ") and ("http" in p_lower or ".com" in p_lower or ".org" in p_lower or "youtube" in p_lower or "google" in p_lower):
             url = prompt[5:].strip()
@@ -628,15 +625,20 @@ class CephalonApp(tk.Tk):
                 speak_voice_neural_async(mem_action, self.voice_enabled, self.voice_name)
                 return
 
-        self.lbl_status.config(text="● COMPUTING MATRIX...", fg=ACCENT_GOLD)
-        self.lbl_progress.config(text=f"⚡ [{self.mode.upper()}] INFERENCE RUNNING...")
-        self.prog_bar["value"] = 50
+        self.lbl_status.config(text="● STREAMING NEURAL MATRIX...", fg=ACCENT_GOLD)
+        self.lbl_progress.config(text=f"⚡ [{self.mode.upper()}] INFERENCE STREAMING...")
+        self.prog_bar["value"] = 30
         self.matrix_canvas.set_speaking_state(True)
         self.btn_send.config(state="disabled")
         
-        threading.Thread(target=self.query_cephalon_thread, args=(prompt,), daemon=True).start()
+        # Start response tag in console
+        tag = "cephalon_child" if self.mode == "child" else ("cephalon_sudo" if self.mode == "professional_sudo" else "cephalon")
+        self.txt_chat.insert(tk.END, "\n◈ CEPHALON GALLY: ", tag)
+        self.txt_chat.see(tk.END)
+        
+        threading.Thread(target=self.stream_cephalon_thread, args=(prompt,), daemon=True).start()
 
-    def query_cephalon_thread(self, prompt):
+    def stream_cephalon_thread(self, prompt):
         try:
             if gally_memory_manager:
                 full_prompt = gally_memory_manager.build_mode_system_prompt(
@@ -647,31 +649,48 @@ class CephalonApp(tk.Tk):
         except Exception:
             full_prompt = prompt
 
+        collected_tokens = []
         try:
             url = "http://127.0.0.1:11434/api/generate"
             payload = json.dumps({
                 "model": "gally-cephalon-ai",
                 "prompt": full_prompt,
-                "stream": False
+                "stream": True
             }).encode("utf-8")
             
             req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
             with urllib.request.urlopen(req, timeout=30) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                response_text = data.get("response", "Operator, neural matrices returned an empty stream.")
+                for line in resp:
+                    if line:
+                        data = json.loads(line.decode("utf-8"))
+                        token = data.get("response", "")
+                        if token:
+                            collected_tokens.append(token)
+                            self.after(0, self.on_token_received, token)
+                            
+            full_response = "".join(collected_tokens)
         except Exception as e:
-            response_text = f"Operator, local matrix encountered an anomaly: {e}\nEnsure local ollama daemon is running."
+            full_response = f"\nOperator, local matrix encountered an anomaly: {e}\nEnsure local ollama daemon is running."
+            self.after(0, self.on_token_received, full_response)
             
-        self.after(0, self.on_query_complete, response_text)
+        self.after(0, self.on_stream_complete, full_response)
 
-    def on_query_complete(self, response_text):
-        self.append_message("cephalon", response_text)
+    def on_token_received(self, token):
+        self.txt_chat.insert(tk.END, token, "body")
+        self.txt_chat.see(tk.END)
+
+    def on_stream_complete(self, full_response):
+        self.txt_chat.insert(tk.END, "\n")
+        self.txt_chat.see(tk.END)
+        self.history.append({"role": "cephalon", "text": full_response, "time": time.time()})
+        save_history(self.history)
+        
         self.lbl_status.config(text="● CEPHALON READY", fg=ACCENT_GREEN)
         self.lbl_progress.config(text="⚡ INFERENCE COMPLETE (100%)")
         self.prog_bar["value"] = 100
         self.matrix_canvas.set_speaking_state(False)
         self.btn_send.config(state="normal")
-        speak_voice_neural_async(response_text, self.voice_enabled, self.voice_name)
+        speak_voice_neural_async(full_response, self.voice_enabled, self.voice_name)
 
     def on_close(self):
         stop_active_tts()
@@ -693,7 +712,8 @@ class CephalonApp(tk.Tk):
                     self.txt_chat.insert(tk.END, f"\n\n◈ OPERATOR: {text}\n", "operator")
                 elif role == "cephalon":
                     tag = "cephalon_child" if self.mode == "child" else ("cephalon_sudo" if self.mode == "professional_sudo" else "cephalon")
-                    self.txt_chat.insert(tk.END, f"\n◈ CEPHALON GALLY: {text}\n", tag)
+                    self.txt_chat.insert(tk.END, f"\n◈ CEPHALON GALLY: ", tag)
+                    self.txt_chat.insert(tk.END, f"{text}\n", "body")
             self.txt_chat.see(tk.END)
 
     def append_message(self, role, text):
@@ -703,7 +723,8 @@ class CephalonApp(tk.Tk):
             self.txt_chat.insert(tk.END, f"\n\n◈ OPERATOR: {text}\n", "operator")
         elif role == "cephalon":
             tag = "cephalon_child" if self.mode == "child" else ("cephalon_sudo" if self.mode == "professional_sudo" else "cephalon")
-            self.txt_chat.insert(tk.END, f"\n◈ CEPHALON GALLY: {text}\n", tag)
+            self.txt_chat.insert(tk.END, f"\n◈ CEPHALON GALLY: ", tag)
+            self.txt_chat.insert(tk.END, f"{text}\n", "body")
         self.txt_chat.see(tk.END)
 
     def clear_console_history(self):
