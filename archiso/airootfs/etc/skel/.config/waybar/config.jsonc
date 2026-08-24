@@ -62,8 +62,8 @@
         "max-length": 25,
         "icon-size": 16,
         "icon-theme": "Papirus-Dark",
-        "tooltip-format": "🗔 {title}\n───────────────────────\n• Left Click: Focus Window (Bring to Front)\n• Right Click / Middle Click: Close App",
-        "on-click": "activate",
+        "tooltip-format": "🗔 {title}\n───────────────────────\n• Left Click: Focus / Minimize Window\n• Right Click: Close App",
+        "on-click": "minimize-raise",
         "on-click-middle": "close",
         "on-click-right": "close",
         "ignore-list": [
