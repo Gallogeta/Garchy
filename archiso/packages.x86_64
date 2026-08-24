@@ -1,8 +1,8 @@
-# --- Garchy Linux Core Base ---
+# --- Garchy Linux Core Base & Bootloader ---
 base
 base-devel
-linux-cachyos
-linux-cachyos-headers
+linux
+linux-headers
 linux-firmware
 intel-ucode
 amd-ucode
@@ -13,6 +13,24 @@ curl
 zsh
 starship
 polkit-kde-agent
+
+# --- Live ISO Boot Engine & Firmware ---
+syslinux
+edk2-shell
+memtest86+
+memtest86+-efi
+mkinitcpio
+mkinitcpio-archiso
+arch-install-scripts
+archinstall
+efibootmgr
+dosfstools
+e2fsprogs
+btrfs-progs
+parted
+gptfdisk
+mtools
+snapper
 
 # --- Hyprland & Wayland Desktop Stack ---
 hyprland
@@ -48,7 +66,6 @@ xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
 qt5-wayland
 qt6-wayland
-polkit-gnome
 
 # --- Fonts & Icons ---
 ttf-jetbrains-mono-nerd
@@ -70,7 +87,6 @@ vulkan-tools
 lib32-vulkan-icd-loader
 
 # --- Developer Ready Stack ---
-code
 docker
 docker-compose
 python
@@ -88,10 +104,6 @@ btop
 jq
 rsync
 
-# --- System Utilities & Self-Healing ---
-snapper
-btrfs-progs
+# --- System Maintenance ---
 pacman-contrib
 reflector
-arch-install-scripts
-efibootmgr
