@@ -78,6 +78,31 @@ window#waybar {
     font-weight: 500;
 }
 
+/* Active Window Pill (Click to Minimize) */
+#custom-active-app {
+    color: @accent;
+    background: @bg-alt;
+    border: 1px solid @accent;
+    border-radius: 6px;
+    padding: 0 10px;
+    margin: 0 4px;
+    font-size: 11.5px;
+    font-weight: bold;
+}
+
+#custom-active-app:hover {
+    color: #ffffff;
+    background: @accent;
+    border-color: @accent;
+}
+
+#custom-active-app.empty {
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+}
+
 /* Minimized Windows Active Pill (Click to Restore) */
 #custom-minimized {
     color: @yellow;

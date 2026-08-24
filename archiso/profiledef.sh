@@ -57,7 +57,8 @@ file_permissions=(
   ["/etc/skel/.config/hypr/scripts/gally_theme_helper.py"]="0:0:755"
   ["/etc/skel/.config/hypr/scripts/wallpaper-gallery-gui.py"]="0:0:755"
   ["/etc/skel/.config/hypr/scripts/help-hud.sh"]="0:0:755"
-  ["/etc/skel/.config/hypr/scripts/help-hud.py"]="0:0:755"
+  ["/etc/skel/.config/hypr/scripts/taskbar-click.sh"]="0:0:755"
+  ["/etc/skel/.config/hypr/scripts/active-window-status.py"]="0:0:755"
   ["/etc/skel/.config/hypr/scripts/gally-ai-hud.sh"]="0:0:755"
   ["/etc/skel/.config/hypr/scripts/gally-ai-hud.py"]="0:0:755"
 )

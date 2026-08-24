@@ -12,6 +12,7 @@
         "custom/launcher",
         "hyprland/workspaces",
         "wlr/taskbar",
+        "custom/active-app",
         "custom/minimized"
     ],
     "modules-center": [
@@ -58,18 +59,28 @@
     },
 
     "wlr/taskbar": {
-        "format": "{icon} {title}",
-        "max-length": 25,
+        "format": "{icon} {name}",
         "icon-size": 16,
         "icon-theme": "Papirus-Dark",
-        "tooltip-format": "🗔 {title}\n───────────────────────\n• Left Click: Focus / Minimize Window\n• Right Click: Close App",
-        "on-click": "minimize-raise",
+        "tooltip-format": "🗔 {title}\n───────────────────────\n• Left Click: Focus & Raise Window\n• Right Click / Middle Click: Close App",
+        "on-click": "activate",
         "on-click-middle": "close",
         "on-click-right": "close",
         "ignore-list": [
             "wlogout",
             "rofi"
         ]
+    },
+
+    "custom/active-app": {
+        "format": "{}",
+        "return-type": "json",
+        "interval": 1,
+        "exec": "python3 /home/gallo/.config/hypr/scripts/active-window-status.py",
+        "on-click": "/home/gallo/.config/hypr/scripts/taskbar-click.sh minimize-active",
+        "on-click-right": "/home/gallo/.config/hypr/scripts/taskbar-click.sh close-active",
+        "on-click-middle": "/home/gallo/.config/hypr/scripts/taskbar-click.sh maximize-active",
+        "tooltip": true
     },
 
     "custom/minimized": {
