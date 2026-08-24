@@ -32,7 +32,8 @@ gptfdisk
 mtools
 snapper
 
-# --- Hyprland & Wayland Desktop Stack ---
+# --- Display Manager & Desktop Environments ---
+sddm
 hyprland
 hyprcursor
 hyprutils
@@ -45,6 +46,9 @@ kitty
 thunar
 thunar-archive-plugin
 file-roller
+xfce4
+xfce4-goodies
+tk
 wl-clipboard
 cliphist
 grim
