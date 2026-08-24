@@ -234,9 +234,6 @@ tooltip {{
     border-radius: {t['waybar_radius']};
 }}
 """
-        with open(waybar_theme, "w") as f:
-            f.write(css_content)
-            
         # 2. Update Hyprland Borders & Rounding Live
         subprocess.run(["hyprctl", "keyword", "general:col.active_border", t["hypr_border"]], stdout=subprocess.DEVNULL)
         subprocess.run(["hyprctl", "keyword", "general:col.inactive_border", t["hypr_inactive"]], stdout=subprocess.DEVNULL)
@@ -244,8 +241,28 @@ tooltip {{
         
         # 3. Reload Waybar
         subprocess.run(["killall", "-SIGUSR2", "waybar"], stderr=subprocess.DEVNULL)
-        
-        # 4. Notify user
+
+        # 4. Save to Gally active theme state
+        try:
+            import gally_theme_helper
+            theme_state = {
+                "name": t["name"],
+                "bg": t["bg"],
+                "bg_card": t["bg_alt"],
+                "bg_input": t["bg_alt"],
+                "fg": t["fg"],
+                "fg_muted": t["fg_muted"],
+                "accent": t["accent"],
+                "accent_alt": t["accent_alt"],
+                "border_col": BORDER_COL,
+                "rounding": t["hypr_rounding"],
+                "border_width": 2
+            }
+            gally_theme_helper.save_active_theme(theme_state)
+        except Exception:
+            pass
+
+        # 5. Notify user
         subprocess.Popen(["notify-send", "-a", "Theme Switcher", "✨ Theme Applied", t["name"]])
         self.destroy()
 
