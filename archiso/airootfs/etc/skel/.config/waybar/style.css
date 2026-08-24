@@ -1,0 +1,234 @@
+/* Dynamic Waybar Theme (GTK3 CSS) */
+@import "theme.css";
+
+* {
+    font-family: "JetBrainsMono Nerd Font", "JetBrainsMono NF", monospace;
+    font-size: 12px;
+    font-weight: bold;
+    min-height: 0;
+}
+
+window#waybar {
+    background-color: transparent;
+    color: @fg;
+}
+
+/* Island Sections (Left, Center, Right) */
+.modules-left,
+.modules-center,
+.modules-right {
+    background: @bg;
+    border: 1px solid @border-col;
+    padding: 2px 6px;
+}
+
+/* Launcher */
+#custom-launcher {
+    font-size: 16px;
+    color: @accent;
+    padding: 0 8px 0 4px;
+    margin-right: 4px;
+}
+
+#custom-launcher:hover {
+    color: @accent-alt;
+}
+
+/* Workspaces */
+#workspaces {
+    padding: 0;
+    margin: 0 2px;
+}
+
+#workspaces button {
+    padding: 0 8px;
+    margin: 2px 2px;
+    color: @fg-muted;
+    background: @bg-alt;
+    border: 1px solid transparent;
+}
+
+#workspaces button:hover {
+    color: @fg;
+    background: @border-col;
+    border: 1px solid @accent;
+}
+
+#workspaces button.active {
+    color: @fg-active;
+    background: @accent;
+    font-weight: 800;
+    border: 1px solid @accent;
+}
+
+#workspaces button.urgent {
+    color: #ffffff;
+    background: @red;
+}
+
+/* Active Window */
+#window {
+    color: @fg;
+    padding: 0 6px;
+    font-size: 11.5px;
+    font-weight: normal;
+}
+
+/* Window Action Buttons (Minimize, Minimize-All, Maximize, Close) */
+#custom-btn-minimize,
+#custom-btn-minimize-all,
+#custom-btn-maximize,
+#custom-btn-close {
+    font-size: 11px;
+    padding: 0 6px;
+    margin: 0 1px;
+    color: @fg-muted;
+    background: @bg-alt;
+    border: 1px solid @border-col;
+}
+
+#custom-btn-minimize:hover {
+    color: @yellow;
+    border-color: @yellow;
+}
+
+#custom-btn-minimize-all:hover {
+    color: #bb9af7;
+    border-color: #bb9af7;
+}
+
+#custom-btn-maximize:hover {
+    color: @accent;
+    border-color: @accent;
+}
+
+#custom-btn-close:hover {
+    color: @red;
+    border-color: @red;
+}
+
+/* Minimized Badge */
+#custom-minimized.has-minimized {
+    color: @yellow;
+    border: 1px solid @yellow;
+    padding: 0 8px;
+    margin-right: 6px;
+}
+
+#custom-minimized.has-minimized:hover {
+    color: #ffffff;
+    background: @border-col;
+}
+
+#custom-minimized.empty {
+    padding: 0;
+    margin: 0;
+}
+
+/* Clock */
+#clock {
+    color: @accent-alt;
+    padding: 0 10px;
+    letter-spacing: 0.5px;
+}
+
+#clock:hover {
+    color: @accent;
+}
+
+/* MPRIS Media Player */
+#mpris {
+    color: @green;
+    padding: 0 10px;
+}
+
+#mpris:hover {
+    color: @accent-alt;
+}
+
+/* Hardware Modules */
+#cpu {
+    color: @accent;
+    padding: 0 7px;
+}
+
+#custom-gpu {
+    color: @accent-alt;
+    padding: 0 7px;
+}
+
+#memory {
+    color: @yellow;
+    padding: 0 7px;
+}
+
+#temperature {
+    color: @accent-alt;
+    padding: 0 7px;
+}
+
+#temperature.critical {
+    color: @red;
+}
+
+/* Audio */
+#pulseaudio {
+    color: @green;
+    padding: 0 8px;
+}
+
+#pulseaudio.muted {
+    color: @fg-muted;
+}
+
+#pulseaudio:hover {
+    color: @fg;
+}
+
+/* Theme Switcher Button */
+#custom-theme {
+    color: @accent;
+    font-size: 13px;
+    padding: 0 7px;
+}
+
+#custom-theme:hover {
+    color: @accent-alt;
+}
+
+/* System Tray */
+#tray {
+    padding: 0 8px;
+}
+
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+    -gtk-icon-effect: highlight;
+}
+
+/* Power Button */
+#custom-power {
+    color: @red;
+    font-size: 14px;
+    padding: 0 6px 0 8px;
+    margin-left: 2px;
+}
+
+#custom-power:hover {
+    color: @yellow;
+}
+
+/* Tooltips */
+tooltip {
+    background: @bg;
+    border: 1px solid @accent;
+}
+
+tooltip label {
+    color: @fg;
+    font-size: 11.5px;
+    padding: 6px 10px;
+}

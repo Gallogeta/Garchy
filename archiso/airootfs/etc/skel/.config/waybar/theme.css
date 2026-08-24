@@ -1,0 +1,23 @@
+@define-color bg #111116;
+@define-color bg-alt #1a1a22;
+@define-color border-col #333340;
+@define-color accent #ffffff;
+@define-color accent-alt #cbd5e1;
+@define-color fg #ffffff;
+@define-color fg-muted #888899;
+@define-color fg-active #111116;
+@define-color green #ffffff;
+@define-color red #f7768e;
+@define-color yellow #e0af68;
+
+.modules-left,
+.modules-center,
+.modules-right,
+#workspaces button,
+#custom-btn-minimize,
+#custom-btn-maximize,
+#custom-btn-close,
+#custom-minimized,
+tooltip {
+    border-radius: 0px;
+}

@@ -1,0 +1,93 @@
+/* Desktop Theme Picker Menu for Rofi */
+configuration {
+    font: "JetBrainsMono Nerd Font 12";
+    show-icons: false;
+    click-to-exit: true;
+}
+
+* {
+    bg: rgba(19, 22, 34, 0.95);
+    bg-alt: rgba(255, 255, 255, 0.06);
+    bg-selected: rgba(122, 162, 247, 0.30);
+    border-color: #7aa2f7;
+    fg: #c0caf5;
+    fg-selected: #ffffff;
+    accent: #7aa2f7;
+
+    background-color: transparent;
+    text-color: @fg;
+    margin: 0;
+    padding: 0;
+    spacing: 0;
+}
+
+window {
+    location: center;
+    anchor: center;
+    width: 480px;
+    background-color: @bg;
+    border: 2px;
+    border-color: @border-color;
+    padding: 16px;
+}
+
+mainbox {
+    orientation: vertical;
+    spacing: 12px;
+    children: [inputbar, listview];
+}
+
+inputbar {
+    background-color: @bg-alt;
+    border: 1px;
+    border-color: @border-color;
+    padding: 10px 14px;
+    spacing: 10px;
+    children: [prompt, entry];
+}
+
+prompt {
+    text-color: @accent;
+    font: "JetBrainsMono Nerd Font 13";
+    vertical-align: 0.5;
+}
+
+entry {
+    text-color: @fg;
+    font: "JetBrainsMono Nerd Font 12";
+    placeholder: "Select theme...";
+    placeholder-color: #565f89;
+    vertical-align: 0.5;
+}
+
+listview {
+    spacing: 4px;
+    padding: 4px 0;
+    lines: 8;
+    columns: 1;
+    fixed-height: true;
+    scrollbar: false;
+}
+
+element {
+    padding: 8px 12px;
+    spacing: 10px;
+}
+
+element-text {
+    text-color: inherit;
+    vertical-align: 0.5;
+    font: "JetBrainsMono Nerd Font 12";
+}
+
+element normal.normal {
+    background-color: transparent;
+    text-color: @fg;
+}
+
+element selected.normal {
+    background-color: @bg-selected;
+    text-color: @fg-selected;
+    border: 1px;
+    border-color: @accent;
+}

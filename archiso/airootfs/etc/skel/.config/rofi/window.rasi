@@ -1,0 +1,113 @@
+configuration {
+    font: "JetBrainsMono Nerd Font 12";
+    show-icons: true;
+    icon-theme: "Papirus-Dark";
+    display-dmenu: "󰖯  SWITCH WINDOW";
+}
+
+* {
+    bg: rgba(19, 22, 34, 0.94);
+    bg-alt: rgba(255, 255, 255, 0.05);
+    bg-selected: rgba(122, 162, 247, 0.28);
+    border-color: #7aa2f7;
+    border-subtle: #24283b;
+    fg: #c0caf5;
+    fg-muted: #787c99;
+    fg-selected: #ffffff;
+    accent: #7aa2f7;
+    urgent: #f7768e;
+
+    background-color: transparent;
+    text-color: @fg;
+    margin: 0;
+    padding: 0;
+    spacing: 0;
+}
+
+window {
+    location: center;
+    anchor: center;
+    width: 780px;
+    height: 520px;
+    background-color: @bg;
+    border: 2px;
+    border-color: @border-color;
+    border-radius: 0px;
+    padding: 20px;
+}
+
+mainbox {
+    orientation: vertical;
+    background-color: transparent;
+    spacing: 16px;
+    children: [inputbar, listview];
+}
+
+inputbar {
+    background-color: @bg-alt;
+    border: 1px;
+    border-color: @border-subtle;
+    border-radius: 0px;
+    padding: 12px 16px;
+    spacing: 12px;
+    children: [prompt, entry];
+}
+
+prompt {
+    enabled: true;
+    background-color: transparent;
+    text-color: @accent;
+    font: "JetBrainsMono Nerd Font Bold 13";
+    vertical-align: 0.5;
+}
+
+entry {
+    background-color: transparent;
+    text-color: @fg;
+    font: "JetBrainsMono Nerd Font 12";
+    placeholder: "Type to filter active windows...";
+    placeholder-color: @fg-muted;
+    vertical-align: 0.5;
+}
+
+listview {
+    background-color: transparent;
+    border: 0;
+    spacing: 8px;
+    padding: 4px 0;
+    lines: 7;
+    columns: 1;
+    fixed-height: true;
+    scrollbar: false;
+}
+
+element {
+    background-color: @bg-alt;
+    border: 1px;
+    border-color: @border-subtle;
+    border-radius: 0px;
+    padding: 10px 14px;
+    spacing: 14px;
+    orientation: horizontal;
+    children: [element-icon, element-text];
+}
+
+element selected {
+    background-color: @bg-selected;
+    border-color: @border-color;
+    text-color: @fg-selected;
+}
+
+element-icon {
+    background-color: transparent;
+    size: 32px;
+    vertical-align: 0.5;
+}
+
+element-text {
+    background-color: transparent;
+    text-color: inherit;
+    font: "JetBrainsMono Nerd Font 12";
+    vertical-align: 0.5;
+    highlight: bold #7dcfff;
+}

@@ -1,0 +1,212 @@
+{
+    "layer": "top",
+    "position": "top",
+    "exclusive": true,
+    "margin-top": 4,
+    "margin-left": 8,
+    "margin-right": 8,
+    "height": 34,
+    "spacing": 6,
+
+    "modules-left": [
+        "custom/launcher",
+        "hyprland/workspaces",
+        "hyprland/window",
+        "custom/btn-minimize",
+        "custom/btn-minimize-all",
+        "custom/btn-maximize",
+        "custom/btn-close"
+    ],
+    "modules-center": [
+        "custom/minimized",
+        "mpris",
+        "clock"
+    ],
+    "modules-right": [
+        "cpu",
+        "custom/gpu",
+        "memory",
+        "temperature",
+        "pulseaudio",
+        "custom/theme",
+        "tray",
+        "custom/power"
+    ],
+
+    "custom/launcher": {
+        "format": "󰣇",
+        "on-click": "rofi -show drun -config ~/.config/rofi/config.rasi",
+        "on-click-right": "/home/gallo/.config/hypr/scripts/wallpaper-select.sh",
+        "tooltip-format": "App Launcher (Left Click)\nWallpaper Menu (Right Click)"
+    },
+
+    "hyprland/workspaces": {
+        "active-only": false,
+        "all-outputs": false,
+        "disable-scroll": false,
+        "on-scroll-up": "hyprctl dispatch workspace e+1",
+        "on-scroll-down": "hyprctl dispatch workspace e-1",
+        "on-click": "activate",
+        "format": "{icon}",
+        "format-icons": {
+            "1": "1", "2": "1",
+            "3": "2", "4": "2",
+            "5": "3", "6": "3",
+            "7": "4", "8": "4",
+            "9": "5", "10": "5",
+            "11": "6", "12": "6",
+            "13": "7", "14": "7",
+            "15": "8", "16": "8",
+            "17": "9", "18": "9",
+            "19": "10", "20": "10"
+        },
+        "persistent-workspaces": {
+            "DP-2": [1, 3, 5, 7, 9, 11, 13, 15, 17, 19],
+            "DP-1": [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+        }
+    },
+
+    "hyprland/window": {
+        "format": "{title}",
+        "max-length": 25,
+        "separate-outputs": true,
+        "on-click-right": "/home/gallo/.config/hypr/scripts/force-kill.sh",
+        "rewrite": {
+            "(.*) — Mozilla Firefox": "󰈹 $1",
+            "(.*) - Brave": "󰖟 $1",
+            "(.*) - Visual Studio Code": "󰨞 $1",
+            "(.*) - Discord": "󰙯 $1",
+            "kitty": " Terminal"
+        }
+    },
+
+    "custom/btn-minimize": {
+        "format": "",
+        "tooltip-format": "Minimize Active Window (Left Click)\nRestore Last Window (Right Click)",
+        "on-click": "/home/gallo/.config/hypr/scripts/minimize-window.sh minimize",
+        "on-click-right": "/home/gallo/.config/hypr/scripts/minimize-window.sh restore-last"
+    },
+
+    "custom/btn-minimize-all": {
+        "format": "󰘖",
+        "tooltip-format": "Minimize ALL Windows on this Screen (Show Desktop)\nClick again to restore all",
+        "on-click": "/home/gallo/.config/hypr/scripts/minimize-window.sh toggle-all",
+        "on-click-right": "/home/gallo/.config/hypr/scripts/minimize-window.sh restore-all"
+    },
+
+    "custom/btn-maximize": {
+        "format": "󰍹",
+        "tooltip-format": "Maximize / Toggle Fullscreen",
+        "on-click": "/home/gallo/.config/hypr/scripts/minimize-window.sh maximize-toggle"
+    },
+
+    "custom/btn-close": {
+        "format": "󰅖",
+        "tooltip-format": "Close Active Window (Left Click)\nForce Kill Program (Right Click)",
+        "on-click": "/home/gallo/.config/hypr/scripts/minimize-window.sh close-window",
+        "on-click-right": "/home/gallo/.config/hypr/scripts/force-kill.sh"
+    },
+
+    "custom/minimized": {
+        "exec": "/home/gallo/.config/hypr/scripts/minimized-status.sh",
+        "return-type": "json",
+        "interval": 2,
+        "on-click": "/home/gallo/.config/hypr/scripts/window-switch.sh",
+        "tooltip": true
+    },
+
+    "mpris": {
+        "format": " {title} - {artist}",
+        "format-paused": " {title} - {artist}",
+        "max-length": 30,
+        "tooltip-format": "{player}: {title} - {artist}",
+        "on-click": "playerctl play-pause",
+        "on-click-right": "playerctl next"
+    },
+
+    "clock": {
+        "format": " {:%H:%M}",
+        "format-alt": " {:%a, %d %b %Y}",
+        "tooltip-format": "<tt><small>{calendar}</small></tt>",
+        "calendar": {
+            "mode": "month",
+            "mode-mon-col": 3,
+            "weeks-pos": "right",
+            "on-scroll": 1,
+            "format": {
+                "months": "<span color='#7aa2f7'><b>{}</b></span>",
+                "days": "<span color='#c0caf5'><b>{}</b></span>",
+                "weeks": "<span color='#7dcfff'><b>W{}</b></span>",
+                "weekdays": "<span color='#bb9af7'><b>{}</b></span>",
+                "today": "<span color='#f7768e'><b><u>{}</u></b></span>"
+            }
+        },
+        "actions": {
+            "on-click-right": "mode"
+        }
+    },
+
+    "cpu": {
+        "format": " {usage}%",
+        "tooltip": true,
+        "interval": 2
+    },
+
+    "custom/gpu": {
+        "exec": "/home/gallo/.config/waybar/scripts/gpu_usage.sh",
+        "interval": 2,
+        "format": " {}%",
+        "tooltip-format": "NVIDIA RTX 3080 Ti: {}%"
+    },
+
+    "memory": {
+        "format": " {percentage}%",
+        "tooltip-format": "RAM Used: {used:0.1f}G / {total:0.1f}G ({percentage}%)",
+        "interval": 2
+    },
+
+    "temperature": {
+        "hwmon-path": "/sys/class/hwmon/hwmon1/temp1_input",
+        "critical-threshold": 80,
+        "format": " {temperatureC}°C",
+        "format-critical": " {temperatureC}°C",
+        "tooltip-format": "Ryzen 9 5900X: {temperatureC}°C",
+        "interval": 2
+    },
+
+    "pulseaudio": {
+        "format": "{icon} {volume}%",
+        "format-muted": "󰝟 Muted",
+        "format-icons": {
+            "headphone": "",
+            "hands-free": "",
+            "headset": "",
+            "phone": "",
+            "portable": "",
+            "car": "",
+            "default": ["", "", ""]
+        },
+        "scroll-step": 4,
+        "on-click": "pavucontrol",
+        "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "tooltip": true,
+        "tooltip-format": "Volume: {volume}%"
+    },
+
+    "tray": {
+        "icon-size": 15,
+        "spacing": 8
+    },
+
+    "custom/theme": {
+        "format": "󰏘",
+        "tooltip-format": "Desktop Theme Switcher\n(Tokyo Night, Catppuccin, Nord, Cyberpunk, etc.)",
+        "on-click": "/home/gallo/.config/hypr/scripts/theme-switcher.sh"
+    },
+
+    "custom/power": {
+        "format": "⏻",
+        "tooltip-format": "Power Menu",
+        "on-click": "wlogout -b 2 -c 20 -r 20"
+    }
+}
