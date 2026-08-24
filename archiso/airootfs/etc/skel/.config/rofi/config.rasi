@@ -1,8 +1,6 @@
 /**
- * Gally OS - Modern App Launcher & Command Runner
+ * Gally OS - Main App Launcher
  */
-
-@import "colors.rasi"
 
 configuration {
     modi: "drun,run,window";
@@ -27,19 +25,14 @@ configuration {
     display-drun: "󰀻  Apps";
     display-run: "  Commands";
     display-window: "󰖯  Windows";
-
-    kb-page-next: "Page_Down";
-    kb-page-prev: "Page_Up";
-    kb-paste: "Control+v,Shift+Insert";
-    kb-primary-paste: "Control+Shift+v,Shift+Insert";
 }
 
 * {
     background-color: transparent;
-    text-color: @fg;
-    margin: 0;
-    padding: 0;
-    spacing: 0;
+    text-color: #f1f5f9;
+    margin: 0px;
+    padding: 0px;
+    spacing: 0px;
 }
 
 window {
@@ -47,10 +40,10 @@ window {
     anchor: center;
     width: 720px;
     height: 500px;
-    background-color: @bg;
-    border: 2px solid;
-    border-color: @border-accent;
-    border-radius: @radius;
+    background-color: #070b14;
+    border: 2px;
+    border-color: #38bdf8;
+    border-radius: 16px;
     padding: 16px;
     cursor: "default";
 }
@@ -69,44 +62,42 @@ mode-switcher {
 
 button {
     padding: 7px 14px;
-    background-color: @bg-alt;
-    text-color: @fg-muted;
+    background-color: #0f172a;
+    text-color: #94a3b8;
     border-radius: 10px;
-    border: 1px solid @border-col;
+    border: 1px;
+    border-color: #334155;
     cursor: pointer;
     font: "JetBrainsMono Nerd Font Bold 11";
 }
 
 button selected {
-    background-color: @accent;
-    text-color: @fg-active;
-    border: 1px solid @accent;
-}
-
-button:hover {
-    background-color: @accent-alt;
-    text-color: @fg-active;
+    background-color: #38bdf8;
+    text-color: #000000;
+    border: 1px;
+    border-color: #38bdf8;
 }
 
 inputbar {
     padding: 10px 14px;
-    background-color: @bg-alt;
+    background-color: #0f172a;
     border-radius: 10px;
-    border: 1px solid @border-accent;
+    border: 1px;
+    border-color: #38bdf8;
     children: [ prompt, entry ];
     spacing: 10px;
 }
 
 prompt {
-    text-color: @accent;
+    text-color: #38bdf8;
     font: "JetBrainsMono Nerd Font Bold 11";
     vertical-align: 0.5;
 }
 
 entry {
     placeholder: "Search applications or commands...";
-    placeholder-color: @fg-muted;
-    text-color: @fg;
+    placeholder-color: #94a3b8;
+    text-color: #ffffff;
     cursor: text;
     vertical-align: 0.5;
 }
@@ -124,32 +115,31 @@ listview {
 
 scrollbar {
     width: 5px;
-    border: 0;
+    border: 0px;
     handle-width: 5px;
-    handle-color: @accent;
+    handle-color: #38bdf8;
     border-radius: 6px;
     background-color: rgba(255, 255, 255, 0.08);
-    margin: 0 0 0 8px;
+    margin: 0px 0px 0px 8px;
 }
 
 element {
     padding: 9px 12px;
     border-radius: 8px;
     background-color: transparent;
-    text-color: @fg;
+    text-color: #f1f5f9;
     spacing: 10px;
     cursor: pointer;
 }
 
 element normal.normal {
     background-color: transparent;
-    text-color: @fg;
+    text-color: #f1f5f9;
 }
 
-element selected.normal,
-element:hover {
-    background-color: @accent;
-    text-color: @fg-active;
+element selected.normal {
+    background-color: #38bdf8;
+    text-color: #000000;
     border-radius: 8px;
 }
 
@@ -169,10 +159,11 @@ element-text {
 message {
     padding: 8px;
     border-radius: 8px;
-    background-color: @bg-alt;
-    border: 1px solid @border-col;
+    background-color: #0f172a;
+    border: 1px;
+    border-color: #334155;
 }
 
 textbox {
-    text-color: @fg;
+    text-color: #f1f5f9;
 }

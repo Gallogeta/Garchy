@@ -14,10 +14,6 @@
         "wlr/taskbar"
     ],
     "modules-center": [
-        "custom/minimized",
-        "custom/btn-minimize",
-        "custom/btn-maximize",
-        "custom/btn-close",
         "clock"
     ],
     "modules-right": [
@@ -64,42 +60,14 @@
         "format": "{icon} {name}",
         "icon-size": 16,
         "icon-theme": "Papirus-Dark",
-        "tooltip-format": "{title}",
-        "on-click": "activate",
+        "tooltip-format": "{title}\nLeft Click: Minimize / Focus\nRight Click: Maximize\nMiddle Click: Close",
+        "on-click": "minimize-raise",
         "on-click-middle": "close",
         "on-click-right": "fullscreen",
         "ignore-list": [
             "wlogout",
             "rofi"
         ]
-    },
-
-    "custom/minimized": {
-        "exec": "/home/gallo/.config/hypr/scripts/minimized-status.sh",
-        "return-type": "json",
-        "interval": 2,
-        "on-click": "/home/gallo/.config/hypr/scripts/minimized-manager.py",
-        "tooltip": true
-    },
-
-    "custom/btn-minimize": {
-        "format": "",
-        "tooltip-format": "Minimize Active Window (Left Click)\nRestore Last Window (Right Click)",
-        "on-click": "/home/gallo/.config/hypr/scripts/minimize-window.sh minimize",
-        "on-click-right": "/home/gallo/.config/hypr/scripts/minimize-window.sh restore-last"
-    },
-
-    "custom/btn-maximize": {
-        "format": "󰍹",
-        "tooltip-format": "Maximize / Toggle Fullscreen",
-        "on-click": "/home/gallo/.config/hypr/scripts/minimize-window.sh maximize-toggle"
-    },
-
-    "custom/btn-close": {
-        "format": "󰅖",
-        "tooltip-format": "Close Active Window (Left Click)\nForce Kill Program (Right Click)",
-        "on-click": "/home/gallo/.config/hypr/scripts/minimize-window.sh close-window",
-        "on-click-right": "/home/gallo/.config/hypr/scripts/force-kill.sh"
     },
 
     "clock": {
