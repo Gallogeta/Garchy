@@ -60,10 +60,10 @@
         "format": "{icon} {name}",
         "icon-size": 16,
         "icon-theme": "Papirus-Dark",
-        "tooltip-format": "{title}\nLeft Click: Minimize / Focus\nRight Click: Maximize\nMiddle Click: Close",
-        "on-click": "minimize-raise",
+        "tooltip-format": "{title}",
+        "on-click": "activate",
         "on-click-middle": "close",
-        "on-click-right": "fullscreen",
+        "on-click-right": "close",
         "ignore-list": [
             "wlogout",
             "rofi"
