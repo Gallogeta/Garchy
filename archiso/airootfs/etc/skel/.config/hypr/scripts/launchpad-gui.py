@@ -8,7 +8,6 @@ import os
 import sys
 import glob
 import subprocess
-import configparser
 import tkinter as tk
 from tkinter import ttk
 
@@ -22,18 +21,40 @@ ACCENT_CYAN = "#38bdf8"
 BORDER_COL = "#334155"
 
 CATEGORY_ICONS = {
-    "Game": "🎮",
-    "AudioVideo": "🎬",
-    "Audio": "🎵",
-    "Video": "🎥",
-    "Development": "💻",
-    "Graphics": "🎨",
-    "Network": "🌐",
-    "Office": "📄",
-    "System": "⚙️",
-    "Utility": "🛠️",
-    "Settings": "🔧"
+    "game": "🎮",
+    "audiovideo": "🎬",
+    "audio": "🎵",
+    "video": "🎥",
+    "development": "💻",
+    "graphics": "🎨",
+    "network": "🌐",
+    "webbrowser": "🌐",
+    "office": "📄",
+    "system": "⚙️",
+    "utility": "🛠️",
+    "settings": "🔧"
 }
+
+def parse_desktop_file(filepath):
+    entry = {}
+    is_desktop_entry = False
+    try:
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                if line.startswith('[') and line.endswith(']'):
+                    is_desktop_entry = (line == '[Desktop Entry]')
+                    continue
+                if is_desktop_entry and '=' in line:
+                    k, v = line.split('=', 1)
+                    k = k.strip()
+                    if k not in entry:
+                        entry[k] = v.strip()
+    except Exception:
+        pass
+    return entry
 
 def get_installed_apps():
     apps = []
@@ -43,64 +64,60 @@ def get_installed_apps():
         "/usr/share/applications/*.desktop"
     ]
     for d in dirs:
-        for f in glob.glob(d):
-            try:
-                cp = configparser.ConfigParser(interpolation=None, strict=False)
-                cp.read(f, encoding='utf-8', errors='ignore')
-                if not cp.has_section('Desktop Entry'):
-                    continue
-                sec = cp['Desktop Entry']
-                if sec.get('NoDisplay', 'false').lower() == 'true':
-                    continue
-                name = sec.get('Name', '').strip()
-                exec_cmd = sec.get('Exec', '').strip()
-                if not name or not exec_cmd:
-                    continue
-                if name in seen:
-                    continue
-                seen.add(name)
-                
-                # Strip %u %f args from exec
-                clean_exec = " ".join([arg for arg in exec_cmd.split() if not arg.startswith('%')])
-                
-                categories = sec.get('Categories', '')
-                icon_emoji = "📦"
-                for cat, emoji in CATEGORY_ICONS.items():
-                    if cat.lower() in categories.lower():
-                        icon_emoji = emoji
-                        break
-                        
-                if "terminal" in name.lower() or "kitty" in name.lower():
-                    icon_emoji = ""
-                elif "steam" in name.lower() or "game" in name.lower():
-                    icon_emoji = "🎮"
-                elif "brave" in name.lower() or "firefox" in name.lower() or "browser" in name.lower():
-                    icon_emoji = "🌐"
-                elif "code" in name.lower() or "codium" in name.lower():
-                    icon_emoji = "💻"
-                elif "file" in name.lower() or "thunar" in name.lower():
-                    icon_emoji = "📁"
-                elif "gally" in name.lower() or "ai" in name.lower():
-                    icon_emoji = "🤖"
-
-                apps.append({
-                    "name": name,
-                    "exec": clean_exec,
-                    "emoji": icon_emoji,
-                    "comment": sec.get('Comment', '')
-                })
-            except Exception:
+        for f in sorted(glob.glob(d)):
+            e = parse_desktop_file(f)
+            if not e:
                 continue
+            if e.get('NoDisplay', '').lower() == 'true':
+                continue
+            name = e.get('Name', '').strip()
+            exec_cmd = e.get('Exec', '').strip()
+            if not name or not exec_cmd:
+                continue
+            if name in seen:
+                continue
+            seen.add(name)
+            
+            # Strip %u %f args from exec
+            clean_exec = " ".join([arg for arg in exec_cmd.split() if not arg.startswith('%')])
+            categories = e.get('Categories', '').lower()
+            
+            icon_emoji = "📦"
+            for cat, emoji in CATEGORY_ICONS.items():
+                if cat in categories:
+                    icon_emoji = emoji
+                    break
+                    
+            name_lower = name.lower()
+            if "terminal" in name_lower or "kitty" in name_lower:
+                icon_emoji = ""
+            elif "steam" in name_lower or "game" in name_lower:
+                icon_emoji = "🎮"
+            elif "brave" in name_lower or "firefox" in name_lower or "browser" in name_lower:
+                icon_emoji = "🌐"
+            elif "code" in name_lower or "codium" in name_lower:
+                icon_emoji = "💻"
+            elif "file" in name_lower or "thunar" in name_lower:
+                icon_emoji = "📁"
+            elif "gally" in name_lower or "ai" in name_lower:
+                icon_emoji = "🤖"
+
+            apps.append({
+                "name": name,
+                "exec": clean_exec,
+                "emoji": icon_emoji,
+                "comment": e.get('Comment', '')
+            })
     apps.sort(key=lambda x: x['name'].lower())
     return apps
 
 class LaunchpadApp(tk.Tk):
     def __init__(self):
-        super().__init__()
+        super().__init__(className='gally_launchpad')
         self.title("Gally OS — Application Launchpad")
-        self.geometry("880x620")
+        self.geometry("900x640")
         self.configure(bg=BG_MAIN)
-        self.minsize(740, 500)
+        self.minsize(760, 520)
         
         self.all_apps = get_installed_apps()
         self.filtered_apps = list(self.all_apps)
@@ -140,18 +157,21 @@ class LaunchpadApp(tk.Tk):
         self.grid_container = tk.Frame(self.canvas, bg=BG_MAIN)
         self.grid_container.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
         
-        self.canvas.create_window((0, 0), window=self.grid_container, anchor="nw")
+        self.canvas_window = self.canvas.create_window((0, 0), window=self.grid_container, anchor="nw")
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
         
         self.canvas.pack(side="left", fill="both", expand=True)
         self.scrollbar.pack(side="right", fill="y")
         
-        # Mouse Wheel Support
-        self.bind_all("<Button-4>", lambda e: self.canvas.yview_scroll(-1, "units"))
-        self.bind_all("<Button-5>", lambda e: self.canvas.yview_scroll(1, "units"))
+        self.bind("<Configure>", self.on_resize)
+        self.bind_all("<Button-4>", lambda e: self.canvas.yview_scroll(-2, "units"))
+        self.bind_all("<Button-5>", lambda e: self.canvas.yview_scroll(2, "units"))
         self.bind("<Escape>", lambda e: self.destroy())
         
         self.render_grid()
+
+    def on_resize(self, event):
+        self.canvas.itemconfig(self.canvas_window, width=self.canvas.winfo_width())
 
     def on_search(self, event=None):
         q = self.ent_search.get().strip().lower()
@@ -174,8 +194,8 @@ class LaunchpadApp(tk.Tk):
             r = idx // columns
             c = idx % columns
             
-            card = tk.Frame(self.grid_container, bg=BG_CARD, padx=12, pady=10, relief="flat",
-                            highlightthickness=1, highlightbackground=BORDER_COL, cursor="hand2", width=180, height=80)
+            card = tk.Frame(self.grid_container, bg=BG_CARD, padx=10, pady=8, relief="flat",
+                            highlightthickness=1, highlightbackground=BORDER_COL, cursor="hand2", width=195, height=72)
             card.grid(row=r, column=c, padx=6, pady=6, sticky="nsew")
             card.grid_propagate(False)
             
@@ -185,8 +205,8 @@ class LaunchpadApp(tk.Tk):
             card.bind("<Button-1>", lambda e, ap=app: self.launch_app(ap))
             
             # Icon
-            lbl_ico = tk.Label(card, text=app['emoji'], font=("Sans", 22), bg=BG_CARD, fg=ACCENT_GOLD, cursor="hand2")
-            lbl_ico.pack(side="left", padx=(4, 10))
+            lbl_ico = tk.Label(card, text=app['emoji'], font=("Sans", 20), bg=BG_CARD, fg=ACCENT_GOLD, cursor="hand2")
+            lbl_ico.pack(side="left", padx=(4, 8))
             lbl_ico.bind("<Button-1>", lambda e, ap=app: self.launch_app(ap))
             
             # Text info
@@ -201,7 +221,7 @@ class LaunchpadApp(tk.Tk):
             
             comment = app.get('comment', '')
             if comment:
-                lbl_cm = tk.Label(info, text=comment[:24] + ("..." if len(comment) > 24 else ""),
+                lbl_cm = tk.Label(info, text=comment[:22] + ("..." if len(comment) > 22 else ""),
                                   font=("Sans", 8), fg=FG_MUTED, bg=BG_CARD, anchor="w", cursor="hand2")
                 lbl_cm.pack(anchor="w")
                 lbl_cm.bind("<Button-1>", lambda e, ap=app: self.launch_app(ap))
