@@ -24,6 +24,7 @@ file_permissions=(
   ["/usr/local/bin/livecd-sound"]="0:0:755"
   ["/usr/bin/garchy-installer"]="0:0:755"
   ["/usr/bin/garchy-gui-installer"]="0:0:755"
+  ["/usr/bin/garchy-tui-installer"]="0:0:755"
   ["/usr/bin/garchy-ai"]="0:0:755"
   ["/usr/bin/garchy-update"]="0:0:755"
   ["/etc/profile.d/garchy-welcome.sh"]="0:0:755"
