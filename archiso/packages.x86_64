@@ -1,4 +1,4 @@
-# --- Garchy Linux Core Base & Bootloader ---
+# --- Garchy Linux Core Base & Kernel ---
 base
 base-devel
 linux
@@ -14,7 +14,7 @@ zsh
 starship
 polkit-kde-agent
 
-# --- Live ISO Boot Engine & Firmware ---
+# --- Live ISO Boot Engine & Partitioning ---
 syslinux
 edk2-shell
 memtest86+
@@ -32,7 +32,7 @@ gptfdisk
 mtools
 snapper
 
-# --- Display Manager & Desktop Environments ---
+# --- Display Manager & Hyprland Desktop Environment ---
 sddm
 hyprland
 hyprcursor
@@ -40,7 +40,6 @@ hyprutils
 hyprlang
 aquamarine
 waybar
-rofi
 dunst
 kitty
 thunar
@@ -49,6 +48,7 @@ file-roller
 xfce4
 xfce4-goodies
 tk
+python-pillow
 wl-clipboard
 cliphist
 grim
@@ -69,14 +69,21 @@ xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
 qt5-wayland
 qt6-wayland
+papirus-icon-theme
 
-# --- Fonts & Icons ---
+# --- Fonts & Glyphs (Latin / Nerd / Emoji) ---
 ttf-jetbrains-mono-nerd
 ttf-fira-code
 ttf-liberation
 noto-fonts
-noto-fonts-cjk
 noto-fonts-emoji
+
+# --- Default Browsers ---
+firefox
+
+# --- Productivity & Media ---
+libreoffice-fresh
+mpv
 
 # --- Gaming Ready Stack ---
 steam
@@ -89,23 +96,14 @@ vulkan-icd-loader
 vulkan-tools
 lib32-vulkan-icd-loader
 
-# --- Developer Ready Stack ---
-docker
-docker-compose
+# --- Lightweight Terminal Editors & Diagnostics ---
 python
 python-pip
-python-virtualenv
-nodejs
-npm
-rust
-go
-neovim
-htop
-fastfetch
+nano
+micro
 btop
+fastfetch
 jq
 rsync
-
-# --- System Maintenance ---
 pacman-contrib
 reflector
