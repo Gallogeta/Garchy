@@ -107,3 +107,4 @@ jq
 rsync
 pacman-contrib
 reflector
+ollama
