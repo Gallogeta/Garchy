@@ -52,8 +52,10 @@ file_permissions=(
   ["/etc/skel/.config/hypr/scripts/quick-ssh.sh"]="0:0:755"
   ["/etc/skel/.config/hypr/scripts/youtube-pip.sh"]="0:0:755"
   ["/etc/skel/.config/hypr/scripts/launchpad.sh"]="0:0:755"
+  ["/etc/skel/.config/hypr/scripts/launchpad-gui.py"]="0:0:755"
+  ["/etc/skel/.config/hypr/scripts/theme-switcher-gui.py"]="0:0:755"
   ["/etc/skel/.config/hypr/scripts/help-hud.sh"]="0:0:755"
   ["/etc/skel/.config/hypr/scripts/help-hud.py"]="0:0:755"
-  ["/etc/skel/.config/hypr/scripts/garchy-ai-hud.sh"]="0:0:755"
-  ["/etc/skel/.config/hypr/scripts/garchy-ai-hud.py"]="0:0:755"
+  ["/etc/skel/.config/hypr/scripts/gally-ai-hud.sh"]="0:0:755"
+  ["/etc/skel/.config/hypr/scripts/gally-ai-hud.py"]="0:0:755"
 )

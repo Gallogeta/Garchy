@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Garchy Launchpad Toggle
-if pgrep -x "rofi" >/dev/null; then
-    pkill -x "rofi"
+if pgrep -f "launchpad-gui.py" >/dev/null; then
+    pkill -f "launchpad-gui.py"
 else
-    rofi -show drun -theme "$HOME/.config/rofi/launchpad.rasi"
+    python3 "$HOME/.config/hypr/scripts/launchpad-gui.py"
 fi
