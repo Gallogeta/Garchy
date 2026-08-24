@@ -1,0 +1,108 @@
+/**
+ * Garchy OS - Launchpad / Fullscreen App Grid
+ * Clean, modern iPad/macOS style launcher for children and beginners
+ */
+
+configuration {
+    modi: "drun";
+    show-icons: true;
+    icon-theme: "Papirus-Dark";
+    display-drun: "🔍 Search Apps:";
+    drun-display-format: "{name}";
+}
+
+@import "colors.rasi"
+
+* {
+    font: "JetBrainsMono Nerd Font 12";
+    background-color: transparent;
+    text-color: #e0e6ed;
+}
+
+window {
+    transparency: "real";
+    fullscreen: true;
+    background-color: rgba(10, 15, 29, 0.92);
+    padding: 60px 120px;
+    cursor: "default";
+}
+
+mainbox {
+    spacing: 30px;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    enabled: true;
+    spacing: 15px;
+    margin: 0px 200px;
+    padding: 14px 20px;
+    border: 2px solid;
+    border-color: #d4af37;
+    border-radius: 20px;
+    background-color: rgba(19, 27, 46, 0.8);
+    text-color: #e0e6ed;
+    children: [ prompt, entry ];
+}
+
+prompt {
+    font: "JetBrainsMono Nerd Font Bold 12";
+    text-color: #00d2ff;
+}
+
+entry {
+    placeholder: "Type to search or click any app below...";
+    placeholder-color: rgba(224, 230, 237, 0.4);
+    text-color: #ffffff;
+    cursor: text;
+}
+
+listview {
+    enabled: true;
+    columns: 6;
+    lines: 4;
+    cycle: true;
+    dynamic: true;
+    scrollbar: false;
+    layout: vertical;
+    spacing: 30px;
+    margin: 20px 0px 0px 0px;
+    background-color: transparent;
+    cursor: "default";
+}
+
+element {
+    enabled: true;
+    orientation: vertical;
+    spacing: 12px;
+    padding: 24px 12px;
+    border-radius: 18px;
+    background-color: rgba(19, 27, 46, 0.5);
+    cursor: pointer;
+}
+
+element selected.normal {
+    background-color: rgba(0, 210, 255, 0.2);
+    border: 2px solid;
+    border-color: #00d2ff;
+}
+
+element selected.active {
+    background-color: rgba(212, 175, 55, 0.25);
+    border: 2px solid;
+    border-color: #d4af37;
+}
+
+element-icon {
+    size: 64px;
+    cursor: inherit;
+    horizontal-align: 0.5;
+}
+
+element-text {
+    font: "JetBrainsMono Nerd Font Medium 11";
+    cursor: inherit;
+    horizontal-align: 0.5;
+    vertical-align: 0.5;
+    text-color: inherit;
+}

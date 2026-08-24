@@ -1,15 +1,15 @@
 * {
-    bg: rgba(18, 18, 18, 0.96);
-    bg-alt: rgba(28, 28, 28, 0.85);
-    bg-hover: rgba(255, 255, 255, 0.15);
-    bg-selected: rgba(255, 255, 255, 0.30);
-    border-col: rgba(50, 50, 50, 0.9);
-    border-accent: #ffffff;
-    accent: #ffffff;
-    accent-alt: #cccccc;
-    fg: #ffffff;
-    fg-muted: #777777;
+    bg: rgba(15, 26, 20, 0.94);
+    bg-alt: rgba(20, 38, 28, 0.85);
+    bg-hover: rgba(80, 250, 123, 0.15);
+    bg-selected: rgba(80, 250, 123, 0.32);
+    border-col: rgba(30, 60, 45, 0.9);
+    border-accent: #50fa7b;
+    accent: #50fa7b;
+    accent-alt: #8be9fd;
+    fg: #e0f8e5;
+    fg-muted: #4e7a5e;
     fg-selected: #ffffff;
     urgent: #f7768e;
-    radius: 0px;
+    radius: 10px;
 }

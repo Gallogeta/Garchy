@@ -28,16 +28,18 @@
         "memory",
         "temperature",
         "pulseaudio",
+        "custom/ai-hub",
         "custom/theme",
+        "custom/help",
         "tray",
         "custom/power"
     ],
 
     "custom/launcher": {
         "format": "󰣇",
-        "on-click": "rofi -show drun -config ~/.config/rofi/config.rasi",
+        "on-click": "/home/gallo/.config/hypr/scripts/launchpad.sh",
         "on-click-right": "/home/gallo/.config/hypr/scripts/wallpaper-select.sh",
-        "tooltip-format": "App Launcher (Left Click)\nWallpaper Menu (Right Click)"
+        "tooltip-format": "Garchy Launchpad (Left Click)\nWallpaper Menu (Right Click)"
     },
 
     "hyprland/workspaces": {
@@ -198,10 +200,22 @@
         "spacing": 8
     },
 
+    "custom/ai-hub": {
+        "format": "🤖 AI",
+        "tooltip-format": "Garchy AI Copilot & Fixes (Super + Shift + Space)",
+        "on-click": "/home/gallo/.config/hypr/scripts/garchy-ai-hud.sh"
+    },
+
     "custom/theme": {
         "format": "󰏘",
         "tooltip-format": "Desktop Theme Switcher\n(Tokyo Night, Catppuccin, Nord, Cyberpunk, etc.)",
         "on-click": "/home/gallo/.config/hypr/scripts/theme-switcher.sh"
+    },
+
+    "custom/help": {
+        "format": "❓",
+        "tooltip-format": "Quick Guide & Shortcuts (F1)",
+        "on-click": "/home/gallo/.config/hypr/scripts/help-hud.sh"
     },
 
     "custom/power": {
