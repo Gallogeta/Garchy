@@ -78,13 +78,4 @@ echo -e "Size:     $(du -h "$ISO_FILE" | cut -f1)"
 
 # 6. Launch in QEMU / KVM Virtual Machine
 echo -e "\n${CYAN}${BOLD}🚀 Launching Garchy Linux in KVM Virtual Machine...${RESET}"
-qemu-system-x86_64 \
-    -enable-kvm \
-    -m 4G \
-    -smp 4 \
-    -cpu host \
-    -cdrom "$ISO_FILE" \
-    -boot d \
-    -vga virtio \
-    -display gtk \
-    -name "Garchy Linux Live Test"
+exec "$SCRIPT_DIR/test-vm.sh"
