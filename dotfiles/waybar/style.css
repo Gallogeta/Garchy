@@ -66,12 +66,22 @@ window#waybar {
     background: @red;
 }
 
-/* Active Window */
+/* Active Window (Clickable to Minimize) */
 #window {
     color: @fg;
-    padding: 0 6px;
+    background: @bg-alt;
+    border: 1px solid @border-col;
+    border-radius: 6px;
+    padding: 0 10px;
+    margin: 0 4px;
     font-size: 11.5px;
-    font-weight: normal;
+    font-weight: 500;
+}
+
+#window:hover {
+    color: @accent;
+    border-color: @accent;
+    background: @border-col;
 }
 
 /* Window Action Buttons (Minimize, Minimize-All, Maximize, Close) */
@@ -297,14 +307,18 @@ window#waybar {
     color: @yellow;
 }
 
-/* Tooltips */
+/* Tooltips - Clean, legible helper cards on hover */
 tooltip {
     background: @bg;
-    border: 1px solid @accent;
+    border: 2px solid @accent;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    padding: 4px;
 }
 
 tooltip label {
     color: @fg;
     font-size: 11.5px;
-    padding: 6px 10px;
+    padding: 8px 12px;
+    font-weight: 500;
 }

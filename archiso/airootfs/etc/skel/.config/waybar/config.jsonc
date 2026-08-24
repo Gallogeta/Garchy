@@ -11,7 +11,8 @@
     "modules-left": [
         "custom/launcher",
         "hyprland/workspaces",
-        "wlr/taskbar"
+        "wlr/taskbar",
+        "hyprland/window"
     ],
     "modules-center": [
         "clock"
@@ -31,7 +32,7 @@
         "format": "󰣇",
         "on-click": "/home/gallo/.config/hypr/scripts/launchpad.sh",
         "on-click-right": "/home/gallo/.config/hypr/scripts/wallpaper-select.sh",
-        "tooltip-format": "Gally Launchpad (Left Click)\nWallpaper Menu (Right Click)"
+        "tooltip-format": "🌌 Gally Launchpad\n───────────────────────\n• Left Click: Open Fullscreen App Grid\n• Right Click: Wallpaper Gallery\n• Shortcut: Super or Super + Space"
     },
 
     "hyprland/workspaces": {
@@ -60,7 +61,7 @@
         "format": "{icon} {name}",
         "icon-size": 16,
         "icon-theme": "Papirus-Dark",
-        "tooltip-format": "{title}",
+        "tooltip-format": "🗔 {title}\n───────────────────────\n• Left Click: Focus Window (Bring to Front)\n• Right Click / Middle Click: Close App",
         "on-click": "activate",
         "on-click-middle": "close",
         "on-click-right": "close",
@@ -70,10 +71,20 @@
         ]
     },
 
+    "hyprland/window": {
+        "format": "🗖 {title}",
+        "max-length": 32,
+        "separate-outputs": true,
+        "tooltip-format": "Active Window: {title}\n───────────────────────\n• Left Click: MINIMIZE this window\n• Right Click: CLOSE this window\n• Middle Click: Maximize / Restore",
+        "on-click": "/home/gallo/.config/hypr/scripts/minimize-window.sh minimize",
+        "on-click-right": "/home/gallo/.config/hypr/scripts/minimize-window.sh close-window",
+        "on-click-middle": "/home/gallo/.config/hypr/scripts/minimize-window.sh maximize-toggle"
+    },
+
     "clock": {
         "format": " {:%H:%M}",
         "format-alt": " {:%a, %d %b %Y}",
-        "tooltip-format": "<tt><small>{calendar}</small></tt>",
+        "tooltip-format": "<tt><small>{calendar}</small></tt>\n───────────────────────\n• Left Click: Toggle Date / Time view\n• Right Click: Switch Calendar Mode",
         "calendar": {
             "mode": "month",
             "mode-mon-col": 3,
@@ -96,13 +107,13 @@
 
     "cpu": {
         "format": " {usage}%",
-        "tooltip-format": "CPU Usage: {usage}%\nLoad: {load}",
+        "tooltip-format": "⚡ CPU Performance\n───────────────────────\n• Processor: Ryzen 9 5900X (24 Threads)\n• Current Usage: {usage}%\n• Load Average: {load}",
         "interval": 2
     },
 
     "memory": {
         "format": " {percentage}%",
-        "tooltip-format": "RAM Used: {used:0.1f}G / {total:0.1f}G ({percentage}%)",
+        "tooltip-format": "🧠 Memory (RAM)\n───────────────────────\n• Used: {used:0.1f} GB / {total:0.1f} GB ({percentage}%)",
         "interval": 2
     },
 
@@ -122,24 +133,24 @@
         "on-click": "pavucontrol",
         "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
         "tooltip": true,
-        "tooltip-format": "Volume: {volume}%"
+        "tooltip-format": "🔊 Sound Volume ({volume}%)\n───────────────────────\n• Scroll Up/Down: Adjust Volume (±4%)\n• Left Click: Open Sound Control Panel\n• Right Click: Mute / Unmute Audio"
     },
 
     "custom/ai-hub": {
         "format": "🤖 Gally AI",
-        "tooltip-format": "Gally AI Copilot & Troubleshooter (Super + Shift + Space)",
+        "tooltip-format": "🤖 Gally AI Copilot\n───────────────────────\n• 1-Click Audio & Gaming FPS Booster\n• Multi-Model System Diagnostics & Chat\n• Shortcut: Super + Shift + Space or Super + I",
         "on-click": "/home/gallo/.config/hypr/scripts/gally-ai-hud.sh"
     },
 
     "custom/theme": {
         "format": "󰏘",
-        "tooltip-format": "Desktop Theme Switcher\n(Tokyo Night, Catppuccin, Nord, Cyberpunk, etc.)",
+        "tooltip-format": "🎨 Desktop Theme Switcher\n───────────────────────\n• Click to switch desktop color styles\n  (Tokyo Night, Catppuccin, Nord, Cyberpunk...)",
         "on-click": "/home/gallo/.config/hypr/scripts/theme-switcher.sh"
     },
 
     "custom/help": {
         "format": "❓",
-        "tooltip-format": "Quick Guide & Keyboard Shortcuts (F1)",
+        "tooltip-format": "❓ Quick Guide & Shortcuts\n───────────────────────\n• Click to open Cheatsheet HUD\n• Shortcut: F1 or Super + ?",
         "on-click": "/home/gallo/.config/hypr/scripts/help-hud.sh"
     },
 
@@ -150,7 +161,7 @@
 
     "custom/power": {
         "format": "⏻",
-        "tooltip-format": "Power Menu",
+        "tooltip-format": "🛑 Power & Session Menu\n───────────────────────\n• Click to Shutdown, Reboot, or Lock Screen",
         "on-click": "wlogout -b 2 -c 20 -r 20"
     }
 }
