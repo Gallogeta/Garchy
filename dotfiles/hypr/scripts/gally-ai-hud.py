@@ -568,6 +568,17 @@ class CephalonApp(tk.Tk):
             
         self.append_message("operator", prompt)
         
+        # Check for memory learning directives
+        try:
+            import gally_memory_manager
+            mem_action = gally_memory_manager.check_for_memory_directives(prompt)
+            if mem_action:
+                self.append_message("cephalon", mem_action)
+                speak_voice_neural_async(mem_action, self.voice_enabled, self.voice_name)
+                return
+        except Exception:
+            pass
+
         self.lbl_status.config(text="● COMPUTING MATRIX...", fg=ACCENT_GOLD)
         self.lbl_progress.config(text="⚡ NEURAL INFERENCE RUNNING...")
         self.prog_bar["value"] = 50
@@ -578,10 +589,16 @@ class CephalonApp(tk.Tk):
 
     def query_cephalon_thread(self, prompt):
         try:
+            import gally_memory_manager
+            full_prompt = gally_memory_manager.build_system_context_prompt(prompt)
+        except Exception:
+            full_prompt = prompt
+
+        try:
             url = "http://127.0.0.1:11434/api/generate"
             payload = json.dumps({
                 "model": "gally-cephalon-ai",
-                "prompt": prompt,
+                "prompt": full_prompt,
                 "stream": False
             }).encode("utf-8")
             

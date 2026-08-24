@@ -1,0 +1,11 @@
+{
+  "os": "Garchy Linux (Arch Linux Rolling Release)",
+  "desktop": "Hyprland Wayland Compositor",
+  "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
+  "gpu": "NVIDIA GeForce RTX 3080 Ti, 610.57.04",
+  "ram": "31Gi Total (20Gi Used)",
+  "disk": "464G Total (113G Available)",
+  "displays": "Dual Displays @ 144Hz (DP-1 & DP-2)",
+  "audio": "PipeWire + WirePlumber + EasyEffects Equalizer",
+  "last_updated": "2026-08-24 19:35:37"
+}
