@@ -39,13 +39,12 @@ hyprutils
 hyprlang
 aquamarine
 waybar
-rofi-wayland
+rofi
 dunst
 kitty
 thunar
 thunar-archive-plugin
 file-roller
-wlogout
 wl-clipboard
 cliphist
 grim
@@ -95,7 +94,6 @@ python-virtualenv
 nodejs
 npm
 rust
-cargo
 go
 neovim
 htop
