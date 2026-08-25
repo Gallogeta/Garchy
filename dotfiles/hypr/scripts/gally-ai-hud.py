@@ -481,6 +481,7 @@ class CephalonApp(ctk.CTk):
                                       font=ctk.CTkFont(family="Sans", size=12),
                                       wrap="word")
         self.txt_chat.pack(fill="both", expand=True, pady=(0, 6))
+        self.setup_chat_tags()
         
         # Rounded Input Bar
         self.input_bar = ctk.CTkFrame(right_panel, fg_color=self.theme_colors["bg_card"],
@@ -507,6 +508,60 @@ class CephalonApp(ctk.CTk):
         self.render_history()
         self.poll_msg_queue()
         self.check_theme_update()
+
+    def setup_chat_tags(self):
+        c = self.theme_colors
+        self.txt_chat.tag_config("op_hdr", foreground=c["accent"])
+        self.txt_chat.tag_config("op_text", foreground="#ffffff")
+        self.txt_chat.tag_config("ai_hdr", foreground=c["accent_alt"])
+        self.txt_chat.tag_config("ai_text", foreground=c["fg"])
+        self.txt_chat.tag_config("cmd", foreground="#c084fc", background="#1e1e2e")
+        self.txt_chat.tag_config("terminal_out", foreground=c["accent"])
+        self.txt_chat.tag_config("code_block", foreground="#34d399", background="#050811")
+        self.txt_chat.tag_config("link", foreground="#00f0ff", underline=True)
+        self.txt_chat.tag_config("sys_notice", foreground="#22c55e")
+        self.txt_chat.tag_config("err_notice", foreground="#f87171")
+        self.txt_chat.bind("<Button-1>", self.on_chat_click)
+
+    def on_chat_click(self, event):
+        try:
+            index = self.txt_chat.index(f"@{event.x},{event.y}")
+            tags = self.txt_chat.tag_names(index)
+            for tag in tags:
+                if tag.startswith("link_target_"):
+                    url = tag[12:]
+                    if gally_memory_manager:
+                        gally_memory_manager.open_browser_link(url)
+                    return
+        except Exception:
+            pass
+
+    def apply_syntax_highlights(self):
+        try:
+            content = self.txt_chat.get("1.0", tk.END)
+            # 1. Hyperlinks
+            for match in re.finditer(r"https?://[^\s\)\>]+|www\.[^\s\)\>]+", content):
+                url = match.group(0).rstrip(".,;!?:")
+                start_idx = f"1.0 + {match.start()} chars"
+                end_idx = f"1.0 + {match.start() + len(url)} chars"
+                tag_name = f"link_target_{url}"
+                self.txt_chat.tag_config(tag_name, foreground="#00f0ff", underline=True)
+                self.txt_chat.tag_add("link", start_idx, end_idx)
+                self.txt_chat.tag_add(tag_name, start_idx, end_idx)
+                
+            # 2. Inline code / commands `...`
+            for match in re.finditer(r"`([^`\n]+)`", content):
+                start_idx = f"1.0 + {match.start()} chars"
+                end_idx = f"1.0 + {match.end()} chars"
+                self.txt_chat.tag_add("cmd", start_idx, end_idx)
+
+            # 3. Multi-line code blocks ```...```
+            for match in re.finditer(r"```[\s\S]*?```", content):
+                start_idx = f"1.0 + {match.start()} chars"
+                end_idx = f"1.0 + {match.end()} chars"
+                self.txt_chat.tag_add("code_block", start_idx, end_idx)
+        except Exception:
+            pass
 
     def check_theme_update(self):
         try:
@@ -543,6 +598,7 @@ class CephalonApp(ctk.CTk):
         self.btn_send.configure(fg_color=c["accent"], hover_color=c["accent_alt"])
         
         self.matrix_canvas.set_theme(c["bg_card"], c["accent"], c["accent_alt"])
+        self.setup_chat_tags()
         self.update_mode_buttons_ui()
         self.update_toggle_buttons_ui()
         self.render_history()
@@ -805,7 +861,7 @@ class CephalonApp(ctk.CTk):
         self.matrix_canvas.set_speaking_state(True)
         self.btn_send.configure(state="disabled")
         
-        self.txt_chat.insert(tk.END, "\n◈ CEPHALON GALLY: ")
+        self.txt_chat.insert(tk.END, "\n◈ CEPHALON GALLY: ", "ai_hdr")
         self.txt_chat.see(tk.END)
         
         threading.Thread(target=self.stream_cephalon_thread, args=(prompt,), daemon=True).start()
@@ -838,10 +894,11 @@ class CephalonApp(ctk.CTk):
             while True:
                 msg_type, payload = self.msg_queue.get_nowait()
                 if msg_type == "token":
-                    self.txt_chat.insert(tk.END, payload)
+                    self.txt_chat.insert(tk.END, payload, "ai_text")
                     self.txt_chat.see(tk.END)
                 elif msg_type == "complete":
                     self.txt_chat.insert(tk.END, "\n")
+                    self.apply_syntax_highlights()
                     self.txt_chat.see(tk.END)
                     self.history.append({"role": "cephalon", "text": payload, "time": time.time()})
                     gally_ai_router.save_history(self.history)
@@ -866,7 +923,9 @@ class CephalonApp(ctk.CTk):
                     self.lbl_progress.configure(text=f"⚡ {msg} ({int(val*100)}%)")
                 elif msg_type == "terminal":
                     cmd_str, out_str = payload
-                    self.txt_chat.insert(tk.END, f"\n$ {cmd_str}\n{out_str}\n")
+                    self.txt_chat.insert(tk.END, f"\n$ {cmd_str}\n", "cmd")
+                    self.txt_chat.insert(tk.END, f"{out_str}\n", "terminal_out")
+                    self.apply_syntax_highlights()
                     self.txt_chat.see(tk.END)
                 elif msg_type == "directive_complete":
                     self.append_message("cephalon", payload)
@@ -883,30 +942,36 @@ class CephalonApp(ctk.CTk):
         self.destroy()
 
     def render_history(self):
+        self.txt_chat.delete("1.0", tk.END)
         if not self.history:
             welcome = (
                 "Greetings, Operator. Cephalon Gally is online and synchronized with your Garchy Linux environment. "
                 "All 24 threads on your Ryzen 9 5900X and Dual 144Hz displays are running nominal. How may I assist you?"
             )
             self.append_message("cephalon", welcome)
-            gally_ai_router.save_history(self.history)
         else:
             for item in self.history:
                 role = item.get("role")
                 text = item.get("text", "")
-                if role == "operator":
-                    self.txt_chat.insert(tk.END, f"\n\n◈ OPERATOR: {text}\n")
-                elif role == "cephalon":
-                    self.txt_chat.insert(tk.END, f"\n◈ CEPHALON GALLY: {text}\n")
+                if role in ["operator", "user"]:
+                    self.txt_chat.insert(tk.END, "\n\n◈ OPERATOR: ", "op_hdr")
+                    self.txt_chat.insert(tk.END, f"{text}\n", "op_text")
+                elif role in ["cephalon", "assistant", "model"]:
+                    self.txt_chat.insert(tk.END, "\n◈ CEPHALON GALLY: ", "ai_hdr")
+                    self.txt_chat.insert(tk.END, f"{text}\n", "ai_text")
+            self.apply_syntax_highlights()
             self.txt_chat.see(tk.END)
 
     def append_message(self, role, text):
         self.history.append({"role": role, "text": text, "time": time.time()})
         gally_ai_router.save_history(self.history)
-        if role == "operator":
-            self.txt_chat.insert(tk.END, f"\n\n◈ OPERATOR: {text}\n")
-        elif role == "cephalon":
-            self.txt_chat.insert(tk.END, f"\n◈ CEPHALON GALLY: {text}\n")
+        if role in ["operator", "user"]:
+            self.txt_chat.insert(tk.END, "\n\n◈ OPERATOR: ", "op_hdr")
+            self.txt_chat.insert(tk.END, f"{text}\n", "op_text")
+        elif role in ["cephalon", "assistant", "model"]:
+            self.txt_chat.insert(tk.END, "\n◈ CEPHALON GALLY: ", "ai_hdr")
+            self.txt_chat.insert(tk.END, f"{text}\n", "ai_text")
+        self.apply_syntax_highlights()
         self.txt_chat.see(tk.END)
 
     def clear_console_history(self):
