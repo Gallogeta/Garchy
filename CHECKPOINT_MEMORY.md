@@ -73,6 +73,13 @@
     * **Tiling & Splits**: `Ctrl+Shift+D` (vsplit), `Ctrl+Shift+S` (hsplit), `Ctrl+Shift+H/J/K/L` (pane navigation).
   * **Custom Garchy Fastfetch Banner (`~/.config/fastfetch/`)**:
     * Custom ASCII Garchy glyph, hardware specs (Ryzen 9 5900X, RTX 3080 Ti, dual 144Hz displays, Btrfs), active theme, and Cephalon AI status indicator.
+  * **CAVA 144Hz Real-Time Audio Visualizer (`~/.config/cava/config`)**:
+    * Hooked into PipeWire monitor sink with 144 FPS framerate and dynamic color gradient sync across all 9 desktop themes.
+    * Launchable as a floating sound bar via **`Super + Shift + V`** or CLI `cava` / `visualizer`.
+  * **BTOP Hardware & Process Telemetry (`~/.config/btop/`)**:
+    * Themed with Garchy OS electric cyan/gold palette and translucent glassmorphism background (`theme_background = false`).
+  * **Garchy Cockpit Multi-Panel Dashboard (`~/.local/bin/cockpit`)**:
+    * 1-click 3-split dashboard combining Shell + BTOP + CAVA visualizer, accessible via **`Super + Alt + T`** or `cockpit`.
   * **Automatic Icon Theme Sync**: System-wide **Tela Circle** icon pairing (`Tela-circle-dark`, `purple`, `pink`, `nord`, `yellow`, `dracula`, `red`, `green`, `black`).
   * **Waybar Dynamic Border Sync**: Border color bound to active theme's accent (`@define-color border-col {t['accent']};`).
 
