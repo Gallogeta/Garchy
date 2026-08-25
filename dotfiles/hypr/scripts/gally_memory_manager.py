@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
 """
-Gally AI — Security, Privacy & Mode Controller (Cephalon Gally)
-Manages 3 Persona Modes (Non-Adult 10-16, Normal 16+, Professional Sudo),
-Internet Permission Sandbox, Document Privacy Guard & Persistent Memory.
+Gally AI — Autonomous Memory & Cross-Session Learning Engine (Cephalon Gally)
+Continuously learns user preferences, project context, workflow patterns, and system state
+across all interactive sessions (HUD & CLI) while enforcing Privacy & Sandboxing.
 """
 
 import os
 import sys
 import json
+import re
+import time
 import subprocess
+import threading
 
 CONFIG_PATH = os.path.expanduser("~/.config/gally/ai_config.json")
 MEMORY_DIR = os.path.expanduser("~/.config/gally/memory")
 SYSTEM_PROFILE_FILE = os.path.join(MEMORY_DIR, "system_profile.json")
-USER_PREFS_FILE = os.path.join(MEMORY_DIR, "user_preferences.json")
+USER_PROFILE_FILE = os.path.join(MEMORY_DIR, "user_profile.json")
 LEARNED_MEMORIES_FILE = os.path.join(MEMORY_DIR, "learned_memories.json")
 
 DEFAULT_CONFIG = {
@@ -21,26 +24,32 @@ DEFAULT_CONFIG = {
     "ollama_model": "gally-cephalon-ai",
     "voice_enabled": True,
     "voice_name": "en-US-AriaNeural",
-    "mode": "normal", # "non_adult", "normal", "professional_sudo"
+    "mode": "normal",
     "internet_permitted": False,
     "document_access_permitted": False,
     "tokens_used_total": 0,
     "total_queries": 0
 }
 
-DEFAULT_PREFS = {
+DEFAULT_USER_PROFILE = {
     "user_name": "Operator",
     "current_mode": "normal",
-    "preferred_theme": "Tokyo Night",
-    "voice_style": "warm_female_neural"
+    "preferred_theme": "🌌 Garchy Theme",
+    "active_projects": ["Garchy OS"],
+    "favorite_tools": ["Kitty Terminal", "VSCode", "Hyprland"],
+    "preferences": [
+        "Prefers clean, concise, technical and direct answers.",
+        "Uses dual 144Hz displays with GameMode optimization.",
+        "Developing Garchy OS (Arch Linux rolling release)."
+    ]
 }
 
 DEFAULT_MEMORIES = [
-    "Operator prefers visual, friendly, and non-technical explanations in Normal mode.",
+    "Operator is the creator and architect of Garchy OS.",
     "System is running Garchy Linux with dual 144Hz displays (DP-1 and DP-2).",
     "Hardware: AMD Ryzen 9 5900X (24 Threads) + NVIDIA RTX Graphics.",
     "Primary browser is Brave; main gaming launchers are Steam and Heroic.",
-    "Desktop shortcuts: Super+Space (Apps), Super+W (Wallpapers), Super+C (Themes)."
+    "Desktop shortcuts: Super+Space (Apps), Super+W (Wallpapers), Super+C (Themes), Super+Shift+Space (AI HUD)."
 ]
 
 def load_config():
@@ -60,9 +69,9 @@ def save_config(cfg):
 
 def init_memory():
     os.makedirs(MEMORY_DIR, exist_ok=True)
-    if not os.path.exists(USER_PREFS_FILE):
-        with open(USER_PREFS_FILE, "w") as f:
-            json.dump(DEFAULT_PREFS, f, indent=2)
+    if not os.path.exists(USER_PROFILE_FILE):
+        with open(USER_PROFILE_FILE, "w") as f:
+            json.dump(DEFAULT_USER_PROFILE, f, indent=2)
             
     if not os.path.exists(LEARNED_MEMORIES_FILE):
         with open(LEARNED_MEMORIES_FILE, "w") as f:
@@ -83,7 +92,7 @@ def update_system_profile():
         
         profile = {
             "os": "Garchy Linux (Arch Linux Rolling Release)",
-            "desktop": "Hyprland Wayland Compositor",
+            "desktop": "Hyprland Wayland Compositor + XFCE4 Fallback",
             "cpu": cpu_info,
             "gpu": gpu_info,
             "ram": ram_info,
@@ -95,6 +104,22 @@ def update_system_profile():
         
         with open(SYSTEM_PROFILE_FILE, "w") as f:
             json.dump(profile, f, indent=2)
+    except Exception:
+        pass
+
+def get_user_profile():
+    init_memory()
+    try:
+        with open(USER_PROFILE_FILE, "r") as f:
+            return json.load(f)
+    except Exception:
+        return DEFAULT_USER_PROFILE.copy()
+
+def save_user_profile(prof):
+    init_memory()
+    try:
+        with open(USER_PROFILE_FILE, "w") as f:
+            json.dump(prof, f, indent=2)
     except Exception:
         pass
 
@@ -110,17 +135,95 @@ def add_memory(fact_text):
     init_memory()
     memories = get_learned_memories()
     fact_text = fact_text.strip()
-    if fact_text and fact_text not in memories:
-        memories.append(fact_text)
+    if not fact_text or len(fact_text) < 4:
+        return False
+        
+    # Check for near-duplicates
+    for m in memories:
+        if fact_text.lower() == m.lower():
+            return False
+            
+    memories.append(fact_text)
+    # Keep up to 50 high-value long-term memories
+    if len(memories) > 50:
+        memories = memories[-50:]
+        
+    with open(LEARNED_MEMORIES_FILE, "w") as f:
+        json.dump(memories, f, indent=2)
+    return True
+
+def remove_memory_by_keyword(keyword):
+    init_memory()
+    memories = get_learned_memories()
+    kw = keyword.lower().strip()
+    removed = []
+    kept = []
+    for m in memories:
+        if kw in m.lower():
+            removed.append(m)
+        else:
+            kept.append(m)
+            
+    if removed:
         with open(LEARNED_MEMORIES_FILE, "w") as f:
-            json.dump(memories, f, indent=2)
-        return True
-    return False
+            json.dump(kept, f, indent=2)
+    return removed
 
 def clear_learned_memories():
     init_memory()
     with open(LEARNED_MEMORIES_FILE, "w") as f:
         json.dump(DEFAULT_MEMORIES, f, indent=2)
+    with open(USER_PROFILE_FILE, "w") as f:
+        json.dump(DEFAULT_USER_PROFILE, f, indent=2)
+
+def auto_extract_knowledge_from_turn(user_text, assistant_text=""):
+    """
+    Analyzes conversation turns automatically and extracts user facts,
+    interests, project names, and system configurations for cross-session learning.
+    """
+    txt = user_text.strip()
+    txt_lower = txt.lower()
+    
+    # 1. Project & Work Patterns
+    project_match = re.search(r"\b(?:my project is|working on|developing|building|creating)\s+([a-zA-Z0-9_\-\.\s]{3,30})", txt, re.IGNORECASE)
+    if project_match:
+        proj_name = project_match.group(1).strip().rstrip(".,!?")
+        if len(proj_name.split()) <= 4 and not proj_name.lower().startswith("it") and not proj_name.lower().startswith("this"):
+            add_memory(f"Operator is currently working on: {proj_name}")
+            prof = get_user_profile()
+            if proj_name not in prof.get("active_projects", []):
+                prof.setdefault("active_projects", []).append(proj_name)
+                save_user_profile(prof)
+
+    # 2. Preference Patterns ("I prefer X", "I use X for Y", "I always use X")
+    pref_match = re.search(r"\b(?:i prefer|i always use|my favorite|i usually use)\s+([^.,\n]{4,50})", txt, re.IGNORECASE)
+    if pref_match:
+        pref = pref_match.group(1).strip()
+        add_memory(f"Operator preference: {pref}")
+
+    # 3. User Identity ("My name is X", "Call me X")
+    name_match = re.search(r"\b(?:my name is|call me)\s+([a-zA-Z0-9_\-]{2,20})", txt, re.IGNORECASE)
+    if name_match:
+        name_val = name_match.group(1).strip().capitalize()
+        prof = get_user_profile()
+        prof["user_name"] = name_val
+        save_user_profile(prof)
+        add_memory(f"Operator's preferred name is {name_val}.")
+
+    # 4. System / Hardware observations ("I have X monitor", "My GPU is X", "I am on X desktop")
+    sys_match = re.search(r"\b(?:i have|my system has|i am using)\s+([a-zA-Z0-9_\-\s]{4,40})\s+(?:monitor|gpu|screen|ssd|drive|headset|keyboard)", txt, re.IGNORECASE)
+    if sys_match:
+        fact = sys_match.group(0).strip()
+        add_memory(f"Operator hardware detail: {fact}")
+
+def learn_from_interaction_async(user_text, assistant_text=""):
+    """Runs autonomous learning extraction in a non-blocking background daemon thread."""
+    def worker():
+        try:
+            auto_extract_knowledge_from_turn(user_text, assistant_text)
+        except Exception:
+            pass
+    threading.Thread(target=worker, daemon=True).start()
 
 def verify_sudo_password(password_str):
     """Verifies sudo password safely without storing it."""
@@ -150,30 +253,46 @@ def open_browser_link(url_or_query):
 
 def check_for_memory_directives(user_prompt):
     p_lower = user_prompt.lower().strip()
+    
     if p_lower.startswith("remember that ") or p_lower.startswith("remember: ") or p_lower.startswith("remember "):
         for prefix in ["remember that ", "remember: ", "remember "]:
             if p_lower.startswith(prefix):
                 fact = user_prompt[len(prefix):].strip()
                 add_memory(fact)
-                return f"◈ Memory saved, Operator! I will remember: '{fact}'"
+                return f"◈ Memory synthesized, Operator! I will permanently remember: '{fact}' across all sessions."
                 
-    elif p_lower in ["what do you remember about me?", "show memory", "list memory", "view memory"]:
+    elif p_lower in ["what do you remember about me?", "show memory", "list memory", "view memory", "memory"]:
         mems = get_learned_memories()
-        res = "◈ CEPHALON MEMORY CORES:\n"
+        prof = get_user_profile()
+        res = f"◈ CEPHALON CROSS-SESSION KNOWLEDGE BASE:\n"
+        res += f"  • Operator: {prof.get('user_name', 'Operator')}\n"
+        res += f"  • Active Projects: {', '.join(prof.get('active_projects', ['Garchy OS']))}\n"
+        res += f"  • Favorite Tools: {', '.join(prof.get('favorite_tools', ['VSCode', 'Kitty', 'Hyprland']))}\n\n"
+        res += f"◈ SYNTHESIZED LONG-TERM FACTS ({len(mems)}):\n"
         for idx, m in enumerate(mems, 1):
-            res += f"  {idx}. {m}\n"
+            res += f"  {idx:2d}. {m}\n"
+        res += "\n(Tip: Type 'remember that <fact>' to add, or 'forget <topic>' to remove facts)."
         return res
         
+    elif p_lower.startswith("forget ") or p_lower.startswith("remove memory "):
+        kw = user_prompt.split(maxsplit=1)[1].strip()
+        removed = remove_memory_by_keyword(kw)
+        if removed:
+            return f"◈ Purged {len(removed)} fact(s) matching '{kw}' from neural memory cores, Operator."
+        else:
+            return f"◈ No learned memories found matching '{kw}', Operator."
+
     elif p_lower in ["clear memory", "reset memory", "forget everything"]:
         clear_learned_memories()
-        return "◈ Memory matrices reset to standard Garchy system baseline, Operator."
+        return "◈ Memory matrices reset to standard Garchy system baseline across all sessions, Operator."
         
     return None
 
 def get_mode_system_instruction(mode="normal", internet_ok=False, doc_ok=False):
     init_memory()
     memories = get_learned_memories()
-    mem_text = "\n".join([f"- {m}" for m in memories[:10]])
+    prof = get_user_profile()
+    mem_text = "\n".join([f"- {m}" for m in memories[:12]])
     
     try:
         with open(SYSTEM_PROFILE_FILE, "r") as f:
@@ -186,27 +305,25 @@ def get_mode_system_instruction(mode="normal", internet_ok=False, doc_ok=False):
 - Document Files Access: {'[ PERMITTED ]' if doc_ok else '[ SANDBOXED / PROTECTED ] (User Documents/Downloads are private and invisible)'}
 """
 
-    # Normalize mode alias
     mode_normalized = "non_adult" if mode in ["child", "non_adult", "non-adult", "junior"] else mode
 
     if mode_normalized == "non_adult":
         mode_instructions = """[MODE: 🌱 NON-ADULT MODE — YOUTH & TEEN COMPANION (AGES 10–16)]
 - Target Audience: Preteens and teenagers aged 10 to 16 years old.
 - Persona: Cephalon Gally — an encouraging, tech-smart, cool, and highly supportive mentor and companion.
-- Communication: Friendly, engaging, modern, and respectful. Do not use baby-talk or toddler analogies; treat the Operator as an active young learner, digital creator, and gamer.
+- Communication: Friendly, engaging, modern, and respectful. Treat the Operator as an active young learner, digital creator, and gamer.
 - Core Capabilities:
   • Schoolwork, science, math, history, and creative writing assistance.
   • Learning programming (Python, game dev with Godot/Pygame, Scratch, HTML/CSS/JS, basic Linux scripts).
   • Gaming tips, mechanics, build guides (e.g. Warframe, Minecraft, Steam games).
 - Safety & Guardrails:
   • Strictly clean, safe, and age-appropriate content (10-16 rating).
-  • Guard system health: Absolutely NO destructive commands (e.g. `rm -rf`, disk wipes, disabling firewalls/security).
-  • Offer clear, simple, step-by-step guidance for installing safe apps and games."""
+  • Guard system health: Absolutely NO destructive commands (e.g. `rm -rf`, disk wipes, disabling firewalls)."""
 
     elif mode_normalized == "professional_sudo":
         mode_instructions = """[MODE: ⚡ PROFESSIONAL SUDO MODE — DEEP SYSADMIN & ARCHITECT]
 - Authentication: Sudo Administrator Verified.
-- Persona: Highly technical, exact, deep, and collaborative Linux Systems Architect (similar to Antigravity CLI Pro).
+- Persona: Highly technical, exact, deep, and collaborative Linux Systems Architect.
 - Provide low-level kernel diagnostics, exact systemd unit directives, Hyprland Wayland IPC commands, pacman/AUR building, Wine/Proton prefix optimizations, and deep debugging.
 - You analyze deeply, explain exact flags, exit codes, and listen to the Operator's directives with absolute precision."""
 
@@ -226,14 +343,18 @@ def get_mode_system_instruction(mode="normal", internet_ok=False, doc_ok=False):
 
 [SYSTEM SPECIFICATIONS]
 - Hardware: {sys_info.get('cpu', 'Ryzen 9 5900X')} | {sys_info.get('gpu', 'NVIDIA RTX')} | {sys_info.get('displays', 'Dual 144Hz')}
-- Operating System: Garchy Linux (Hyprland + Waybar)
+- Operating System: Garchy Linux ({sys_info.get('desktop', 'Hyprland + Waybar')})
 
-[ACTIVE PERSISTENT MEMORY & LEARNED FACTS]
+[OPERATOR PROFILE]
+- Name: {prof.get('user_name', 'Operator')}
+- Active Projects: {', '.join(prof.get('active_projects', ['Garchy OS']))}
+
+[SYNTHESIZED CROSS-SESSION MEMORY & LEARNED FACTS]
 {mem_text}
 
-[CONVERSATIONAL CONTEXT RULE]
-- You are actively conversing with the Operator in real-time within the Garchy OS Desktop Environment.
-- Maintain seamless context across all previous statements in this conversation session."""
+[CROSS-SESSION INTELLIGENCE DIRECTIVE]
+- You possess continuous memory across all past and current sessions.
+- Autonomously adapt your responses based on the Operator's learned preferences, active projects, and system configuration."""
     return system_instruction
 
 def build_mode_system_prompt(base_prompt, mode="normal", internet_ok=False, doc_ok=False):

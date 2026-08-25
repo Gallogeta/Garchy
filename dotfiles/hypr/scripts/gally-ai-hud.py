@@ -845,6 +845,16 @@ class CephalonApp(ctk.CTk):
                     self.txt_chat.see(tk.END)
                     self.history.append({"role": "cephalon", "text": payload, "time": time.time()})
                     gally_ai_router.save_history(self.history)
+                    
+                    # Trigger autonomous cross-session memory learning
+                    last_user_prompt = ""
+                    for m in reversed(self.history):
+                        if m.get("role") in ["operator", "user"]:
+                            last_user_prompt = m.get("text", "")
+                            break
+                    if last_user_prompt and gally_memory_manager:
+                        gally_memory_manager.learn_from_interaction_async(last_user_prompt, payload)
+                        
                     self.lbl_status.configure(text="● CEPHALON READY", text_color="#22c55e")
                     self.prog_bar.set(1.0)
                     self.matrix_canvas.set_speaking_state(False)
