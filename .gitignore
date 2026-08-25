@@ -1,0 +1,26 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Output ISO and temporary build artifacts
+out/
+*.iso
+*.iso.sig
+*.iso.zsync
+work/
+archiso-tmp/
+dotfiles_backup/
+
+# Logs and databases
+*.log
+*.sqlite
+*.lock
+
+# User personal state and private keys
+ai_config.json
+cephalon_history.json
+learned_memories.json
+*.key
+*.token
+*.env

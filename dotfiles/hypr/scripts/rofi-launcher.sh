@@ -7,10 +7,10 @@ MODE="${1:-drun}"
 
 case "$MODE" in
     "clip"|"clipboard")
-        /home/gallo/.config/hypr/scripts/clipboard-manager.sh
+        $HOME/.config/hypr/scripts/clipboard-manager.sh
         ;;
     "window"|"windows")
-        /home/gallo/.config/hypr/scripts/window-switch.sh
+        $HOME/.config/hypr/scripts/window-switch.sh
         ;;
     "calc"|"calculator")
         QUERY=$(rofi -dmenu -p "󰪚 Calculator" -mesg "Enter math expression (e.g. 250 * 1.25, sqrt(144), 2**10)" -config ~/.config/rofi/config.rasi)

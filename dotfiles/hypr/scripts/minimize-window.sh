@@ -129,7 +129,7 @@ def do_restore_last():
         notify("Window Restored", f"Restored '{title}' to Workspace {ws_id}")
     else:
         # If none minimized, open window switch menu
-        subprocess.Popen(['/home/gallo/.config/hypr/scripts/window-switch.sh'])
+        subprocess.Popen(['$HOME/.config/hypr/scripts/window-switch.sh'])
 
 def do_restore_all():
     ws_id, _, _, all_clients, monitors = get_target_workspace_and_window()
@@ -191,7 +191,7 @@ def main():
     elif action == "close-window":
         do_close()
     elif action == "menu":
-        subprocess.Popen(['/home/gallo/.config/hypr/scripts/minimized-manager.py'])
+        subprocess.Popen(['$HOME/.config/hypr/scripts/minimized-manager.py'])
     else:
         do_minimize()
 

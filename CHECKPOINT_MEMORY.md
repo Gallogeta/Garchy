@@ -1,11 +1,11 @@
 # 🌌 Garchy OS & Cephalon AI — Project Memory Checkpoint
 
 **Date**: August 25, 2026  
-**Operator**: `gallo`  
+**Operator**: `User`  
 **OS**: Garchy Linux / Arch Linux (x86_64 rolling release)  
-**Compositor**: Hyprland 0.56.2 (Wayland)  
+**Compositor**: Hyprland (Wayland)  
 **Editor**: VSCode  
-**Hardware Profile**: AMD Ryzen 9 5900X (12 Cores, 24 Threads), NVIDIA GeForce RTX 3080 Ti (Proprietary drivers + NVENC), Dual 144Hz Monitors (`DP-1` and `DP-2`), PipeWire Audio Subsystem.
+**Hardware Profile**: Modern Multi-Core x86_64 Architecture, Dedicated GPU, Dual 144Hz Displays, PipeWire Audio Subsystem.
 
 ---
 
@@ -27,7 +27,7 @@
     * `models` — List all engines and current active badge
     * `status` — View engine, persona mode, and privacy permissions
 * **Three Operational Modes (`~/.config/hypr/scripts/gally_memory_manager.py`)**:
-  * **🌱 Non-Adult Mode (Ages 10–16)**: Engaging, tech-smart youth and teen companion. Helps with learning programming (Python, Godot, Pygame, Scratch, web dev), school homework (math, science, history), gaming tips/builds (Warframe, Minecraft, Steam), and creative projects with strict safety guardrails (0 adult content, 0 destructive shell commands).
+  * **🌱 Non-Adult Mode (Ages 10–16)**: Engaging, tech-smart youth and teen companion. Helps with learning programming (Python, Godot, Pygame, Scratch, web dev), school homework (math, science, history), gaming tips/builds, and creative projects with strict safety guardrails (0 adult content, 0 destructive shell commands).
   * **🚀 Normal Mode (Ages 16+)**: Unrestricted, semi-autonomous desktop intelligence. Handles package management (`pacman`, `yay`), Wine/Proton/Bottles gaming prefixes, PipeWire/EasyEffects audio routing, Hyprland script automation, and deep system workflows.
   * **⚡ Professional Sudo Mode**: **Unlocked via sudo password verification**. Highly technical Linux systems architect (kernel telemetry, systemd units, memory fragmentation, Wayland socket IPC).
 * **Privacy & Security Sandbox**:
@@ -44,9 +44,9 @@
 ### 2. 💾 Universal Storage & Drive Automounter
 * **Automounter Daemon (`~/.config/hypr/scripts/gally-drive-automount.py`)**:
   * **Startup Auto-Mount**: Automatically detects and mounts all unmounted internal/secondary SSDs, HDDs, and storage partitions on login (`udisks2`).
-  * **Live Hotplug Listener**: Real-time event monitoring via `udisksctl monitor` with debouncing. Automatically mounts newly plugged-in USB flash drives, external SSDs, SD cards, and drives upon connection.
-  * **Desktop Notifications**: Dispatches rich desktop notifications (`notify-send`) showing drive label, storage size, filesystem type, and mount point path (`/run/media/gallo/<LABEL>`).
-  * **Autostart**: Enrolled into `hyprland.conf` via `exec-once = /home/gallo/.config/hypr/scripts/gally-drive-automount.py`.
+  * **Live Hotplug Listener**: Real-time event monitoring via `udisksctl monitor` with debouncing. Automatically mounts newly plugged-in USB flash drives, external SSDs, SD cards, and storage drives upon connection.
+  * **Desktop Notifications**: Dispatches rich desktop notifications (`notify-send`) showing drive label, storage size, filesystem type, and mount point path (`/run/media/$USER/<LABEL>`).
+  * **Autostart**: Enrolled into `hyprland.conf` via `exec-once = ~/.config/hypr/scripts/gally-drive-automount.py`.
 
 ---
 
@@ -75,7 +75,7 @@
   * **Dev SDKs**: Kept Rust & VirtualBox on host; stripped heavy SDKs from ISO.
   * **Filesystem & Storage**: Added `udisks2`, `ntfs-3g`, `dosfstools`, `e2fsprogs`, `btrfs-progs`, `exfat-utils`.
 * **Dotfiles & Profile Sync**:
-  * `/home/gallo/Garchy/dotfiles/` and `/home/gallo/Garchy/archiso/` are in 100% sync and committed to Git on branch `main`.
+  * `dotfiles/` and `archiso/` are in 100% sync and committed to Git on branch `main`.
 
 ---
 
@@ -83,23 +83,23 @@
 
 | Path | Description |
 | :--- | :--- |
-| [`~/.config/hypr/scripts/gally-ai-hud.py`](file:///home/gallo/.config/hypr/scripts/gally-ai-hud.py) | Main CustomTkinter Glassmorphic Cephalon AI HUD |
-| [`~/.config/hypr/scripts/gally_ai_router.py`](file:///home/gallo/.config/hypr/scripts/gally_ai_router.py) | Multi-provider router, in-terminal login & model switching engine |
-| [`~/.config/hypr/scripts/gally_memory_manager.py`](file:///home/gallo/.config/hypr/scripts/gally_memory_manager.py) | Persistent memory, 3 modes (Non-Adult 10-16, Normal 16+, Sudo), and security sandbox |
-| [`~/.config/hypr/scripts/gally-drive-automount.py`](file:///home/gallo/.config/hypr/scripts/gally-drive-automount.py) | Universal storage automounter (startup & live hotplug) |
-| [`~/.local/bin/ai`](file:///home/gallo/.local/bin/ai) | Terminal CLI wrapper for Cephalon AI |
-| [`~/.config/gally/ai_config.json`](file:///home/gallo/.config/gally/ai_config.json) | AI config, active model, persona mode, and API keys storage |
-| [`~/.config/gally/active_theme.json`](file:///home/gallo/.config/gally/active_theme.json) | Active desktop theme state |
-| [`~/.config/hypr/scripts/theme-switcher-gui.py`](file:///home/gallo/.config/hypr/scripts/theme-switcher-gui.py) | Desktop theme gallery with scrollbar & live sync |
-| [`~/.config/hypr/scripts/launchpad-gui.py`](file:///home/gallo/.config/hypr/scripts/launchpad-gui.py) | Fast cached application launchpad |
-| [`~/.config/hypr/scripts/wallpaper-gallery-gui.py`](file:///home/gallo/.config/hypr/scripts/wallpaper-gallery-gui.py) | 144Hz animated wallpaper chooser |
-| [`~/.config/hypr/hyprland.conf`](file:///home/gallo/.config/hypr/hyprland.conf) | Hyprland window rules, autostart, keybindings, and monitor setup |
-| [`/home/gallo/Garchy/CHECKPOINT_MEMORY.md`](file:///home/gallo/Garchy/CHECKPOINT_MEMORY.md) | Garchy OS master checkpoint memory documentation |
-| [`/home/gallo/Garchy/archiso/packages.x86_64`](file:///home/gallo/Garchy/archiso/packages.x86_64) | Debloated Garchy OS ISO package manifest |
+| `~/.config/hypr/scripts/gally-ai-hud.py` | Main CustomTkinter Glassmorphic Cephalon AI HUD |
+| `~/.config/hypr/scripts/gally_ai_router.py` | Multi-provider router, in-terminal login & model switching engine |
+| `~/.config/hypr/scripts/gally_memory_manager.py` | Persistent memory, 3 modes (Non-Adult 10-16, Normal 16+, Sudo), and security sandbox |
+| `~/.config/hypr/scripts/gally-drive-automount.py` | Universal storage automounter (startup & live hotplug) |
+| `~/.local/bin/ai` | Terminal CLI wrapper for Cephalon AI |
+| `~/.config/gally/ai_config.json` | AI config, active model, persona mode, and API keys storage |
+| `~/.config/gally/active_theme.json` | Active desktop theme state |
+| `~/.config/hypr/scripts/theme-switcher-gui.py` | Desktop theme gallery with scrollbar & live sync |
+| `~/.config/hypr/scripts/launchpad-gui.py` | Fast cached application launchpad |
+| `~/.config/hypr/scripts/wallpaper-gallery-gui.py` | 144Hz animated wallpaper chooser |
+| `~/.config/hypr/hyprland.conf` | Hyprland window rules, autostart, keybindings, and monitor setup |
+| `CHECKPOINT_MEMORY.md` | Garchy OS master checkpoint memory documentation |
+| `archiso/packages.x86_64` | Debloated Garchy OS ISO package manifest |
 
 ---
 
 ## 🚀 Status & Verification
-1. **Drive Automounting**: Verified active with `sdb2` (MEDIA), `sdd1` (SDD256), and `sda1` (GAME) automatically mounted at `/run/media/gallo/`.
-2. **Hyprland & Dotfiles**: Reloaded and synced with `/home/gallo/Garchy/dotfiles/`.
+1. **Drive Automounting**: Verified automatic mounting of internal and external block storage partitions to `/run/media/$USER/<LABEL>`.
+2. **Hyprland & Dotfiles**: Reloaded and synced with portable, user-agnostic pathing (`~/.config/...`).
 3. **Cephalon AI**: Operating with updated Non-Adult (10-16) and Normal (16+) personas, in-terminal model and mode commands, and CustomTkinter HUD.
