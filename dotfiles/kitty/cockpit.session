@@ -1,0 +1,14 @@
+# ==============================================================================
+# 🌌 Garchy OS Cockpit — Multi-Panel Dashboard Session
+# ==============================================================================
+
+layout splits
+
+# Left Panel: Main Interactive Shell
+launch --title "🌌 Garchy Core" zsh
+
+# Top Right Panel: BTOP Hardware & Process Telemetry
+launch --location=vsplit --title "⚡ BTOP Telemetry" btop
+
+# Bottom Right Panel: CAVA 144Hz Real-Time Audio Visualizer
+launch --location=hsplit --title "🎵 CAVA Audio Waves" cava

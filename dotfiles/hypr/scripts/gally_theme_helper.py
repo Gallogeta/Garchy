@@ -217,6 +217,74 @@ def get_theme_mtime():
             pass
     return 0.0
 
+CAVA_GRADIENTS = {
+    "🌌 Garchy Theme": ["#131c31", "#1e3a8a", "#3b82f6", "#38bdf8", "#7dd3fc", "#fbbf24"],
+    "🌸 Tokyo Night": ["#15161e", "#24283b", "#414868", "#7aa2f7", "#bb9af7", "#7dcfff"],
+    "☕ Catppuccin Mocha": ["#1e1e2e", "#313244", "#585b70", "#89b4fa", "#cba6f7", "#f5c2e7"],
+    "❄️ Nord Arctic": ["#2e3440", "#3b4252", "#4c566a", "#81a1c1", "#88c0d0", "#eceff4"],
+    "⚡ Cyberpunk 2077": ["#0a0a0f", "#14141e", "#00f0ff", "#33ff88", "#fcee0a", "#ffff33"],
+    "🧛 Dracula": ["#21222c", "#282a36", "#6272a4", "#bd93f9", "#ff79c6", "#8be9fd"],
+    "🌋 Volcanic Lava": ["#1a0f0f", "#261414", "#ff3333", "#ff5533", "#ff9900", "#ffaa22"],
+    "🌲 Emerald Forest": ["#0b1a13", "#12291e", "#1e90ff", "#2ed573", "#7bed9f", "#e6ffed"],
+    "🖤 Deep Obsidian": ["#050505", "#121212", "#2c2c2c", "#40c4ff", "#00f0ff", "#ffffff"]
+}
+
+def update_cava_config(theme_dict):
+    cava_conf_path = os.path.expanduser("~/.config/cava/config")
+    name = theme_dict.get("name", "🌌 Garchy Theme")
+    grad = CAVA_GRADIENTS.get(name, CAVA_GRADIENTS["🌌 Garchy Theme"])
+    
+    content = f"""## ==============================================================================
+## 🌌 Garchy OS CAVA Configuration (PipeWire + 144Hz + Dynamic Gradients)
+## ==============================================================================
+
+[general]
+mode = normal
+framerate = 144
+autosens = 1
+overshoot = 20
+sensitivity = 100
+bars = 0
+bar_width = 2
+bar_spacing = 1
+max_height = 100
+lower_cutoff_freq = 50
+higher_cutoff_freq = 12000
+sleep_timer = 3
+
+[input]
+method = pipewire
+source = auto
+
+[output]
+channels = stereo
+mono_option = average
+
+[color]
+gradient = 1
+gradient_count = {len(grad)}
+
+"""
+    for i, col in enumerate(grad, 1):
+        content += f"gradient_color_{i} = '{col}'\n"
+        
+    content += """
+[smoothing]
+integral = 70
+monstercat = 1
+waves = 0
+gravity = 100
+noise_reduction = 0.77
+"""
+    try:
+        os.makedirs(os.path.dirname(cava_conf_path), exist_ok=True)
+        with open(cava_conf_path, "w") as f:
+            f.write(content)
+        subprocess.run(["killall", "-SIGUSR2", "cava"], stderr=subprocess.DEVNULL)
+        subprocess.run(["killall", "-SIGUSR1", "cava"], stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
 def save_active_theme(theme_dict):
     os.makedirs(os.path.dirname(THEME_STATE_FILE), exist_ok=True)
     with open(THEME_STATE_FILE, "w") as f:
@@ -232,7 +300,10 @@ def save_active_theme(theme_dict):
     except Exception:
         pass
 
-    # 2. Sync GTK icon theme if specified
+    # 2. Update CAVA audio visualizer gradient colors
+    update_cava_config(theme_dict)
+
+    # 3. Sync GTK icon theme if specified
     icon_th = theme_dict.get("icon_theme", "Tela-circle-dark")
     if icon_th:
         try:
