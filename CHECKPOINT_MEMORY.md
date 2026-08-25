@@ -78,8 +78,14 @@
     * Launchable as a floating sound bar via **`Super + Shift + V`** or CLI `cava` / `visualizer`.
   * **BTOP Hardware & Process Telemetry (`~/.config/btop/`)**:
     * Themed with Garchy OS electric cyan/gold palette and translucent glassmorphism background (`theme_background = false`).
-  * **Garchy Cockpit Multi-Panel Dashboard (`~/.local/bin/cockpit`)**:
-    * 1-click 3-split dashboard combining Shell + BTOP + CAVA visualizer, accessible via **`Super + Alt + T`** or `cockpit`.
+  * **Garchy Cockpit Unified Terminal (`~/.local/bin/garchy-terminal`)**:
+    * Set as the default `$terminal` for `Super + Return` and `Super + T`.
+    * Launches the complete 3-split dashboard (Shell + BTOP Telemetry + CAVA 144Hz Visualizer) with cursor automatically focused in the interactive shell.
+    * **Fluid Interactive Resizing & Zoom**:
+      * `Ctrl + Shift + R`: Dedicated interactive pane resize mode (resize with arrows or HJKL).
+      * `Ctrl + Shift + Arrows`: Instant pane nudging (narrower/wider/taller/shorter).
+      * `Ctrl + Shift + Z`: Instant 1-key zoom/unzoom toggle (maximize active pane to full-screen and restore).
+      * `Ctrl + Shift + Space`: Cycle layout between splits, tall, fat, grid, and stacked.
   * **Automatic Icon Theme Sync**: System-wide **Tela Circle** icon pairing (`Tela-circle-dark`, `purple`, `pink`, `nord`, `yellow`, `dracula`, `red`, `green`, `black`).
   * **Waybar Dynamic Border Sync**: Border color bound to active theme's accent (`@define-color border-col {t['accent']};`).
 
