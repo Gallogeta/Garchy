@@ -72,10 +72,12 @@
     * **Slanted Powerline Tabs**: `tab_bar_style powerline` with `tab_powerline_style slanted`.
     * **Tiling & Splits**: `Ctrl+Shift+D` (vsplit), `Ctrl+Shift+S` (hsplit), `Ctrl+Shift+H/J/K/L` (pane navigation).
   * **Custom Garchy Fastfetch Banner (`~/.config/fastfetch/`)**:
-    * Custom digitalized **G-Shield ASCII Core** with live hardware specs (Ryzen 9 5900X, RTX 3080 Ti, dual 144Hz displays, Btrfs), Cephalon AI status indicator, and an **Inline Frequency Spectrum Equalizer (` ▂▃▄▅▆▇█ [30Hz Sub-Bass ➔ 14kHz Treble]`)** positioned directly above the color palette.
+    * Custom digitalized **G-Shield ASCII Core** with live hardware specs (Ryzen 9 5900X, RTX 3080 Ti, dual 144Hz displays, Btrfs), Cephalon AI status indicator, and dynamic color block palette.
+  * **CAVA 144Hz Audio Visualizer (`~/.config/cava/config`)**:
+    * Reset to **full responsive default mode** (`bars = 0` auto fill, `max_height = 100`, `framerate = 144`) with dynamic theme gradient synchronization.
+    * Launchable on-demand in floating glass mode via **`Super + Shift + V`** or CLI `cava` / `visualizer`.
   * **Clean Single-Window Terminal Experience**:
     * Default terminal (`Super + Return` or `Super + T`) launches as a **single, clean, unified window** with zero unwanted tiled splits.
-    * Live 144Hz audio visualizer is accessible on-demand via floating bar (**`Super + Shift + V`**) or CLI command `visualizer` / `cava`.
     * **Fluid Interactive Resizing & Zoom**:
       * `Ctrl + Shift + R`: Dedicated interactive pane resize mode (resize height/width with arrows or HJKL).
       * `Ctrl + Shift + Arrows`: Instant pane nudging (taller/shorter/wider/narrower).
