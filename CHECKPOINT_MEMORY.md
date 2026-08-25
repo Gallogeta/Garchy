@@ -73,16 +73,15 @@
     * **Tiling & Splits**: `Ctrl+Shift+D` (vsplit), `Ctrl+Shift+S` (hsplit), `Ctrl+Shift+H/J/K/L` (pane navigation).
   * **Custom Garchy Fastfetch Banner (`~/.config/fastfetch/`)**:
     * Custom ASCII Garchy glyph, hardware specs (Ryzen 9 5900X, RTX 3080 Ti, dual 144Hz displays, Btrfs), active theme, and Cephalon AI status indicator.
-  * **CAVA 144Hz Real-Time Audio Visualizer (`~/.config/cava/config`)**:
-    * Hooked into PipeWire monitor sink with 144 FPS framerate and dynamic color gradient sync across all 9 desktop themes.
-    * Launchable as a floating sound bar via **`Super + Shift + V`** or CLI `cava` / `visualizer`.
-  * **BTOP Hardware & Process Telemetry (`~/.config/btop/`)**:
-    * Themed with Garchy OS electric cyan/gold palette and translucent glassmorphism background (`theme_background = false`).
+  * **CAVA 144Hz Calibrated Frequency Spectrum (`~/.config/cava/config`)**:
+    * **Frequency Mapping**: Strictly calibrated from **Sub-Bass (30Hz) on the far Left** ➔ **Mids (1kHz)** ➔ **High Treble (14kHz) on the far Right** (`channels = mono`).
+    * **Compact Geometry**: Scaled down to a sleek, compact 20-bar spectrum (`bars = 20`, `max_height = 6`) positioned cleanly on the right alongside the fastfetch palette.
+    * Dynamic color gradient sync across all 9 desktop themes.
   * **Garchy Unified Terminal (`~/.local/bin/garchy-terminal`)**:
     * Set as the default `$terminal` for `Super + Return` and `Super + T`.
-    * **Clean 2-Tier Stack**:
-      * **Top Tier**: CAVA 144Hz Real-Time Audio Visualizer waving across the top of the terminal.
-      * **Bottom Tier**: Interactive Shell (`zsh`) with fastfetch, Cephalon AI (`ai`), and full typing focus.
+    * **Proportional 75/25 Layout**:
+      * **Left (75%)**: Main interactive Shell (`zsh`) with fastfetch, Cephalon AI (`ai`), and full typing focus.
+      * **Right (25%)**: Compact Audio Spectrum pulsing cleanly alongside the shell.
     * **Fluid Interactive Resizing & Zoom**:
       * `Ctrl + Shift + R`: Dedicated interactive pane resize mode (resize height/width with arrows or HJKL).
       * `Ctrl + Shift + Arrows`: Instant pane nudging (taller/shorter/wider/narrower).
