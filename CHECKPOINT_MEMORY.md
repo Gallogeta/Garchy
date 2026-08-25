@@ -110,7 +110,30 @@
 
 ---
 
-### 5. 🪟 Secondary Desktop Environment: XFCE4 with Garchy Design
+### 5. 🚀 Garchy OS Distro Core & First-Boot Architecture
+* **Garchy Welcome & Setup Center (`~/.config/hypr/scripts/garchy-welcome.py`)**:
+  * First-boot OOBE wizard styled with `garchy-minimal.jpg` banner artwork.
+  * **6 Interactive Hubs**:
+    1. **🌟 Overview**: Live hardware telemetry, kernel release, and quick system shortcuts.
+    2. **⚡ Fast Mirrors**: 1-click pacman mirror benchmark & ranking for maximum download speed.
+    3. **🎮 Gaming Hub**: 1-click installation of Steam, Lutris, Heroic, GameMode, MangoHud, ProtonUp-Qt.
+    4. **📦 Software & Browsers**: 1-click install for Brave, Zen, Chrome, VS Code, Discord/Vesktop, Spotify, OBS Studio.
+    5. **🎨 Personalize Rice**: Direct hooks into 9 themes, Wallpaper Gallery, opacity, and audio visualizer.
+    6. **🛡️ System Resilience**: Instant Btrfs snapshots, PipeWire audio repair, and security sentinel audits.
+* **Btrfs Snapshot & Rollback Engine (`~/.local/bin/garchy-snapshot`, `garchy-restore`)**:
+  * Instant CLI checkpoint creation with timestamp and tags.
+  * Interactive restore manager for rolling back system state in seconds.
+* **Plymouth Boot Splash Theme (`Garchy/dotfiles/plymouth/garchy-minimal/`)**:
+  * Custom startup animation with glowing G-Shield emblem, dark obsidian backdrop (`garchy-minimal.jpg`), and electric cyan progress bar.
+* **Glassmorphic Hyprlock & Wlogout (`~/.config/hypr/hyprlock.conf`, `~/.config/wlogout/`)**:
+  * High-security lock screen with `garchy-minimal.jpg` backdrop, battery/clock widgets, Cephalon status, and Orokin gold glowing input pill.
+  * Wlogout glassmorphic power menu (`Super + Escape`) with hover glows and quick power controls.
+* **Thunar File Manager Context Extensions (`~/.config/Thunar/uca.xml`)**:
+  * Right-click shortcuts: *"Open in Garchy Terminal"*, *"Inspect with Cephalon AI"*, *"Set as Wallpaper"*, *"Compress to .tar.zst"*, *"Open in VS Code"*, *"Verify SHA256"*.
+
+---
+
+### 6. 🪟 Secondary Desktop Environment: XFCE4 with Garchy Design
 * **Purpose**: Ultra-lightweight (~300MB RAM), robust X11 fallback for older hardware, laptops, virtual machines, or users preferring traditional stacking window managers.
 * **Unified Garchy Visual Identity**:
   * **Panels & Docking**: Modern dark glass panel with application menu, window icon dock, workspace switcher, telemetry, and system tray.
@@ -119,7 +142,7 @@
 
 ---
 
-### 6. 💾 Universal Storage & Drive Automounter
+### 7. 💾 Universal Storage & Drive Automounter
 * **Automounter Daemon (`~/.config/hypr/scripts/gally-drive-automount.py`)**:
   * **Startup Auto-Mount**: Detects and mounts all unmounted internal/secondary SSDs, HDDs, and partitions on login via `udisks2`.
   * **Live Hotplug Listener**: Real-time event monitoring with debouncing (`udisksctl monitor`). Automatically mounts plugged-in USB drives, external SSDs, SD cards upon connection.
