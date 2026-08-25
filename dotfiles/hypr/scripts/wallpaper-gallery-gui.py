@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
 """
-Gally OS - Animated Glassmorphic Wallpaper Gallery & Chooser (GUI)
-Features:
-- Live on-the-fly theme observer (colors, border rounding, accents).
-- Configurable auto-rotation timer (Minutes dropdown, Instant Enable/Disable button).
-- Multi-directory wallpaper scanning (Add Folder button to include custom wallpaper directories).
-- 144Hz smooth in-memory preview caching with adjacent prefetching.
-- Auto-sliding filmstrip thumbnail carousel.
-- Keyboard navigation (Arrow keys, Enter to apply, Space for random).
+Gally OS - Animated Glassmorphic Wallpaper Gallery & Chooser (CustomTkinter)
+Visually rebuilt with native rounded theme borders, auto-cycling timer controls,
+custom folder management, and 144Hz responsive preview caching.
 """
 
 import os
@@ -18,8 +13,9 @@ import random
 import subprocess
 import threading
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog
 from PIL import Image, ImageTk, ImageOps
+import customtkinter as ctk
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.expanduser("~/.config/hypr/scripts"))
@@ -55,7 +51,6 @@ def save_wallpaper_config(cfg):
         json.dump(cfg, f, indent=2)
 
 def restart_wallpaper_daemon(cfg):
-    """Starts, updates, or stops the background wallpaper rotation daemon."""
     script_path = os.path.expanduser("~/.config/hypr/scripts/wallpaper-timer.sh")
     if not os.path.exists(script_path):
         return
@@ -76,27 +71,28 @@ def get_all_wallpapers(dirs):
             for ext in exts:
                 files.extend(glob.glob(os.path.join(exp_d, ext)))
                 files.extend(glob.glob(os.path.join(exp_d, "**", ext), recursive=True))
-    # Deduplicate and sort
     return sorted(list(set(files)))
 
-class WallpaperGalleryApp(tk.Tk):
+class WallpaperGalleryApp(ctk.CTk):
     def __init__(self):
-        super().__init__(className='gally_wallpaper_gallery')
+        super().__init__()
         
+        ctk.set_appearance_mode("dark")
         self.wall_config = load_wallpaper_config()
         self.theme_mtime = gally_theme_helper.get_theme_mtime()
         self.load_theme_values()
         
         self.title("Gally OS — Wallpaper Gallery & Timer Controller")
-        self.geometry("980x730")
-        self.configure(bg=self.bg_main)
-        self.minsize(860, 600)
+        self.geometry("980x680")
+        self.minsize(860, 580)
+        self.configure(fg_color=self.bg_main)
         
         self.wallpapers = get_all_wallpapers(self.wall_config.get("directories", [DEFAULT_WALL_DIR]))
         self.current_index = 0
         self.thumb_boxes = []
-        self.big_preview_img = None
+        self.thumb_labels = []
         self.preview_cache = {}
+        self.big_preview_img = None
         
         if os.path.exists(CURRENT_FILE):
             try:
@@ -107,41 +103,45 @@ class WallpaperGalleryApp(tk.Tk):
             except Exception:
                 pass
 
-        # 1. Header Bar
-        self.hdr = tk.Frame(self, bg=self.bg_main, padx=22, pady=10)
-        self.hdr.pack(fill="x")
+        # --- 1. Top Glass Header & Toolbar Card ---
+        self.hdr_card = ctk.CTkFrame(self, fg_color=self.bg_card, corner_radius=self.radius,
+                                     border_width=1, border_color=self.accent_primary)
+        self.hdr_card.pack(fill="x", padx=16, pady=(10, 6))
         
-        self.top_bar = tk.Frame(self.hdr, bg=self.bg_main)
-        self.top_bar.pack(fill="x")
+        hdr_top = ctk.CTkFrame(self.hdr_card, fg_color="transparent")
+        hdr_top.pack(fill="x", padx=14, pady=(8, 4))
         
-        self.lbl_title = tk.Label(self.top_bar, text="🌌 Gally Wallpaper Gallery", font=("Sans", 16, "bold"),
-                                  fg=self.accent_primary, bg=self.bg_main)
+        self.lbl_title = ctk.CTkLabel(hdr_top, text="🌌 Gally Wallpaper Gallery",
+                                      font=ctk.CTkFont(family="Sans", size=17, weight="bold"),
+                                      text_color=self.accent_primary)
         self.lbl_title.pack(side="left")
         
-        self.lbl_count = tk.Label(self.top_bar, text=f"🖼️ {len(self.wallpapers)} Wallpapers Ready",
-                                  font=("Sans", 10, "bold"), fg=self.accent_secondary, bg=self.bg_card, padx=12, pady=4,
-                                  highlightthickness=1, highlightbackground=self.border_col)
+        self.lbl_count = ctk.CTkLabel(hdr_top, text=f"🖼️ {len(self.wallpapers)} Wallpapers Ready",
+                                      font=ctk.CTkFont(family="Sans", size=11, weight="bold"),
+                                      text_color=self.accent_secondary, fg_color=self.bg_input,
+                                      corner_radius=self.radius, padx=12, pady=3)
         self.lbl_count.pack(side="right")
         
-        # 2. Timer & Directory Toolbar
-        self.toolbar = tk.Frame(self.hdr, bg=self.bg_card, padx=14, pady=8,
-                                highlightthickness=1, highlightbackground=self.border_col)
-        self.toolbar.pack(fill="x", pady=(8, 0))
+        # Integrated Toolbar Row
+        self.toolbar_row = ctk.CTkFrame(self.hdr_card, fg_color="transparent")
+        self.toolbar_row.pack(fill="x", padx=14, pady=(0, 8))
         
-        # Timer Toggle Button
-        timer_text = "⏱️ Auto-Cycle: ON 🟢" if self.wall_config.get("timer_enabled", True) else "⏱️ Auto-Cycle: OFF ⛔"
-        timer_fg = "#22c55e" if self.wall_config.get("timer_enabled", True) else self.fg_muted
-        self.btn_timer_toggle = tk.Button(self.toolbar, text=timer_text, font=("Sans", 9, "bold"),
-                                          bg=self.bg_input, fg=timer_fg, activebackground=self.accent_secondary, activeforeground="#000",
-                                          relief="flat", padx=12, pady=4, cursor="hand2", command=self.toggle_timer)
-        self.btn_timer_toggle.pack(side="left", padx=(0, 10))
+        # Timer Toggle
+        timer_on = self.wall_config.get("timer_enabled", True)
+        timer_text = "⏱️ Auto-Cycle: ON 🟢" if timer_on else "⏱️ Auto-Cycle: OFF ⛔"
+        timer_fg = "#22c55e" if timer_on else self.fg_muted
+        self.btn_timer_toggle = ctk.CTkButton(self.toolbar_row, text=timer_text,
+                                              font=ctk.CTkFont(family="Sans", size=11, weight="bold"),
+                                              fg_color=self.bg_input, hover_color=self.bg_main,
+                                              text_color=timer_fg, corner_radius=self.radius,
+                                              border_width=1, border_color=self.border_col,
+                                              height=28, command=self.toggle_timer)
+        self.btn_timer_toggle.pack(side="left", padx=(0, 8))
         
-        # Interval Dropdown
-        self.lbl_interval = tk.Label(self.toolbar, text="Interval:", font=("Sans", 9, "bold"),
-                                     fg=self.fg_light, bg=self.bg_card)
-        self.lbl_interval.pack(side="left", padx=(0, 6))
+        lbl_int = ctk.CTkLabel(self.toolbar_row, text="Interval:",
+                               font=ctk.CTkFont(family="Sans", size=11), text_color=self.fg_muted)
+        lbl_int.pack(side="left", padx=(0, 4))
         
-        self.interval_var = tk.StringVar(value=f"{self.wall_config.get('interval_minutes', 10)} min")
         self.intervals_map = {
             "1 min": 1,
             "5 min": 5,
@@ -151,95 +151,111 @@ class WallpaperGalleryApp(tk.Tk):
             "60 min": 60,
             "120 min": 120
         }
-        self.opt_interval = ttk.Combobox(self.toolbar, textvariable=self.interval_var,
-                                         values=list(self.intervals_map.keys()), state="readonly", width=8)
-        self.opt_interval.pack(side="left", padx=(0, 15))
-        self.opt_interval.bind("<<ComboboxSelected>>", self.on_interval_changed)
+        curr_mins = self.wall_config.get("interval_minutes", 10)
+        curr_choice = f"{curr_mins} min" if f"{curr_mins} min" in self.intervals_map else "10 min"
         
-        # Add Directory Button
-        self.btn_add_folder = tk.Button(self.toolbar, text="📂 ➕ Add Folder...", font=("Sans", 9, "bold"),
-                                        bg=self.bg_input, fg=self.accent_secondary, activebackground=self.accent_secondary, activeforeground="#000",
-                                        relief="flat", padx=12, pady=4, cursor="hand2", command=self.add_wallpaper_folder)
+        self.opt_interval = ctk.CTkOptionMenu(self.toolbar_row, values=list(self.intervals_map.keys()),
+                                              command=self.on_interval_changed,
+                                              fg_color=self.bg_input, button_color=self.accent_primary,
+                                              button_hover_color=self.accent_secondary,
+                                              text_color=self.fg_light, corner_radius=self.radius,
+                                              width=90, height=28)
+        self.opt_interval.set(curr_choice)
+        self.opt_interval.pack(side="left", padx=(0, 12))
+        
+        # Add Folder Button
+        self.btn_add_folder = ctk.CTkButton(self.toolbar_row, text="📂 ➕ Add Folder...",
+                                            font=ctk.CTkFont(family="Sans", size=11, weight="bold"),
+                                            fg_color=self.bg_input, hover_color=self.bg_main,
+                                            text_color=self.accent_secondary, corner_radius=self.radius,
+                                            border_width=1, border_color=self.accent_secondary,
+                                            height=28, command=self.add_wallpaper_folder)
         self.btn_add_folder.pack(side="left", padx=(0, 6))
         
         # Reset Folders Button
-        self.btn_reset_folders = tk.Button(self.toolbar, text="↺ Default Folder", font=("Sans", 9),
-                                           bg=self.bg_input, fg=self.fg_muted, activebackground=self.border_col, activeforeground="#fff",
-                                           relief="flat", padx=10, pady=4, cursor="hand2", command=self.reset_wallpaper_folders)
+        self.btn_reset_folders = ctk.CTkButton(self.toolbar_row, text="↺ Reset",
+                                               font=ctk.CTkFont(family="Sans", size=11),
+                                               fg_color=self.bg_input, hover_color=self.bg_main,
+                                               text_color=self.fg_muted, corner_radius=self.radius,
+                                               width=65, height=28, command=self.reset_wallpaper_folders)
         self.btn_reset_folders.pack(side="left")
 
-        # Subtitle
-        self.lbl_sub = tk.Label(self.hdr, text="Browse via Arrow Keys or Filmstrip • Press [ Enter ] to Apply Wallpaper",
-                                font=("Sans", 9), fg=self.fg_muted, bg=self.bg_main)
-        self.lbl_sub.pack(anchor="w", pady=(6, 0))
-        self.sep = tk.Frame(self.hdr, height=2, bg=self.accent_primary)
-        self.sep.pack(fill="x", pady=(6, 0))
-
-        # 3. Main Large Preview Canvas
-        self.preview_frame = tk.Frame(self, bg=self.bg_card, padx=10, pady=8, relief="flat",
-                                      highlightthickness=1, highlightbackground=self.border_col)
-        self.preview_frame.pack(fill="both", expand=True, padx=22, pady=(2, 8))
+        # --- 2. Main Large Preview Canvas Frame ---
+        self.preview_card = ctk.CTkFrame(self, fg_color=self.bg_card, corner_radius=self.radius,
+                                         border_width=1, border_color=self.border_col)
+        self.preview_card.pack(fill="both", expand=True, padx=16, pady=(0, 6))
         
-        self.nav_row = tk.Frame(self.preview_frame, bg=self.bg_card)
-        self.nav_row.pack(fill="x", pady=(0, 4))
+        # Preview Nav Top Bar
+        nav_top = ctk.CTkFrame(self.preview_card, fg_color="transparent")
+        nav_top.pack(fill="x", padx=10, pady=(6, 2))
         
-        self.btn_prev = tk.Button(self.nav_row, text="◀  Prev", font=("Sans", 10, "bold"),
-                                  bg=self.bg_input, fg=self.fg_light, activebackground=self.accent_secondary, activeforeground="#000",
-                                  relief="flat", padx=14, pady=4, cursor="hand2", command=self.prev_wallpaper)
+        self.btn_prev = ctk.CTkButton(nav_top, text="◀ Prev", width=75, height=26,
+                                      font=ctk.CTkFont(family="Sans", size=11, weight="bold"),
+                                      fg_color=self.bg_input, hover_color=self.bg_main,
+                                      text_color=self.fg_light, corner_radius=self.radius,
+                                      command=self.prev_wallpaper)
         self.btn_prev.pack(side="left")
         
-        self.lbl_wall_name = tk.Label(self.nav_row, text="", font=("Sans", 11, "bold"), fg=self.accent_primary, bg=self.bg_card)
-        self.lbl_wall_name.pack(side="left", padx=15)
+        self.lbl_wall_name = ctk.CTkLabel(nav_top, text="",
+                                          font=ctk.CTkFont(family="Sans", size=11, weight="bold"),
+                                          text_color=self.accent_primary)
+        self.lbl_wall_name.pack(side="left", padx=12, fill="x", expand=True)
         
-        self.btn_next = tk.Button(self.nav_row, text="Next  ▶", font=("Sans", 10, "bold"),
-                                  bg=self.bg_input, fg=self.fg_light, activebackground=self.accent_secondary, activeforeground="#000",
-                                  relief="flat", padx=14, pady=4, cursor="hand2", command=self.next_wallpaper)
+        self.btn_next = ctk.CTkButton(nav_top, text="Next ▶", width=75, height=26,
+                                      font=ctk.CTkFont(family="Sans", size=11, weight="bold"),
+                                      fg_color=self.bg_input, hover_color=self.bg_main,
+                                      text_color=self.fg_light, corner_radius=self.radius,
+                                      command=self.next_wallpaper)
         self.btn_next.pack(side="right")
         
-        # Big Preview Image Label
-        self.lbl_preview_canvas = tk.Label(self.preview_frame, bg="#050811")
-        self.lbl_preview_canvas.pack(fill="both", expand=True)
+        # Big Preview Image Display
+        self.lbl_preview_canvas = tk.Label(self.preview_card, bg="#050811", relief="flat", highlightthickness=0)
+        self.lbl_preview_canvas.pack(fill="both", expand=True, padx=8, pady=(2, 6))
 
-        # 4. Horizontal Auto-Sliding Thumbnail Filmstrip
-        self.ribbon_outer = tk.Frame(self, bg=self.bg_main, padx=22, pady=2)
-        self.ribbon_outer.pack(fill="x")
+        # --- 3. Filmstrip Thumbnail Ribbon ---
+        self.filmstrip_card = ctk.CTkFrame(self, fg_color=self.bg_card, corner_radius=self.radius,
+                                           border_width=1, border_color=self.border_col)
+        self.filmstrip_card.pack(fill="x", padx=16, pady=(0, 6))
         
-        self.lbl_filmstrip = tk.Label(self.ribbon_outer, text="Gallery Filmstrip (Auto-scrolls with selection):",
-                                      font=("Sans", 9, "bold"), fg=self.fg_muted, bg=self.bg_main)
-        self.lbl_filmstrip.pack(anchor="w", pady=(0, 2))
-                 
-        self.thumb_canvas = tk.Canvas(self.ribbon_outer, bg=self.bg_main, height=88, highlightthickness=0)
-        self.thumb_scrollbar = ttk.Scrollbar(self.ribbon_outer, orient="horizontal", command=self.thumb_canvas.xview)
+        self.thumb_canvas = tk.Canvas(self.filmstrip_card, bg=self.bg_card, height=72, highlightthickness=0)
+        self.thumb_scrollbar = ttk.Scrollbar(self.filmstrip_card, orient="horizontal", command=self.thumb_canvas.xview)
         
-        self.thumb_container = tk.Frame(self.thumb_canvas, bg=self.bg_main)
+        self.thumb_container = tk.Frame(self.thumb_canvas, bg=self.bg_card)
         self.thumb_container.bind("<Configure>", lambda e: self.thumb_canvas.configure(scrollregion=self.thumb_canvas.bbox("all")))
         
         self.thumb_canvas.create_window((0, 0), window=self.thumb_container, anchor="nw")
         self.thumb_canvas.configure(xscrollcommand=self.thumb_scrollbar.set)
         
-        self.thumb_canvas.pack(fill="x")
-        self.thumb_scrollbar.pack(fill="x", pady=(2, 0))
+        self.thumb_canvas.pack(fill="x", padx=6, pady=(4, 2))
+        self.thumb_scrollbar.pack(fill="x", padx=6, pady=(0, 4))
 
-        # 5. Action Buttons Footer
-        self.footer = tk.Frame(self, bg=self.bg_main, padx=22, pady=10)
-        self.footer.pack(fill="x", side="bottom")
+        # --- 4. Bottom Action Footer ---
+        self.footer = ctk.CTkFrame(self, fg_color="transparent")
+        self.footer.pack(fill="x", padx=16, pady=(0, 10))
         
-        self.btn_random = tk.Button(self.footer, text="🎲  Random Wallpaper (Space)", font=("Sans", 10, "bold"),
-                                    bg=self.bg_input, fg=self.accent_secondary, activebackground=self.accent_secondary, activeforeground="#000",
-                                    relief="flat", padx=16, pady=6, cursor="hand2", command=self.apply_random)
+        self.btn_random = ctk.CTkButton(self.footer, text="🎲 Random Wallpaper (Space)",
+                                        font=ctk.CTkFont(family="Sans", size=11, weight="bold"),
+                                        fg_color=self.bg_input, hover_color=self.bg_card,
+                                        text_color=self.accent_secondary, corner_radius=self.radius,
+                                        border_width=1, border_color=self.accent_secondary,
+                                        height=32, command=self.apply_random)
         self.btn_random.pack(side="left")
         
-        self.btn_close = tk.Button(self.footer, text="Close (Esc)", font=("Sans", 10),
-                                   bg=self.bg_input, fg=self.fg_muted, activebackground=self.border_col, activeforeground="#fff",
-                                   relief="flat", padx=16, pady=6, cursor="hand2", command=self.destroy)
-        self.btn_close.pack(side="left", padx=(10, 0))
+        self.btn_close = ctk.CTkButton(self.footer, text="Close (Esc)",
+                                       font=ctk.CTkFont(family="Sans", size=11),
+                                       fg_color=self.bg_input, hover_color=self.bg_card,
+                                       text_color=self.fg_muted, corner_radius=self.radius,
+                                       width=95, height=32, command=self.destroy)
+        self.btn_close.pack(side="left", padx=(8, 0))
         
-        self.btn_apply = tk.Button(self.footer, text="✨  Apply This Wallpaper (Enter)", font=("Sans", 11, "bold"),
-                                   bg=self.accent_primary, fg="#000", activebackground=self.accent_secondary, activeforeground="#000",
-                                   relief="flat", padx=22, pady=6, cursor="hand2", command=self.apply_current)
+        self.btn_apply = ctk.CTkButton(self.footer, text="✨ Apply This Wallpaper (Enter)",
+                                       font=ctk.CTkFont(family="Sans", size=12, weight="bold"),
+                                       fg_color=self.accent_primary, hover_color=self.accent_secondary,
+                                       text_color="#000000", corner_radius=self.radius,
+                                       height=32, command=self.apply_current)
         self.btn_apply.pack(side="right")
 
-        # Keyboard Bindings
+        # Bindings
         self.bind("<Left>", lambda e: self.prev_wallpaper())
         self.bind("<Right>", lambda e: self.next_wallpaper())
         self.bind("<Up>", lambda e: self.prev_wallpaper())
@@ -249,26 +265,25 @@ class WallpaperGalleryApp(tk.Tk):
         self.bind("<Escape>", lambda e: self.destroy())
         self.bind("<space>", lambda e: self.apply_random())
         
-        # Mouse Wheel on Strip
         self.thumb_canvas.bind_all("<Button-4>", lambda e: self.thumb_canvas.xview_scroll(-2, "units"))
         self.thumb_canvas.bind_all("<Button-5>", lambda e: self.thumb_canvas.xview_scroll(2, "units"))
 
-        # Render first view and generate thumbnails in background
+        # Render initial image and thumbnails
         self.update_preview()
         threading.Thread(target=self.generate_thumbnails_async, daemon=True).start()
         self.check_theme_update()
 
     def load_theme_values(self):
         self.theme = gally_theme_helper.get_active_theme()
-        self.bg_main = self.theme.get("bg", "#070b14")
-        self.bg_card = self.theme.get("bg_card", "#0f172a")
+        self.bg_main = self.theme.get("bg", "#0a0f1d")
+        self.bg_card = self.theme.get("bg_card", "#131c31")
         self.bg_input = self.theme.get("bg_input", "#1e293b")
         self.fg_light = self.theme.get("fg", "#f1f5f9")
         self.fg_muted = self.theme.get("fg_muted", "#94a3b8")
         self.accent_primary = self.theme.get("accent", "#38bdf8")
         self.accent_secondary = self.theme.get("accent_alt", "#fbbf24")
         self.border_col = self.theme.get("border_col", self.accent_primary)
-        self.rounding = int(self.theme.get("rounding", 14))
+        self.radius = max(8, int(self.theme.get("rounding", 14)))
 
     def toggle_timer(self):
         cur = self.wall_config.get("timer_enabled", True)
@@ -278,12 +293,11 @@ class WallpaperGalleryApp(tk.Tk):
         restart_wallpaper_daemon(self.wall_config)
         
         if new_state:
-            self.btn_timer_toggle.configure(text="⏱️ Auto-Cycle: ON 🟢", fg="#22c55e")
+            self.btn_timer_toggle.configure(text="⏱️ Auto-Cycle: ON 🟢", text_color="#22c55e")
         else:
-            self.btn_timer_toggle.configure(text="⏱️ Auto-Cycle: OFF ⛔", fg=self.fg_muted)
+            self.btn_timer_toggle.configure(text="⏱️ Auto-Cycle: OFF ⛔", text_color=self.fg_muted)
 
-    def on_interval_changed(self, event=None):
-        val_str = self.interval_var.get()
+    def on_interval_changed(self, val_str):
         mins = self.intervals_map.get(val_str, 10)
         self.wall_config["interval_minutes"] = mins
         save_wallpaper_config(self.wall_config)
@@ -324,30 +338,30 @@ class WallpaperGalleryApp(tk.Tk):
         self.after(300, self.check_theme_update)
 
     def apply_theme_live(self):
-        self.configure(bg=self.bg_main)
-        self.hdr.configure(bg=self.bg_main)
-        self.top_bar.configure(bg=self.bg_main)
-        self.lbl_title.configure(fg=self.accent_primary, bg=self.bg_main)
-        self.lbl_count.configure(fg=self.accent_secondary, bg=self.bg_card, highlightbackground=self.border_col)
-        self.toolbar.configure(bg=self.bg_card, highlightbackground=self.border_col)
-        self.lbl_interval.configure(fg=self.fg_light, bg=self.bg_card)
-        self.btn_add_folder.configure(bg=self.bg_input, fg=self.accent_secondary, activebackground=self.accent_secondary)
-        self.btn_reset_folders.configure(bg=self.bg_input, fg=self.fg_muted, activebackground=self.border_col)
-        self.lbl_sub.configure(fg=self.fg_muted, bg=self.bg_main)
-        self.sep.configure(bg=self.accent_primary)
-        self.preview_frame.configure(bg=self.bg_card, highlightbackground=self.border_col)
-        self.nav_row.configure(bg=self.bg_card)
-        self.lbl_wall_name.configure(fg=self.accent_primary, bg=self.bg_card)
-        self.btn_prev.configure(bg=self.bg_input, fg=self.fg_light, activebackground=self.accent_secondary)
-        self.btn_next.configure(bg=self.bg_input, fg=self.fg_light, activebackground=self.accent_secondary)
-        self.ribbon_outer.configure(bg=self.bg_main)
-        self.lbl_filmstrip.configure(fg=self.fg_muted, bg=self.bg_main)
-        self.thumb_canvas.configure(bg=self.bg_main)
-        self.thumb_container.configure(bg=self.bg_main)
-        self.footer.configure(bg=self.bg_main)
-        self.btn_random.configure(bg=self.bg_input, fg=self.accent_secondary, activebackground=self.accent_secondary)
-        self.btn_close.configure(bg=self.bg_input, fg=self.fg_muted, activebackground=self.border_col)
-        self.btn_apply.configure(bg=self.accent_primary, activebackground=self.accent_secondary)
+        self.configure(fg_color=self.bg_main)
+        self.hdr_card.configure(fg_color=self.bg_card, border_color=self.accent_primary, corner_radius=self.radius)
+        self.lbl_title.configure(text_color=self.accent_primary)
+        self.lbl_count.configure(text_color=self.accent_secondary, fg_color=self.bg_input, corner_radius=self.radius)
+        self.btn_timer_toggle.configure(fg_color=self.bg_input, border_color=self.border_col, corner_radius=self.radius)
+        self.opt_interval.configure(fg_color=self.bg_input, button_color=self.accent_primary,
+                                     button_hover_color=self.accent_secondary, text_color=self.fg_light, corner_radius=self.radius)
+        self.btn_add_folder.configure(fg_color=self.bg_input, text_color=self.accent_secondary,
+                                      border_color=self.accent_secondary, corner_radius=self.radius)
+        self.btn_reset_folders.configure(fg_color=self.bg_input, text_color=self.fg_muted, corner_radius=self.radius)
+        
+        self.preview_card.configure(fg_color=self.bg_card, border_color=self.border_col, corner_radius=self.radius)
+        self.lbl_wall_name.configure(text_color=self.accent_primary)
+        self.btn_prev.configure(fg_color=self.bg_input, text_color=self.fg_light, corner_radius=self.radius)
+        self.btn_next.configure(fg_color=self.bg_input, text_color=self.fg_light, corner_radius=self.radius)
+        
+        self.filmstrip_card.configure(fg_color=self.bg_card, border_color=self.border_col, corner_radius=self.radius)
+        self.thumb_canvas.configure(bg=self.bg_card)
+        self.thumb_container.configure(bg=self.bg_card)
+        
+        self.btn_random.configure(fg_color=self.bg_input, text_color=self.accent_secondary,
+                                  border_color=self.accent_secondary, corner_radius=self.radius)
+        self.btn_close.configure(fg_color=self.bg_input, text_color=self.fg_muted, corner_radius=self.radius)
+        self.btn_apply.configure(fg_color=self.accent_primary, hover_color=self.accent_secondary, corner_radius=self.radius)
         self.highlight_and_auto_scroll()
 
     def load_cached_preview(self, path):
@@ -355,7 +369,7 @@ class WallpaperGalleryApp(tk.Tk):
             return self.preview_cache[path]
         try:
             img = Image.open(path)
-            pw, ph = 760, 320
+            pw, ph = 740, 310
             img.thumbnail((pw, ph), Image.Resampling.BILINEAR)
             tk_img = ImageTk.PhotoImage(img)
             self.preview_cache[path] = tk_img
@@ -374,7 +388,7 @@ class WallpaperGalleryApp(tk.Tk):
             if p not in self.preview_cache:
                 try:
                     img = Image.open(p)
-                    pw, ph = 760, 320
+                    pw, ph = 740, 310
                     img.thumbnail((pw, ph), Image.Resampling.BILINEAR)
                     self.preview_cache[p] = ImageTk.PhotoImage(img)
                 except Exception:
@@ -422,12 +436,10 @@ class WallpaperGalleryApp(tk.Tk):
             if idx == self.current_index:
                 box.configure(highlightbackground=self.accent_primary, highlightthickness=3, bg=self.accent_primary)
             else:
-                box.configure(highlightbackground=self.border_col, highlightthickness=1, bg=self.bg_card)
+                box.configure(highlightbackground=self.border_col, highlightthickness=1, bg=self.bg_input)
                 
-        # Auto-scroll thumbnail strip smoothly to keep selected item in center
         if self.wallpapers and len(self.thumb_boxes) == len(self.wallpapers):
             fraction = self.current_index / float(len(self.wallpapers))
-            # Shift slightly to center
             adj_fraction = max(0.0, min(1.0, fraction - 0.08))
             self.thumb_canvas.xview_moveto(adj_fraction)
 
@@ -440,9 +452,9 @@ class WallpaperGalleryApp(tk.Tk):
         os.makedirs(cache_dir, exist_ok=True)
         
         for idx, path in enumerate(self.wallpapers):
-            box = tk.Frame(self.thumb_container, bg=self.bg_card, width=104, height=72,
+            box = tk.Frame(self.thumb_container, bg=self.bg_input, width=96, height=60,
                            highlightthickness=1, highlightbackground=self.border_col, cursor="hand2")
-            box.pack(side="left", padx=4, pady=2)
+            box.pack(side="left", padx=3, pady=2)
             box.pack_propagate(False)
             
             lbl = tk.Label(box, bg="#000000", text="...", fg=self.fg_muted, cursor="hand2")
@@ -453,7 +465,6 @@ class WallpaperGalleryApp(tk.Tk):
             
             self.thumb_boxes.append(box)
             
-            # Generate or load cached thumbnail
             try:
                 fname = f"thumb_{abs(hash(path))}.png"
                 cached_thumb_path = os.path.join(cache_dir, fname)
@@ -462,12 +473,12 @@ class WallpaperGalleryApp(tk.Tk):
                     thumb_img = Image.open(cached_thumb_path)
                 else:
                     img = Image.open(path)
-                    thumb_img = ImageOps.fit(img, (96, 64), Image.Resampling.BILINEAR)
+                    thumb_img = ImageOps.fit(img, (90, 54), Image.Resampling.BILINEAR)
                     thumb_img.save(cached_thumb_path, "PNG")
                     
                 tk_thumb = ImageTk.PhotoImage(thumb_img)
                 lbl.configure(image=tk_thumb, text="")
-                lbl.image = tk_thumb  # Prevent garbage collection
+                lbl.image = tk_thumb
             except Exception:
                 lbl.configure(text="Err", fg="#ef4444")
                 
