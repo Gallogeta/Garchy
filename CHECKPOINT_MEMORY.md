@@ -27,13 +27,20 @@
     * `mode <non-adult|normal|sudo>` — Switch operational persona
     * `models` — List all engines and current active badge
     * `status` — View engine, persona mode, and privacy permissions
-* **Three Operational Modes (`~/.config/hypr/scripts/gally_memory_manager.py`)**:
-  * **🌱 Non-Adult Mode (Ages 10–16)**: Engaging, tech-smart youth and teen companion. Helps with learning programming (Python, Godot, Pygame, Scratch, web dev), school homework (math, science, history), gaming tips/builds, and creative projects with strict safety guardrails (0 adult content, 0 destructive shell commands).
-  * **🚀 Normal Mode (Ages 16+)**: Unrestricted, semi-autonomous desktop intelligence. Handles package management (`pacman`, `yay`), Wine/Proton/Bottles gaming prefixes, PipeWire/EasyEffects audio routing, Hyprland script automation, and deep system workflows.
-  * **⚡ Professional Sudo Mode**: **Unlocked via sudo password verification**. Highly technical Linux systems architect (kernel telemetry, systemd units, memory fragmentation, Wayland socket IPC).
-* **Privacy & Security Sandbox**:
-  * **Zero Internet by Default**: External queries require explicit user permission.
-  * **Document Privacy Guard**: `~/Documents` and personal folders are completely invisible to the AI unless explicitly allowed.
+* **Four Operational Modes (`~/.config/hypr/scripts/gally_memory_manager.py`)**:
+  * **🌱 Non-Adult Mode (Ages 10–16)**: Engaging youth & teen companion. School homework, Python/Godot game dev, gaming guides. Strict safety shield (0 adult content, blocks dangerous shell commands).
+  * **🚀 Normal Mode (Ages 16+)**: Unrestricted desktop companion. Package management, Wine/Proton, audio routing, Hyprland customization.
+  * **⚡ Professional Sudo Mode**: Password-verified Linux sysadmin (kernel diagnostics, systemd units, Wayland IPC).
+  * **⚡ Master Architect / Full Sudo Mode**: Unlocked root authority for deep system engineering, offline rescue, and snapshot management.
+* **Safety Shield & Offline Rescue Matrix (`~/.config/hypr/scripts/gally_system_rescue.py`)**:
+  * **Command Safety Interceptor**: Validates commands before execution, blocking catastrophic commands (`rm -rf /`, `dd`, `mkfs`, fork bombs) so Gally AI cannot mess up the system.
+  * **100% Offline System Self-Healing**: Automated pacman DB lock clearance (`/var/lib/pacman/db.lck`), PipeWire/WirePlumber audio daemon restart, and memory page flushing.
+  * **Local Restore Snapshots**: Instant 1-click Timeshift / Snapper Btrfs snapshot creation (`ai snapshot`) for fast offline recovery.
+  * **Fast Local File Finder**: Instant natural language search via `fd` / `find` (`ai find <query>` or in HUD).
+* **Security Sentinel & Intruder Alerts (`~/.config/hypr/scripts/gally_security_sentinel.py`)**:
+  * Real-time monitoring of failed sudo attempts, open listening ports, USB peripherals, and firewall status (`ai security`).
+* **Master Standby / Disable Switch**:
+  * 1-click toggle (`🟢 Standby: ACTIVE` / `🛑 Standby: PAUSED`) to instantly silence TTS, halt background learning, and sleep AI monitors with zero background overhead.
 * **Autonomous Cross-Session Learning & Memory (`~/.config/gally/memory/`)**:
   * **Continuous Knowledge Synthesis**: In the background after every conversation turn, Cephalon automatically extracts and memorizes user preferences, active projects (e.g. Garchy OS), favorite tools, coding languages, and hardware configurations without requiring manual `remember` syntax.
   * **Cross-Session Injection**: Synthesized memory profile (`user_profile.json`, `learned_memories.json`, `system_profile.json`) is dynamically loaded into every new HUD session and CLI invocation across all 8 neural model engines.
