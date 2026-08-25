@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Garchy Minimal
+Description=Official Garchy OS Plymouth Boot Splash Theme with G-Shield animation
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/garchy-minimal
+ScriptFile=/usr/share/plymouth/themes/garchy-minimal/garchy-minimal.script

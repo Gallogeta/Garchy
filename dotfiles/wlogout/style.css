@@ -1,0 +1,57 @@
+* { 
+    font-family: "JetBrainsMono Nerd Font", monospace;
+    background-image: none;
+    box-shadow: none;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+window {
+    background-color: rgba(10, 15, 29, 0.85);
+}
+
+button {
+    margin: 14px;
+    min-width: 130px;
+    min-height: 130px;
+    border-radius: 16px;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    color: #f1f5f9;
+    background-color: rgba(19, 28, 49, 0.85);
+    background-repeat: no-repeat;
+    background-position: center 30px;
+    background-size: 40px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+    text-shadow: none;
+    padding-top: 65px;
+    transition: all 0.2s ease-in-out;
+}
+
+button:hover,
+button:focus,
+button:active {
+    background-color: rgba(56, 189, 248, 0.25);
+    border: 2px solid #38bdf8;
+    color: #ffffff;
+    box-shadow: 0 12px 32px rgba(56, 189, 248, 0.45);
+}
+
+#lock {
+    background-image: url("/home/gallo/.config/wlogout/icons/lock.png");
+}
+
+#logout {
+    background-image: url("/home/gallo/.config/wlogout/icons/logout.png");
+}
+
+#suspend {
+    background-image: url("/home/gallo/.config/wlogout/icons/suspend.png");
+}
+
+#reboot {
+    background-image: url("/home/gallo/.config/wlogout/icons/reboot.png");
+}
+
+#shutdown {
+    background-image: url("/home/gallo/.config/wlogout/icons/shutdown.png");
+}

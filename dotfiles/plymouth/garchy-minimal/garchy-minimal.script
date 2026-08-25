@@ -1,0 +1,53 @@
+# ==============================================================================
+# 🌌 Garchy OS — Plymouth Boot Animation Script
+# ==============================================================================
+
+# Background Wallpaper
+bg_image = Image("background.png");
+screen_width = Window.GetWidth();
+screen_height = Window.GetHeight();
+
+resized_bg = bg_image.Scale(screen_width, screen_height);
+bg_sprite = Sprite(resized_bg);
+bg_sprite.SetPosition(0, 0, -100);
+
+# Center G-Shield Emblem
+logo_image = Image("logo.png");
+logo_sprite = Sprite(logo_image);
+logo_x = (screen_width / 2) - (logo_image.GetWidth() / 2);
+logo_y = (screen_height / 2) - (logo_image.GetHeight() / 2) - 30;
+logo_sprite.SetPosition(logo_x, logo_y, 10);
+
+# Progress Bar Container
+progress_box = Image("progress_box.png");
+progress_bar = Image("progress_bar.png");
+
+box_sprite = Sprite(progress_box);
+box_x = (screen_width / 2) - (progress_box.GetWidth() / 2);
+box_y = (screen_height / 2) + (logo_image.GetHeight() / 2) + 20;
+box_sprite.SetPosition(box_x, box_y, 10);
+
+bar_sprite = Sprite();
+bar_sprite.SetPosition(box_x, box_y, 11);
+
+# Animation & Progress Callback
+fun progress_callback(duration, progress) {
+    if (progress_bar) {
+        new_width = progress_box.GetWidth() * progress;
+        if (new_width > 0) {
+            scaled_bar = progress_bar.Scale(new_width, progress_box.GetHeight());
+            bar_sprite.SetImage(scaled_bar);
+        }
+    }
+}
+
+Plymouth.SetBootProgressFunction(progress_callback);
+
+# Quit Callback
+fun quit_callback() {
+    logo_sprite.SetOpacity(0);
+    box_sprite.SetOpacity(0);
+    bar_sprite.SetOpacity(0);
+}
+
+Plymouth.SetQuitFunction(quit_callback);
