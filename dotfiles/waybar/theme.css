@@ -1,11 +1,11 @@
-@define-color bg #1e1e2e;
-@define-color bg-alt #181825;
-@define-color border-col #334155;
-@define-color accent #cba6f7;
-@define-color accent-alt #f5c2e7;
-@define-color fg #cdd6f4;
-@define-color fg-muted #6c7086;
-@define-color fg-active #1e1e2e;
+@define-color bg #0a0f1d;
+@define-color bg-alt #131c31;
+@define-color border-col #38bdf8;
+@define-color accent #38bdf8;
+@define-color accent-alt #fbbf24;
+@define-color fg #f1f5f9;
+@define-color fg-muted #94a3b8;
+@define-color fg-active #0a0f1d;
 @define-color green #22c55e;
 @define-color red #ef4444;
 @define-color yellow #fbbf24;
@@ -18,5 +18,5 @@
 #custom-btn-maximize,
 #custom-btn-close,
 tooltip {
-    border-radius: 12px;
+    border-radius: 14px;
 }

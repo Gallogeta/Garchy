@@ -273,7 +273,7 @@ class ThemeSwitcherApp(tk.Tk):
         os.makedirs(os.path.dirname(waybar_theme), exist_ok=True)
         css_content = f"""@define-color bg {t['bg']};
 @define-color bg-alt {t['bg_alt']};
-@define-color border-col {BORDER_COL};
+@define-color border-col {t['accent']};
 @define-color accent {t['accent']};
 @define-color accent-alt {t['accent_alt']};
 @define-color fg {t['fg']};
