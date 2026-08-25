@@ -130,16 +130,11 @@
   * Wlogout glassmorphic power menu (`Super + Escape`) with hover glows and quick power controls.
 * **Thunar File Manager Context Extensions (`~/.config/Thunar/uca.xml`)**:
   * **🤖 Inspect with Cephalon AI (`~/.config/hypr/scripts/gally_inspect_file.py`)**:
-    * Right-clicking any file or folder opens a dedicated streaming AI diagnostic window.
-    * **Format-Aware Manifest Extraction**:
-      * **Archives (`.7z`, `.zip`, `.tar*`)**: Auto-extracts full file listing with `7z l` / `tar` (e.g. tracks, sizes, dates) rather than raw binary bytes.
-      * **Audio/Video (`.mp3`, `.wav`, `.flac`, `.mp4`, `.mkv`)**: Reads artist, title, album, bitrate, duration, and codecs via `ffprobe`.
-      * **Images (`.png`, `.jpg`, `.webp`)**: Inspects resolution, color modes, and formats via Pillow.
-      * **Code/Configs (`.py`, `.sh`, `.toml`, `.json`)**: Syntax-checked UTF-8 source inspection.
-    * Real-time streaming Cephalon AI analysis with interactive follow-up Q&A prompt.
+    * Right-clicking any file or folder opens a dedicated streaming AI diagnostic window with format-aware manifest extraction (archives, audio tags via ffprobe, image specs via Pillow, code syntax) and interactive follow-up Q&A.
+  * **🖼️ Unified Native "Set as wallpaper" Action (`~/.config/hypr/scripts/gally-wallpaper-bridge.py`)**:
+    * Removed duplicate context entries. Thunar's native **"Set as wallpaper"** is seamlessly bridged to `awww` with 144Hz wave transitions and desktop notifications across dual monitors.
   * **🌌 Open in Garchy Terminal**: Opens Kitty directly in that folder.
   * **💻 Open with VS Code**: Launches VS Code for selected files/folders.
-  * **🖼️ Set as Desktop Wallpaper**: Instantly applies image with 144Hz wave animation.
   * **📦 Compress to High-Speed .tar.zst**: Multi-threaded ZSTD compression.
   * **🔒 Verify SHA256 Checksum**: Cryptographic hash generator.
 
