@@ -161,10 +161,15 @@
 
 | Path | Description |
 | :--- | :--- |
+| `~/.config/hypr/scripts/garchy-welcome.py` | Garchy OS First-Boot OOBE & Welcome Setup Center |
+| `~/.local/bin/garchy-snapshot` | Instant Btrfs snapshot checkpoint generator |
+| `~/.local/bin/garchy-restore` | Interactive snapshot rollback manager |
+| `~/.config/hypr/scripts/gally_inspect_file.py` | Format-aware Cephalon AI file & archive manifest inspector |
+| `~/.config/hypr/scripts/gally-wallpaper-bridge.py` | Seamless xfconf-to-awww 144Hz wallpaper bridge |
 | `~/.config/hypr/scripts/gally-ai-hud.py` | Main CustomTkinter Glassmorphic Cephalon AI HUD |
 | `~/.config/hypr/scripts/gally_ai_router.py` | Multi-provider router, in-terminal login & model switching engine |
-| `~/.config/hypr/scripts/gally_memory_manager.py` | Persistent memory, 3 modes (Non-Adult 10-16, Normal 16+, Sudo), and sandbox |
-| `~/.config/hypr/scripts/gally_theme_helper.py` | Universal desktop theme state & icon sync controller |
+| `~/.config/hypr/scripts/gally_memory_manager.py` | Persistent memory, 4 modes, and safety sandbox |
+| `~/.config/hypr/scripts/gally_theme_helper.py` | Universal desktop theme state, Kitty ANSI & CAVA sync controller |
 | `~/.config/hypr/scripts/gally-drive-automount.py` | Universal storage automounter (startup & live hotplug) |
 | `~/.config/hypr/scripts/wallpaper-gallery-gui.py` | Wallpaper chooser with timer interval controls and folder manager |
 | `~/.config/hypr/scripts/wallpaper-timer.sh` | Background wallpaper rotation daemon |
@@ -175,3 +180,7 @@
 | `~/.config/hypr/scripts/theme-switcher-gui.py` | Theme gallery with scrollbar & icon synchronization |
 | `~/.config/hypr/scripts/launchpad-gui.py` | Instant cached application launchpad |
 | `~/.config/hypr/scripts/help-hud.py` | Cheatsheet popup helper card (`F1`) |
+| `~/.config/Thunar/uca.xml` | Custom right-click file manager actions |
+| `~/.config/starship.toml` | Starship prompt with squared digital G (`🅶`) icon |
+| `~/.config/fastfetch/config.jsonc` | Fastfetch hardware telemetry with G-Shield ASCII and circular dots |
+| `Garchy/dotfiles/plymouth/garchy-minimal/` | Garchy Minimal Plymouth boot splash theme |
