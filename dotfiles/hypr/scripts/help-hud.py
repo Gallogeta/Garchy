@@ -70,8 +70,8 @@ class HelpHudApp(tk.Tk):
         self.bg_input = self.theme.get("bg_input", "#1e293b")
         self.fg_light = self.theme.get("fg", "#e0e6ed")
         self.fg_muted = self.theme.get("fg_muted", "#94a3b8")
-        self.accent_gold = self.theme.get("accent", "#d4af37")
-        self.accent_cyan = self.theme.get("accent_alt", "#00d2ff")
+        self.accent_gold = self.theme.get("accent", "#38bdf8")
+        self.accent_cyan = self.theme.get("accent_alt", "#fbbf24")
         self.border_color = self.theme.get("border_col", self.accent_gold)
 
     def check_theme_update(self):

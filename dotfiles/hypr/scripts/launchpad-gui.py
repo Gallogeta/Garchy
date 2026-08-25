@@ -155,10 +155,9 @@ class LaunchpadApp(tk.Tk):
         self.bg_input = self.theme.get("bg_input", "#1e293b")
         self.bg_hover = "#1e293b" if self.bg_main != "#1e293b" else "#2a2b3d"
         self.fg_light = self.theme.get("fg", "#f1f5f9")
-        self.fg_muted = self.theme.get("fg_muted", "#94a3b8")
-        self.accent_primary = self.theme.get("accent", "#fbbf24")
-        self.accent_secondary = self.theme.get("accent_alt", "#38bdf8")
-        self.border_col = self.theme.get("border_col", "#334155")
+        self.accent_primary = self.theme.get("accent", "#38bdf8")
+        self.accent_secondary = self.theme.get("accent_alt", "#fbbf24")
+        self.border_col = self.theme.get("border_col", self.accent_primary)
         
         self.title("Gally OS — Application Launchpad")
         self.geometry("900x640")
@@ -252,8 +251,8 @@ class LaunchpadApp(tk.Tk):
                 self.bg_hover = "#1e293b" if self.bg_main != "#1e293b" else "#2a2b3d"
                 self.fg_light = self.theme.get("fg", "#f1f5f9")
                 self.fg_muted = self.theme.get("fg_muted", "#94a3b8")
-                self.accent_primary = self.theme.get("accent", "#fbbf24")
-                self.accent_secondary = self.theme.get("accent_alt", "#38bdf8")
+                self.accent_primary = self.theme.get("accent", "#38bdf8")
+                self.accent_secondary = self.theme.get("accent_alt", "#fbbf24")
                 self.border_col = self.theme.get("border_col", self.accent_primary)
                 self.apply_theme_live()
         except Exception:

@@ -19,9 +19,9 @@ ACTIVE_T = gally_theme_helper.get_active_theme()
 BG_MAIN = ACTIVE_T.get("bg", "#070b14")
 BG_CARD = ACTIVE_T.get("bg_card", "#0f172a")
 FG_LIGHT = ACTIVE_T.get("fg", "#f1f5f9")
-ACCENT_GOLD = ACTIVE_T.get("accent", "#fbbf24")
-ACCENT_CYAN = ACTIVE_T.get("accent_alt", "#38bdf8")
-BORDER_COL = ACTIVE_T.get("border_col", "#334155")
+ACCENT_GOLD = ACTIVE_T.get("accent", "#38bdf8")
+ACCENT_CYAN = ACTIVE_T.get("accent_alt", "#fbbf24")
+BORDER_COL = ACTIVE_T.get("border_col", ACCENT_GOLD)
 
 THEMES = [
     {
