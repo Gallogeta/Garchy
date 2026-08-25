@@ -63,7 +63,16 @@
     6. **🧛 Dracula**: Gothic purple and vibrant pink highlights.
     7. **🌋 Volcanic Lava**: Magma crimson and fiery amber.
     8. **🌲 Emerald Forest**: Lush matrix green and mint.
-    9. **🖤 Monochrome Glass**: Minimalist titanium silver and diamond white.
+    9. **🖤 Deep Obsidian**: Pitch obsidian dark glass with diamond white highlights.
+  * **Kitty Terminal Dynamic Full-Spectrum 16-Color ANSI Sync (`~/.config/kitty/theme.conf`)**:
+    * Automatically generates and writes the full 16-color ANSI palette (`color0` through `color15`), tab bar styles, border colors, and cursor glows for all 9 themes with instant live reload via `SIGUSR1`.
+  * **Kitty Aesthetic & Productivity Engine (`~/.config/kitty/kitty.conf`)**:
+    * **Glassmorphism**: `background_opacity 0.88` with `background_blur 20`.
+    * **Smooth Kinetic Cursor Trails**: `cursor_trail 1` and `cursor_trail_decay 0.1 0.4` (smooth kinetic particle glide).
+    * **Slanted Powerline Tabs**: `tab_bar_style powerline` with `tab_powerline_style slanted`.
+    * **Tiling & Splits**: `Ctrl+Shift+D` (vsplit), `Ctrl+Shift+S` (hsplit), `Ctrl+Shift+H/J/K/L` (pane navigation).
+  * **Custom Garchy Fastfetch Banner (`~/.config/fastfetch/`)**:
+    * Custom ASCII Garchy glyph, hardware specs (Ryzen 9 5900X, RTX 3080 Ti, dual 144Hz displays, Btrfs), active theme, and Cephalon AI status indicator.
   * **Automatic Icon Theme Sync**: System-wide **Tela Circle** icon pairing (`Tela-circle-dark`, `purple`, `pink`, `nord`, `yellow`, `dracula`, `red`, `green`, `black`).
   * **Waybar Dynamic Border Sync**: Border color bound to active theme's accent (`@define-color border-col {t['accent']};`).
 
