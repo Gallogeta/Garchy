@@ -35,13 +35,13 @@ disabled = true
 [os]
 disabled = false
 style = "bold cyan"
-format = "[$symbol](bold cyan)"
+format = "[$symbol](bold cyan) "
 
 [os.symbols]
-CachyOS = "◈ G "
-Arch = "◈ G "
-EndeavourOS = "◈ G "
-Linux = "◈ G "
+CachyOS = "🅶"
+Arch = "🅶"
+EndeavourOS = "🅶"
+Linux = "🅶"
 
 [directory]
 truncation_length = 3
