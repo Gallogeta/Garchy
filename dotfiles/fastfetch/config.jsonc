@@ -29,7 +29,8 @@
     },
     {
       "type": "os",
-      "key": "OS"
+      "key": "OS",
+      "format": "Garchy OS Linux (Arch Rolling x86_64)"
     },
     {
       "type": "wm",
