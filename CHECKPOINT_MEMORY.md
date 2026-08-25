@@ -72,16 +72,10 @@
     * **Slanted Powerline Tabs**: `tab_bar_style powerline` with `tab_powerline_style slanted`.
     * **Tiling & Splits**: `Ctrl+Shift+D` (vsplit), `Ctrl+Shift+S` (hsplit), `Ctrl+Shift+H/J/K/L` (pane navigation).
   * **Custom Garchy Fastfetch Banner (`~/.config/fastfetch/`)**:
-    * Custom ASCII Garchy glyph, hardware specs (Ryzen 9 5900X, RTX 3080 Ti, dual 144Hz displays, Btrfs), active theme, and Cephalon AI status indicator.
-  * **CAVA 144Hz Calibrated Frequency Spectrum (`~/.config/cava/config`)**:
-    * **Frequency Mapping**: Strictly calibrated from **Sub-Bass (30Hz) on the far Left** ➔ **Mids (1kHz)** ➔ **High Treble (14kHz) on the far Right** (`channels = mono`).
-    * **Compact Geometry**: Scaled down to a sleek, compact 20-bar spectrum (`bars = 20`, `max_height = 6`) positioned cleanly on the right alongside the fastfetch palette.
-    * Dynamic color gradient sync across all 9 desktop themes.
-  * **Garchy Unified Terminal (`~/.local/bin/garchy-terminal`)**:
-    * Set as the default `$terminal` for `Super + Return` and `Super + T`.
-    * **Proportional 75/25 Layout**:
-      * **Left (75%)**: Main interactive Shell (`zsh`) with fastfetch, Cephalon AI (`ai`), and full typing focus.
-      * **Right (25%)**: Compact Audio Spectrum pulsing cleanly alongside the shell.
+    * Custom digitalized **G-Shield ASCII Core** with live hardware specs (Ryzen 9 5900X, RTX 3080 Ti, dual 144Hz displays, Btrfs), Cephalon AI status indicator, and an **Inline Frequency Spectrum Equalizer (` ▂▃▄▅▆▇█ [30Hz Sub-Bass ➔ 14kHz Treble]`)** positioned directly above the color palette.
+  * **Clean Single-Window Terminal Experience**:
+    * Default terminal (`Super + Return` or `Super + T`) launches as a **single, clean, unified window** with zero unwanted tiled splits.
+    * Live 144Hz audio visualizer is accessible on-demand via floating bar (**`Super + Shift + V`**) or CLI command `visualizer` / `cava`.
     * **Fluid Interactive Resizing & Zoom**:
       * `Ctrl + Shift + R`: Dedicated interactive pane resize mode (resize height/width with arrows or HJKL).
       * `Ctrl + Shift + Arrows`: Instant pane nudging (taller/shorter/wider/narrower).
