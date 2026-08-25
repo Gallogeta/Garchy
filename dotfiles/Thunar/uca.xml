@@ -41,18 +41,6 @@
 	<text-files/>
 </action>
 <action>
-	<icon>preferences-desktop-wallpaper</icon>
-	<name>🖼️ Set as Desktop Wallpaper</name>
-	<submenu></submenu>
-	<unique-id>1753617536042303-4</unique-id>
-	<command>sh -c "awww img '%f' --transition-type wave --transition-fps 144 &amp;&amp; notify-send -a 'Wallpaper' '🖼️ Wallpaper Applied' '%n'"</command>
-	<description>Set selected image as active desktop wallpaper</description>
-	<range></range>
-	<patterns>*.png;*.jpg;*.jpeg;*.webp;*.bmp;*.gif</patterns>
-	<startup-notify/>
-	<image-files/>
-</action>
-<action>
 	<icon>package-x-generic</icon>
 	<name>📦 Compress to High-Speed .tar.zst</name>
 	<submenu></submenu>
