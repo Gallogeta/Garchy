@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Gally OS - Animated Glassmorphic Wallpaper Gallery & Chooser (GUI)
-Theme-aware styling, auto-scrolling filmstrip carousel, large preview & Enter-to-Apply.
+Theme-aware styling, auto-scrolling filmstrip carousel, in-memory preview caching & Enter-to-Apply.
 """
 
 import os
@@ -14,30 +14,9 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk, ImageOps
 
-# Import Gally active theme state
-try:
-    import gally_theme_helper
-    THEME = gally_theme_helper.get_active_theme()
-except Exception:
-    THEME = {
-        "bg": "#070b14",
-        "bg_card": "#0f172a",
-        "bg_input": "#1e293b",
-        "fg": "#f1f5f9",
-        "fg_muted": "#94a3b8",
-        "accent": "#fbbf24",
-        "accent_alt": "#38bdf8",
-        "border_col": "#334155"
-    }
-
-BG_MAIN = THEME.get("bg", "#070b14")
-BG_CARD = THEME.get("bg_card", "#0f172a")
-BG_INPUT = THEME.get("bg_input", "#1e293b")
-FG_LIGHT = THEME.get("fg", "#f1f5f9")
-FG_MUTED = THEME.get("fg_muted", "#94a3b8")
-ACCENT_PRIMARY = THEME.get("accent", "#fbbf24")
-ACCENT_SECONDARY = THEME.get("accent_alt", "#38bdf8")
-BORDER_COL = THEME.get("border_col", "#334155")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.expanduser("~/.config/hypr/scripts"))
+import gally_theme_helper
 
 WALLPAPERS_DIR = os.path.expanduser("~/Pictures/Wallpapers")
 CURRENT_FILE = "/tmp/hypr_current_wallpaper.txt"
@@ -55,15 +34,28 @@ def get_wallpaper_list():
 class WallpaperGalleryApp(tk.Tk):
     def __init__(self):
         super().__init__(className='gally_wallpaper_gallery')
+        
+        # Dynamically load active theme
+        self.theme = gally_theme_helper.get_active_theme()
+        self.bg_main = self.theme.get("bg", "#070b14")
+        self.bg_card = self.theme.get("bg_card", "#0f172a")
+        self.bg_input = self.theme.get("bg_input", "#1e293b")
+        self.fg_light = self.theme.get("fg", "#f1f5f9")
+        self.fg_muted = self.theme.get("fg_muted", "#94a3b8")
+        self.accent_primary = self.theme.get("accent", "#fbbf24")
+        self.accent_secondary = self.theme.get("accent_alt", "#38bdf8")
+        self.border_col = self.theme.get("border_col", "#334155")
+        
         self.title("Gally OS — Visual Wallpaper Gallery")
         self.geometry("940x680")
-        self.configure(bg=BG_MAIN)
+        self.configure(bg=self.bg_main)
         self.minsize(800, 560)
         
         self.wallpapers = get_wallpaper_list()
         self.current_index = 0
         self.thumb_boxes = []
         self.big_preview_img = None
+        self.preview_cache = {}  # In-memory LRU preview cache for instant switching
         
         # Determine currently active wallpaper if saved
         if os.path.exists(CURRENT_FILE):
@@ -76,42 +68,42 @@ class WallpaperGalleryApp(tk.Tk):
                 pass
 
         # 1. Glassmorphic Header
-        hdr = tk.Frame(self, bg=BG_MAIN, padx=25, pady=12)
+        hdr = tk.Frame(self, bg=self.bg_main, padx=25, pady=12)
         hdr.pack(fill="x")
         
-        top_bar = tk.Frame(hdr, bg=BG_MAIN)
+        top_bar = tk.Frame(hdr, bg=self.bg_main)
         top_bar.pack(fill="x")
         
-        tk.Label(top_bar, text="🌌 Gally Wallpaper Gallery", font=("Sans", 16, "bold"), fg=ACCENT_PRIMARY, bg=BG_MAIN).pack(side="left")
+        tk.Label(top_bar, text="🌌 Gally Wallpaper Gallery", font=("Sans", 16, "bold"),
+                 fg=self.accent_primary, bg=self.bg_main).pack(side="left")
         
         self.lbl_count = tk.Label(top_bar, text=f"🖼️ {len(self.wallpapers)} Wallpapers Ready",
-                                  font=("Sans", 10, "bold"), fg=ACCENT_SECONDARY, bg=BG_CARD, padx=12, pady=4,
-                                  highlightthickness=1, highlightbackground=BORDER_COL)
+                                  font=("Sans", 10, "bold"), fg=self.accent_secondary, bg=self.bg_card, padx=12, pady=4,
+                                  highlightthickness=1, highlightbackground=self.border_col)
         self.lbl_count.pack(side="right")
         
         tk.Label(hdr, text="Browse via Arrow Keys or Filmstrip • Press [ Enter ] to Apply Wallpaper",
-                 font=("Sans", 9), fg=FG_MUTED, bg=BG_MAIN).pack(anchor="w", pady=(2, 0))
-        tk.Frame(hdr, height=2, bg=ACCENT_PRIMARY).pack(fill="x", pady=(8, 0))
+                 font=("Sans", 9), fg=self.fg_muted, bg=self.bg_main).pack(anchor="w", pady=(2, 0))
+        tk.Frame(hdr, height=2, bg=self.accent_primary).pack(fill="x", pady=(8, 0))
 
         # 2. Main Large Preview Canvas
-        self.preview_frame = tk.Frame(self, bg=BG_CARD, padx=10, pady=10, relief="flat",
-                                      highlightthickness=1, highlightbackground=BORDER_COL)
+        self.preview_frame = tk.Frame(self, bg=self.bg_card, padx=10, pady=10, relief="flat",
+                                      highlightthickness=1, highlightbackground=self.border_col)
         self.preview_frame.pack(fill="both", expand=True, padx=25, pady=(5, 10))
         
-        # Navigation Overlay Controls
-        nav_row = tk.Frame(self.preview_frame, bg=BG_CARD)
+        nav_row = tk.Frame(self.preview_frame, bg=self.bg_card)
         nav_row.pack(fill="x", pady=(0, 6))
         
-        self.btn_prev = tk.Button(nav_row, text="◀  Previous", font=("Sans", 10, "bold"),
-                                  bg=BG_INPUT, fg=FG_LIGHT, activebackground=ACCENT_SECONDARY, activeforeground="#000",
+        self.btn_prev = tk.Button(nav_row, text="◀  Prev", font=("Sans", 10, "bold"),
+                                  bg=self.bg_input, fg=self.fg_light, activebackground=self.accent_secondary, activeforeground="#000",
                                   relief="flat", padx=14, pady=5, cursor="hand2", command=self.prev_wallpaper)
         self.btn_prev.pack(side="left")
         
-        self.lbl_wall_name = tk.Label(nav_row, text="", font=("Sans", 11, "bold"), fg=ACCENT_PRIMARY, bg=BG_CARD)
+        self.lbl_wall_name = tk.Label(nav_row, text="", font=("Sans", 11, "bold"), fg=self.accent_primary, bg=self.bg_card)
         self.lbl_wall_name.pack(side="left", padx=15)
         
         self.btn_next = tk.Button(nav_row, text="Next  ▶", font=("Sans", 10, "bold"),
-                                  bg=BG_INPUT, fg=FG_LIGHT, activebackground=ACCENT_SECONDARY, activeforeground="#000",
+                                  bg=self.bg_input, fg=self.fg_light, activebackground=self.accent_secondary, activeforeground="#000",
                                   relief="flat", padx=14, pady=5, cursor="hand2", command=self.next_wallpaper)
         self.btn_next.pack(side="right")
         
@@ -120,16 +112,16 @@ class WallpaperGalleryApp(tk.Tk):
         self.lbl_preview_canvas.pack(fill="both", expand=True)
 
         # 3. Horizontal Auto-Sliding Thumbnail Filmstrip
-        ribbon_outer = tk.Frame(self, bg=BG_MAIN, padx=25, pady=4)
+        ribbon_outer = tk.Frame(self, bg=self.bg_main, padx=25, pady=4)
         ribbon_outer.pack(fill="x")
         
         tk.Label(ribbon_outer, text="Gallery Filmstrip (Auto-scrolls with selection):",
-                 font=("Sans", 9, "bold"), fg=FG_MUTED, bg=BG_MAIN).pack(anchor="w", pady=(0, 4))
+                 font=("Sans", 9, "bold"), fg=self.fg_muted, bg=self.bg_main).pack(anchor="w", pady=(0, 4))
                  
-        self.thumb_canvas = tk.Canvas(ribbon_outer, bg=BG_MAIN, height=92, highlightthickness=0)
+        self.thumb_canvas = tk.Canvas(ribbon_outer, bg=self.bg_main, height=92, highlightthickness=0)
         self.thumb_scrollbar = ttk.Scrollbar(ribbon_outer, orient="horizontal", command=self.thumb_canvas.xview)
         
-        self.thumb_container = tk.Frame(self.thumb_canvas, bg=BG_MAIN)
+        self.thumb_container = tk.Frame(self.thumb_canvas, bg=self.bg_main)
         self.thumb_container.bind("<Configure>", lambda e: self.thumb_canvas.configure(scrollregion=self.thumb_canvas.bbox("all")))
         
         self.thumb_canvas.create_window((0, 0), window=self.thumb_container, anchor="nw")
@@ -139,25 +131,25 @@ class WallpaperGalleryApp(tk.Tk):
         self.thumb_scrollbar.pack(fill="x", pady=(3, 0))
 
         # 4. Action Buttons Footer
-        footer = tk.Frame(self, bg=BG_MAIN, padx=25, pady=12)
+        footer = tk.Frame(self, bg=self.bg_main, padx=25, pady=12)
         footer.pack(fill="x", side="bottom")
         
         btn_random = tk.Button(footer, text="🎲  Random Wallpaper", font=("Sans", 10, "bold"),
-                               bg=BG_INPUT, fg=ACCENT_SECONDARY, activebackground=ACCENT_SECONDARY, activeforeground="#000",
+                               bg=self.bg_input, fg=self.accent_secondary, activebackground=self.accent_secondary, activeforeground="#000",
                                relief="flat", padx=18, pady=8, cursor="hand2", command=self.apply_random)
         btn_random.pack(side="left")
         
         btn_close = tk.Button(footer, text="Close (Esc)", font=("Sans", 10),
-                              bg=BG_INPUT, fg=FG_MUTED, activebackground=BORDER_COL, activeforeground="#fff",
+                              bg=self.bg_input, fg=self.fg_muted, activebackground=self.border_col, activeforeground="#fff",
                               relief="flat", padx=16, pady=8, cursor="hand2", command=self.destroy)
         btn_close.pack(side="left", padx=(10, 0))
         
         self.btn_apply = tk.Button(footer, text="✨  Apply This Wallpaper (Enter)", font=("Sans", 11, "bold"),
-                                   bg=ACCENT_PRIMARY, fg="#000", activebackground=ACCENT_SECONDARY, activeforeground="#000",
+                                   bg=self.accent_primary, fg="#000", activebackground=self.accent_secondary, activeforeground="#000",
                                    relief="flat", padx=24, pady=8, cursor="hand2", command=self.apply_current)
         self.btn_apply.pack(side="right")
 
-        # Keyboard Bindings (Enter, Left, Right, Escape, Space)
+        # Keyboard Bindings
         self.bind("<Left>", lambda e: self.prev_wallpaper())
         self.bind("<Right>", lambda e: self.next_wallpaper())
         self.bind("<Up>", lambda e: self.prev_wallpaper())
@@ -175,6 +167,19 @@ class WallpaperGalleryApp(tk.Tk):
         self.update_preview()
         threading.Thread(target=self.generate_thumbnails_async, daemon=True).start()
 
+    def load_cached_preview(self, path):
+        if path in self.preview_cache:
+            return self.preview_cache[path]
+        try:
+            img = Image.open(path)
+            pw, ph = 760, 320
+            img.thumbnail((pw, ph), Image.Resampling.BILINEAR)
+            tk_img = ImageTk.PhotoImage(img)
+            self.preview_cache[path] = tk_img
+            return tk_img
+        except Exception:
+            return None
+
     def update_preview(self):
         if not self.wallpapers:
             self.lbl_wall_name.config(text="No Wallpapers Found")
@@ -184,14 +189,28 @@ class WallpaperGalleryApp(tk.Tk):
         filename = os.path.basename(path)
         self.lbl_wall_name.config(text=f"[{self.current_index + 1}/{len(self.wallpapers)}]  {filename}")
         
-        try:
-            img = Image.open(path)
-            pw, ph = 760, 320
-            img.thumbnail((pw, ph), Image.Resampling.LANCZOS)
-            self.big_preview_img = ImageTk.PhotoImage(img)
+        tk_img = self.load_cached_preview(path)
+        if tk_img:
+            self.big_preview_img = tk_img
             self.lbl_preview_canvas.config(image=self.big_preview_img)
-        except Exception:
-            pass
+            
+        # Asynchronously prefetch next & prev
+        threading.Thread(target=self.prefetch_adjacent_previews, daemon=True).start()
+
+    def prefetch_adjacent_previews(self):
+        total = len(self.wallpapers)
+        if total <= 1:
+            return
+        for offset in [1, -1, 2, -2]:
+            idx = (self.current_index + offset) % total
+            p = self.wallpapers[idx]
+            if p not in self.preview_cache:
+                try:
+                    img = Image.open(p)
+                    img.thumbnail((760, 320), Image.Resampling.BILINEAR)
+                    self.preview_cache[p] = ImageTk.PhotoImage(img)
+                except Exception:
+                    pass
 
     def next_wallpaper(self):
         if self.wallpapers:
@@ -228,7 +247,7 @@ class WallpaperGalleryApp(tk.Tk):
 
     def set_wallpaper_live(self, target):
         try:
-            if not subprocess.run(["pgrep", "-x", "awww-daemon"], stdout=subprocess.DEVNULL).returncode == 0:
+            if subprocess.run(["pgrep", "-x", "awww-daemon"], stdout=subprocess.DEVNULL).returncode != 0:
                 subprocess.Popen(["awww-daemon"])
                 
             cmd = ["awww", "img", target, "--transition-type", "outer", "--transition-step", "90", "--transition-fps", "144"]
@@ -253,11 +272,11 @@ class WallpaperGalleryApp(tk.Tk):
                 continue
 
     def add_thumb_widget(self, idx, tk_img, path):
-        box = tk.Frame(self.thumb_container, bg=BG_CARD, padx=2, pady=2, relief="flat",
-                       highlightthickness=2, highlightbackground=BORDER_COL, cursor="hand2")
+        box = tk.Frame(self.thumb_container, bg=self.bg_card, padx=2, pady=2, relief="flat",
+                       highlightthickness=2, highlightbackground=self.border_col, cursor="hand2")
         box.pack(side="left", padx=4, pady=2)
         
-        lbl = tk.Label(box, image=tk_img, bg=BG_CARD, cursor="hand2")
+        lbl = tk.Label(box, image=tk_img, bg=self.bg_card, cursor="hand2")
         lbl.image = tk_img
         lbl.pack()
         
@@ -268,16 +287,16 @@ class WallpaperGalleryApp(tk.Tk):
         self.thumb_boxes.append(box)
         
         if idx == self.current_index:
-            box.configure(highlightbackground=ACCENT_PRIMARY)
+            box.configure(highlightbackground=self.accent_primary)
             self.auto_scroll_filmstrip()
 
     def highlight_and_auto_scroll(self):
         for box in self.thumb_container.winfo_children():
             idx = getattr(box, "thumb_idx", -1)
             if idx == self.current_index:
-                box.configure(highlightbackground=ACCENT_PRIMARY)
+                box.configure(highlightbackground=self.accent_primary)
             else:
-                box.configure(highlightbackground=BORDER_COL)
+                box.configure(highlightbackground=self.border_col)
         self.auto_scroll_filmstrip()
 
     def auto_scroll_filmstrip(self):

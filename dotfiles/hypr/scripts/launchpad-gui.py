@@ -13,31 +13,9 @@ import threading
 import tkinter as tk
 from tkinter import ttk
 
-# Import Gally active theme state
-try:
-    import gally_theme_helper
-    THEME = gally_theme_helper.get_active_theme()
-except Exception:
-    THEME = {
-        "bg": "#070b14",
-        "bg_card": "#0f172a",
-        "bg_input": "#1e293b",
-        "fg": "#f1f5f9",
-        "fg_muted": "#94a3b8",
-        "accent": "#fbbf24",
-        "accent_alt": "#38bdf8",
-        "border_col": "#334155"
-    }
-
-BG_MAIN = THEME.get("bg", "#070b14")
-BG_CARD = THEME.get("bg_card", "#0f172a")
-BG_HOVER = "#1e293b"
-BG_INPUT = THEME.get("bg_input", "#1e293b")
-FG_LIGHT = THEME.get("fg", "#f1f5f9")
-FG_MUTED = THEME.get("fg_muted", "#94a3b8")
-ACCENT_PRIMARY = THEME.get("accent", "#fbbf24")
-ACCENT_SECONDARY = THEME.get("accent_alt", "#38bdf8")
-BORDER_COL = THEME.get("border_col", "#334155")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.expanduser("~/.config/hypr/scripts"))
+import gally_theme_helper
 
 CACHE_FILE = os.path.expanduser("~/.cache/gally_apps_cache.json")
 
@@ -58,72 +36,87 @@ CATEGORY_ICONS = {
 
 def parse_desktop_file(filepath):
     entry = {}
-    is_desktop_entry = False
+    in_desktop_entry = False
     try:
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
             for line in f:
                 line = line.strip()
-                if not line or line.startswith('#'):
+                if line == '[Desktop Entry]':
+                    in_desktop_entry = True
                     continue
-                if line.startswith('[') and line.endswith(']'):
-                    is_desktop_entry = (line == '[Desktop Entry]')
+                elif line.startswith('[') and line.endswith(']'):
+                    in_desktop_entry = False
                     continue
-                if is_desktop_entry and '=' in line:
-                    k, v = line.split('=', 1)
-                    k = k.strip()
-                    if k not in entry:
-                        entry[k] = v.strip()
+                if in_desktop_entry and '=' in line:
+                    key, val = line.split('=', 1)
+                    key = key.strip()
+                    val = val.strip()
+                    if key in ['Name', 'Exec', 'Icon', 'Categories', 'NoDisplay', 'Terminal', 'Type', 'Comment']:
+                        if key not in entry:
+                            entry[key] = val
     except Exception:
-        pass
-    return entry
+        return None
+
+    if entry.get('Type') != 'Application' or entry.get('NoDisplay') == 'true' or not entry.get('Name') or not entry.get('Exec'):
+        return None
+
+    exec_cmd = entry['Exec']
+    for placeholder in ['%f', '%F', '%u', '%U', '%d', '%D', '%n', '%N', '%k', '%v', '%m']:
+        exec_cmd = exec_cmd.replace(placeholder, '')
+    exec_cmd = exec_cmd.strip()
+    if not exec_cmd:
+        return None
+
+    emoji = "📦"
+    cats = entry.get('Categories', '').lower()
+    for cat_key, cat_emoji in CATEGORY_ICONS.items():
+        if cat_key in cats:
+            emoji = cat_emoji
+            break
+
+    name_lower = entry['Name'].lower()
+    if "terminal" in name_lower or "kitty" in name_lower or "console" in name_lower:
+        emoji = "💻"
+    elif "browser" in name_lower or "brave" in name_lower or "firefox" in name_lower or "chrome" in name_lower:
+        emoji = "🌐"
+    elif "steam" in name_lower or "game" in name_lower or "heroic" in name_lower or "lutris" in name_lower:
+        emoji = "🎮"
+    elif "code" in name_lower or "editor" in name_lower:
+        emoji = "⚡"
+    elif "files" in name_lower or "thunar" in name_lower:
+        emoji = "📁"
+
+    return {
+        "name": entry['Name'],
+        "exec": exec_cmd,
+        "comment": entry.get('Comment', ''),
+        "emoji": emoji,
+        "search_key": f"{entry['Name']} {entry.get('Comment', '')} {cats}".lower()
+    }
 
 def scan_apps_from_disk():
-    apps = []
-    seen = set()
     dirs = [
-        os.path.expanduser("~/.local/share/applications/*.desktop"),
-        "/usr/share/applications/*.desktop"
+        os.path.expanduser("~/.local/share/applications"),
+        "/usr/local/share/applications",
+        "/usr/share/applications"
     ]
-    for d in dirs:
-        for f in sorted(glob.glob(d)):
-            e = parse_desktop_file(f)
-            if not e or e.get('NoDisplay', '').lower() == 'true':
-                continue
-            name = e.get('Name', '').strip()
-            exec_cmd = e.get('Exec', '').strip()
-            if not name or not exec_cmd or name in seen:
-                continue
-            seen.add(name)
-            
-            clean_exec = " ".join([arg for arg in exec_cmd.split() if not arg.startswith('%')])
-            categories = e.get('Categories', '').lower()
-            
-            icon_emoji = "📦"
-            for cat, emoji in CATEGORY_ICONS.items():
-                if cat in categories:
-                    icon_emoji = emoji
-                    break
-                    
-            name_lower = name.lower()
-            if "terminal" in name_lower or "kitty" in name_lower:
-                icon_emoji = ""
-            elif "steam" in name_lower or "game" in name_lower:
-                icon_emoji = "🎮"
-            elif "brave" in name_lower or "firefox" in name_lower or "browser" in name_lower:
-                icon_emoji = "🌐"
-            elif "code" in name_lower or "codium" in name_lower:
-                icon_emoji = "💻"
-            elif "file" in name_lower or "thunar" in name_lower:
-                icon_emoji = "📁"
-            elif "gally" in name_lower or "ai" in name_lower:
-                icon_emoji = "🤖"
+    seen_execs = set()
+    apps = []
 
-            apps.append({
-                "name": name,
-                "exec": clean_exec,
-                "emoji": icon_emoji,
-                "comment": e.get('Comment', '')
-            })
+    for d in dirs:
+        if not os.path.exists(d):
+            continue
+        for root, _, files in os.walk(d):
+            for file in files:
+                if file.endswith('.desktop'):
+                    full_path = os.path.join(root, file)
+                    app = parse_desktop_file(full_path)
+                    if app:
+                        exec_base = app['exec'].split()[0]
+                        if exec_base not in seen_execs:
+                            seen_execs.add(exec_base)
+                            apps.append(app)
+
     apps.sort(key=lambda x: x['name'].lower())
     return apps
 
@@ -131,7 +124,12 @@ def load_apps_cached():
     if os.path.exists(CACHE_FILE):
         try:
             with open(CACHE_FILE, "r") as f:
-                return json.load(f)
+                data = json.load(f)
+                if isinstance(data, list) and len(data) > 0:
+                    for app in data:
+                        if "search_key" not in app:
+                            app["search_key"] = f"{app.get('name', '')} {app.get('comment', '')}".lower()
+                    return data
         except Exception:
             pass
     apps = scan_apps_from_disk()
@@ -149,47 +147,72 @@ def save_apps_cache(apps):
 class LaunchpadApp(tk.Tk):
     def __init__(self):
         super().__init__(className='gally_launchpad')
+        
+        # Load active theme dynamically
+        self.theme = gally_theme_helper.get_active_theme()
+        self.bg_main = self.theme.get("bg", "#070b14")
+        self.bg_card = self.theme.get("bg_card", "#0f172a")
+        self.bg_input = self.theme.get("bg_input", "#1e293b")
+        self.bg_hover = "#1e293b" if self.bg_main != "#1e293b" else "#2a2b3d"
+        self.fg_light = self.theme.get("fg", "#f1f5f9")
+        self.fg_muted = self.theme.get("fg_muted", "#94a3b8")
+        self.accent_primary = self.theme.get("accent", "#fbbf24")
+        self.accent_secondary = self.theme.get("accent_alt", "#38bdf8")
+        self.border_col = self.theme.get("border_col", "#334155")
+        
         self.title("Gally OS — Application Launchpad")
         self.geometry("900x640")
-        self.configure(bg=BG_MAIN)
+        self.configure(bg=self.bg_main)
         self.minsize(760, 520)
         
+        # Style vertical scrollbar
+        style = ttk.Style()
+        try:
+            style.theme_use("clam")
+            style.configure("Vertical.TScrollbar", gripcount=0,
+                            background=self.bg_card, darkcolor=self.bg_main, lightcolor=self.bg_main,
+                            troughcolor=self.bg_main, bordercolor=self.border_col, arrowcolor=self.accent_secondary)
+        except Exception:
+            pass
+
         self.all_apps = load_apps_cached()
         self.filtered_apps = list(self.all_apps)
         
         # Header & Search Bar
-        hdr = tk.Frame(self, bg=BG_MAIN, padx=25, pady=14)
+        hdr = tk.Frame(self, bg=self.bg_main, padx=25, pady=14)
         hdr.pack(fill="x")
         
-        top_bar = tk.Frame(hdr, bg=BG_MAIN)
+        top_bar = tk.Frame(hdr, bg=self.bg_main)
         top_bar.pack(fill="x")
         
-        tk.Label(top_bar, text="🌌 Gally Launchpad", font=("Sans", 16, "bold"), fg=ACCENT_PRIMARY, bg=BG_MAIN).pack(side="left")
+        tk.Label(top_bar, text="🌌 Gally Launchpad", font=("Sans", 16, "bold"),
+                 fg=self.accent_primary, bg=self.bg_main).pack(side="left")
         
         # Search Box Container
-        search_card = tk.Frame(top_bar, bg=BG_INPUT, padx=12, pady=4, relief="flat",
-                               highlightthickness=1, highlightbackground=ACCENT_SECONDARY)
+        search_card = tk.Frame(top_bar, bg=self.bg_input, padx=12, pady=4, relief="flat",
+                               highlightthickness=1, highlightbackground=self.accent_secondary)
         search_card.pack(side="right", fill="x", expand=True, padx=(30, 0))
         
-        tk.Label(search_card, text="🔍", font=("Sans", 11), fg=ACCENT_SECONDARY, bg=BG_INPUT).pack(side="left", padx=(0, 6))
+        tk.Label(search_card, text="🔍", font=("Sans", 11),
+                 fg=self.accent_secondary, bg=self.bg_input).pack(side="left", padx=(0, 6))
         
-        self.ent_search = tk.Entry(search_card, font=("Sans", 11), bg=BG_INPUT, fg="#ffffff",
-                                   insertbackground=ACCENT_PRIMARY, relief="flat", borderwidth=0)
+        self.ent_search = tk.Entry(search_card, font=("Sans", 11), bg=self.bg_input, fg="#ffffff",
+                                   insertbackground=self.accent_primary, relief="flat", borderwidth=0)
         self.ent_search.pack(side="left", fill="x", expand=True)
         self.ent_search.bind("<KeyRelease>", self.on_search)
         self.ent_search.bind("<Return>", self.on_enter_press)
         self.ent_search.focus_set()
         
-        tk.Frame(hdr, height=2, bg=ACCENT_PRIMARY).pack(fill="x", pady=(10, 0))
+        tk.Frame(hdr, height=2, bg=self.accent_primary).pack(fill="x", pady=(10, 0))
         
         # Scrollable Canvas Grid
-        self.canvas_frame = tk.Frame(self, bg=BG_MAIN)
+        self.canvas_frame = tk.Frame(self, bg=self.bg_main)
         self.canvas_frame.pack(fill="both", expand=True, padx=25, pady=(0, 10))
         
-        self.canvas = tk.Canvas(self.canvas_frame, bg=BG_MAIN, highlightthickness=0)
+        self.canvas = tk.Canvas(self.canvas_frame, bg=self.bg_main, highlightthickness=0)
         self.scrollbar = ttk.Scrollbar(self.canvas_frame, orient="vertical", command=self.canvas.yview)
         
-        self.grid_container = tk.Frame(self.canvas, bg=BG_MAIN)
+        self.grid_container = tk.Frame(self.canvas, bg=self.bg_main)
         self.grid_container.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
         
         self.canvas_window = self.canvas.create_window((0, 0), window=self.grid_container, anchor="nw")
@@ -201,6 +224,7 @@ class LaunchpadApp(tk.Tk):
         self.bind("<Configure>", self.on_resize)
         self.bind_all("<Button-4>", lambda e: self.canvas.yview_scroll(-2, "units"))
         self.bind_all("<Button-5>", lambda e: self.canvas.yview_scroll(2, "units"))
+        self.bind_all("<MouseWheel>", lambda e: self.canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"))
         self.bind("<Escape>", lambda e: self.destroy())
         
         self.render_grid()
@@ -222,7 +246,7 @@ class LaunchpadApp(tk.Tk):
         if not q:
             self.filtered_apps = list(self.all_apps)
         else:
-            self.filtered_apps = [a for a in self.all_apps if q in a['name'].lower() or q in a['comment'].lower()]
+            self.filtered_apps = [a for a in self.all_apps if q in a.get("search_key", "")]
         self.render_grid()
 
     def on_enter_press(self, event=None):
@@ -238,27 +262,27 @@ class LaunchpadApp(tk.Tk):
             r = idx // columns
             c = idx % columns
             
-            # Static container with fixed border width to prevent any jumping or flickering
-            card = tk.Frame(self.grid_container, bg=BG_CARD, padx=10, pady=8, relief="flat",
-                            highlightthickness=1, highlightbackground=BORDER_COL, cursor="hand2", width=195, height=72)
+            card = tk.Frame(self.grid_container, bg=self.bg_card, padx=10, pady=8, relief="flat",
+                            highlightthickness=1, highlightbackground=self.border_col, cursor="hand2", width=195, height=72)
             card.grid(row=r, column=c, padx=5, pady=5, sticky="nsew")
             card.pack_propagate(False)
             
-            lbl_ico = tk.Label(card, text=app['emoji'], font=("Sans", 20), bg=BG_CARD, fg=ACCENT_PRIMARY, cursor="hand2")
+            lbl_ico = tk.Label(card, text=app['emoji'], font=("Sans", 20),
+                               bg=self.bg_card, fg=self.accent_primary, cursor="hand2")
             lbl_ico.pack(side="left", padx=(4, 8))
             
-            info = tk.Frame(card, bg=BG_CARD, cursor="hand2")
+            info = tk.Frame(card, bg=self.bg_card, cursor="hand2")
             info.pack(side="left", fill="both", expand=True)
             
-            lbl_nm = tk.Label(info, text=app['name'], font=("Sans", 10, "bold"), fg=FG_LIGHT, bg=BG_CARD,
-                              anchor="w", justify="left", cursor="hand2")
+            lbl_nm = tk.Label(info, text=app['name'], font=("Sans", 10, "bold"),
+                              fg=self.fg_light, bg=self.bg_card, anchor="w", justify="left", cursor="hand2")
             lbl_nm.pack(anchor="w")
             
             comment = app.get('comment', '')
             lbl_cm = None
             if comment:
                 lbl_cm = tk.Label(info, text=comment[:22] + ("..." if len(comment) > 22 else ""),
-                                  font=("Sans", 8), fg=FG_MUTED, bg=BG_CARD, anchor="w", cursor="hand2")
+                                  font=("Sans", 8), fg=self.fg_muted, bg=self.bg_card, anchor="w", cursor="hand2")
                 lbl_cm.pack(anchor="w")
 
             widgets = [card, lbl_ico, info, lbl_nm]
@@ -282,7 +306,7 @@ class LaunchpadApp(tk.Tk):
                             pass
                 return on_enter, on_leave
 
-            enter_fn, leave_fn = make_hover_handlers(card, widgets, BG_CARD, BG_HOVER, BORDER_COL, ACCENT_SECONDARY)
+            enter_fn, leave_fn = make_hover_handlers(card, widgets, self.bg_card, self.bg_hover, self.border_col, self.accent_secondary)
 
             for w in widgets:
                 w.bind("<Enter>", enter_fn)

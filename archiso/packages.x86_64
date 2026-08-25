@@ -70,6 +70,7 @@ xdg-desktop-portal-gtk
 qt5-wayland
 qt6-wayland
 papirus-icon-theme
+tela-circle-icon-theme-all
 
 # --- Fonts & Glyphs (Latin / Nerd / Emoji) ---
 ttf-jetbrains-mono-nerd

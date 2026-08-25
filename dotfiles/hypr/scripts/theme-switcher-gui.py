@@ -11,12 +11,17 @@ import subprocess
 import tkinter as tk
 from tkinter import ttk
 
-BG_MAIN = "#070b14"
-BG_CARD = "#0f172a"
-FG_LIGHT = "#f1f5f9"
-ACCENT_GOLD = "#fbbf24"
-ACCENT_CYAN = "#38bdf8"
-BORDER_COL = "#334155"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.expanduser("~/.config/hypr/scripts"))
+import gally_theme_helper
+
+ACTIVE_T = gally_theme_helper.get_active_theme()
+BG_MAIN = ACTIVE_T.get("bg", "#070b14")
+BG_CARD = ACTIVE_T.get("bg_card", "#0f172a")
+FG_LIGHT = ACTIVE_T.get("fg", "#f1f5f9")
+ACCENT_GOLD = ACTIVE_T.get("accent", "#fbbf24")
+ACCENT_CYAN = ACTIVE_T.get("accent_alt", "#38bdf8")
+BORDER_COL = ACTIVE_T.get("border_col", "#334155")
 
 THEMES = [
     {
@@ -32,7 +37,8 @@ THEMES = [
         "bg": "#131622",
         "bg_alt": "#1a1d2e",
         "fg": "#c0caf5",
-        "fg_muted": "#787c99"
+        "fg_muted": "#787c99",
+        "icon_theme": "Tela-circle-purple"
     },
     {
         "name": "☕ Catppuccin Mocha",
@@ -47,7 +53,8 @@ THEMES = [
         "bg": "#1e1e2e",
         "bg_alt": "#181825",
         "fg": "#cdd6f4",
-        "fg_muted": "#6c7086"
+        "fg_muted": "#6c7086",
+        "icon_theme": "Tela-circle-pink"
     },
     {
         "name": "❄️ Nord Arctic",
@@ -62,7 +69,8 @@ THEMES = [
         "bg": "#2e3440",
         "bg_alt": "#3b4252",
         "fg": "#eceff4",
-        "fg_muted": "#7b88a1"
+        "fg_muted": "#7b88a1",
+        "icon_theme": "Tela-circle-nord"
     },
     {
         "name": "⚡ Cyberpunk 2077",
@@ -77,7 +85,8 @@ THEMES = [
         "bg": "#0a0a0f",
         "bg_alt": "#14141e",
         "fg": "#fcee0a",
-        "fg_muted": "#71717a"
+        "fg_muted": "#71717a",
+        "icon_theme": "Tela-circle-yellow"
     },
     {
         "name": "🧛 Dracula",
@@ -92,7 +101,8 @@ THEMES = [
         "bg": "#282a36",
         "bg_alt": "#1e1f29",
         "fg": "#f8f8f2",
-        "fg_muted": "#6272a4"
+        "fg_muted": "#6272a4",
+        "icon_theme": "Tela-circle-dracula"
     },
     {
         "name": "🌋 Volcanic Lava",
@@ -107,7 +117,8 @@ THEMES = [
         "bg": "#1a0f0f",
         "bg_alt": "#261414",
         "fg": "#ffddcc",
-        "fg_muted": "#885544"
+        "fg_muted": "#885544",
+        "icon_theme": "Tela-circle-red"
     },
     {
         "name": "🌲 Emerald Forest",
@@ -122,7 +133,8 @@ THEMES = [
         "bg": "#0f1a14",
         "bg_alt": "#14261c",
         "fg": "#e0f8e5",
-        "fg_muted": "#4e7a5e"
+        "fg_muted": "#4e7a5e",
+        "icon_theme": "Tela-circle-green"
     },
     {
         "name": "🖤 Monochrome Glass",
@@ -137,7 +149,8 @@ THEMES = [
         "bg": "#111116",
         "bg_alt": "#1a1a22",
         "fg": "#ffffff",
-        "fg_muted": "#888899"
+        "fg_muted": "#888899",
+        "icon_theme": "Tela-circle-black"
     }
 ]
 
@@ -304,7 +317,8 @@ inactive_border_color {t['bg_alt']}
                 "accent_alt": t["accent_alt"],
                 "border_col": BORDER_COL,
                 "rounding": t["hypr_rounding"],
-                "border_width": 2
+                "border_width": 2,
+                "icon_theme": t.get("icon_theme", "Tela-circle-purple")
             }
             gally_theme_helper.save_active_theme(theme_state)
         except Exception:
