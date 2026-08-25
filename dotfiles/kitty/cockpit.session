@@ -4,14 +4,14 @@
 
 layout splits
 
-# Panel 1: Main Interactive Shell (Left)
+# Launch Left Panel: Interactive Shell
 launch --title "🌌 Garchy Core" zsh
 
-# Panel 2: BTOP Hardware Telemetry (Top Right)
+# Launch Top Right Panel: BTOP Hardware Telemetry
 launch --location=vsplit --title "⚡ BTOP Telemetry" btop
 
-# Panel 3: CAVA 144Hz Real-Time Audio Visualizer (Bottom Right)
+# Launch Bottom Right Panel: CAVA Audio Visualizer
 launch --location=hsplit --title "🎵 CAVA Audio Waves" cava
 
-# Ensure focus starts in the main interactive shell on the left
-focus_matching --title "🌌 Garchy Core"
+# Focus
+focus
