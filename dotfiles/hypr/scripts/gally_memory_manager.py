@@ -170,10 +170,10 @@ def check_for_memory_directives(user_prompt):
         
     return None
 
-def build_mode_system_prompt(base_prompt, mode="normal", internet_ok=False, doc_ok=False):
+def get_mode_system_instruction(mode="normal", internet_ok=False, doc_ok=False):
     init_memory()
     memories = get_learned_memories()
-    mem_text = "\n".join([f"- {m}" for m in memories[:8]])
+    mem_text = "\n".join([f"- {m}" for m in memories[:10]])
     
     try:
         with open(SYSTEM_PROFILE_FILE, "r") as f:
@@ -220,7 +220,7 @@ def build_mode_system_prompt(base_prompt, mode="normal", internet_ok=False, doc_
   • Advanced programming, terminal power-user tooling, automation scripts, and productivity.
   • Explain command flags, architecture, and configuration options clearly with technical depth."""
 
-    full_context = f"""{mode_instructions}
+    system_instruction = f"""{mode_instructions}
 
 {privacy_status}
 
@@ -228,10 +228,14 @@ def build_mode_system_prompt(base_prompt, mode="normal", internet_ok=False, doc_
 - Hardware: {sys_info.get('cpu', 'Ryzen 9 5900X')} | {sys_info.get('gpu', 'NVIDIA RTX')} | {sys_info.get('displays', 'Dual 144Hz')}
 - Operating System: Garchy Linux (Hyprland + Waybar)
 
-[ACTIVE MEMORY]
+[ACTIVE PERSISTENT MEMORY & LEARNED FACTS]
 {mem_text}
 
-[OPERATOR QUERY]
-{base_prompt}
-"""
-    return full_context
+[CONVERSATIONAL CONTEXT RULE]
+- You are actively conversing with the Operator in real-time within the Garchy OS Desktop Environment.
+- Maintain seamless context across all previous statements in this conversation session."""
+    return system_instruction
+
+def build_mode_system_prompt(base_prompt, mode="normal", internet_ok=False, doc_ok=False):
+    sys_inst = get_mode_system_instruction(mode, internet_ok, doc_ok)
+    return f"{sys_inst}\n\n[OPERATOR QUERY]\n{base_prompt}\n"

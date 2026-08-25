@@ -812,11 +812,11 @@ class CephalonApp(ctk.CTk):
 
     def stream_cephalon_thread(self, prompt):
         try:
-            full_prompt = gally_memory_manager.build_mode_system_prompt(
-                prompt, mode=self.mode, internet_ok=self.internet_permitted, doc_ok=self.document_permitted
+            sys_inst = gally_memory_manager.get_mode_system_instruction(
+                mode=self.mode, internet_ok=self.internet_permitted, doc_ok=self.document_permitted
             )
         except Exception:
-            full_prompt = prompt
+            sys_inst = "You are Cephalon Gally, the intelligent desktop companion for Garchy Linux."
 
         def on_token(token):
             self.msg_queue.put(("token", token))
@@ -824,7 +824,14 @@ class CephalonApp(ctk.CTk):
         def on_complete(full_resp):
             self.msg_queue.put(("complete", full_resp))
 
-        gally_ai_router.stream_query(full_prompt, self.config_data, on_token, on_complete)
+        gally_ai_router.stream_query(
+            prompt=prompt,
+            config=self.config_data,
+            token_callback=on_token,
+            complete_callback=on_complete,
+            history_messages=self.history,
+            system_instruction=sys_inst
+        )
 
     def poll_msg_queue(self):
         try:
