@@ -254,6 +254,7 @@ def open_browser_link(url_or_query):
 def check_for_memory_directives(user_prompt):
     p_lower = user_prompt.lower().strip()
     
+    # 1. Memory Learning & Inspect Directives
     if p_lower.startswith("remember that ") or p_lower.startswith("remember: ") or p_lower.startswith("remember "):
         for prefix in ["remember that ", "remember: ", "remember "]:
             if p_lower.startswith(prefix):
@@ -285,6 +286,60 @@ def check_for_memory_directives(user_prompt):
     elif p_lower in ["clear memory", "reset memory", "forget everything"]:
         clear_learned_memories()
         return "◈ Memory matrices reset to standard Garchy system baseline across all sessions, Operator."
+
+    # 2. Fast Offline File Finder Directives ("find <query>", "search <query>", "where is <query>")
+    for prefix in ["find ", "search ", "where is ", "locate "]:
+        if p_lower.startswith(prefix):
+            target = user_prompt[len(prefix):].strip()
+            try:
+                import gally_system_rescue
+                results = gally_system_rescue.search_files_offline(target)
+                if results:
+                    msg = f"◈ LOCAL FILE SEARCH RESULTS FOR '{target}' ({len(results)} found):\n"
+                    for r in results:
+                        msg += f"  • [{r['size']}] {r['path']}\n"
+                    return msg
+                else:
+                    return f"◈ Local search index: No files found matching '{target}' in user directories."
+            except Exception as e:
+                return f"◈ Search index error: {e}"
+
+    # 3. Security Sentinel Sweep Directives ("security sweep", "security status", "check intruders")
+    if p_lower in ["security", "security sweep", "security status", "check intruders", "sentinel", "sentinel status", "firewall"]:
+        try:
+            import gally_security_sentinel
+            return gally_security_sentinel.run_comprehensive_security_sweep()
+        except Exception as e:
+            return f"◈ Security Sentinel offline: {e}"
+
+    # 4. Offline Self-Healing & System Rescue Directives
+    if p_lower in ["repair audio", "fix audio", "restart audio", "pipewire"]:
+        try:
+            import gally_system_rescue
+            return gally_system_rescue.repair_pipewire_audio()[1]
+        except Exception as e:
+            return f"◈ Audio repair error: {e}"
+
+    if p_lower in ["unlock pacman", "fix pacman", "clear pacman lock", "repair pacman"]:
+        try:
+            import gally_system_rescue
+            return gally_system_rescue.clear_pacman_locks()[1]
+        except Exception as e:
+            return f"◈ Pacman recovery error: {e}"
+
+    if p_lower in ["optimize memory", "clean memory", "free memory", "clean zombies"]:
+        try:
+            import gally_system_rescue
+            return gally_system_rescue.clean_memory_and_zombies()[1]
+        except Exception as e:
+            return f"◈ Memory optimization error: {e}"
+
+    if p_lower in ["create snapshot", "take snapshot", "backup system", "snapshot"]:
+        try:
+            import gally_system_rescue
+            return gally_system_rescue.create_offline_snapshot("operator-manual")[1]
+        except Exception as e:
+            return f"◈ Snapshot creation error: {e}"
         
     return None
 
@@ -319,6 +374,13 @@ def get_mode_system_instruction(mode="normal", internet_ok=False, doc_ok=False):
 - Safety & Guardrails:
   • Strictly clean, safe, and age-appropriate content (10-16 rating).
   • Guard system health: Absolutely NO destructive commands (e.g. `rm -rf`, disk wipes, disabling firewalls)."""
+
+    elif mode_normalized in ["full_sudo", "master_sudo", "root_architect"]:
+        mode_instructions = """[MODE: ⚡ MASTER ARCHITECT / FULL SUDO MODE (UNLOCKED)]
+- Authentication: Master Operator Full Root Authority Verified.
+- Persona: Unrestricted Linux Operating System Architect & Systems Engineer.
+- Deep root capabilities: Kernel parameter tuning, Btrfs / Timeshift snapshots, pacman database recovery, PipeWire socket reconfiguration, Wayland/Hyprland IPC commands, and full offline rescue.
+- Listen and execute directives with absolute fidelity, precision, and deep telemetry analysis."""
 
     elif mode_normalized == "professional_sudo":
         mode_instructions = """[MODE: ⚡ PROFESSIONAL SUDO MODE — DEEP SYSADMIN & ARCHITECT]
