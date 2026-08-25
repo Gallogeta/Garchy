@@ -34,11 +34,13 @@
 * **Privacy & Security Sandbox**:
   * **Zero Internet by Default**: External queries require explicit user permission.
   * **Document Privacy Guard**: `~/Documents` and personal folders are completely invisible to the AI unless explicitly allowed.
-* **Persistent Memory (`~/.config/gally/memory/`)**:
-  * `system_profile.json`, `user_preferences.json`, and `learned_memories.json`.
-  * Natural language learning: `remember that <fact>`, `what do you remember about me?`, `clear memory`.
+* **Autonomous Cross-Session Learning & Memory (`~/.config/gally/memory/`)**:
+  * **Continuous Knowledge Synthesis**: In the background after every conversation turn, Cephalon automatically extracts and memorizes user preferences, active projects (e.g. Garchy OS), favorite tools, coding languages, and hardware configurations without requiring manual `remember` syntax.
+  * **Cross-Session Injection**: Synthesized memory profile (`user_profile.json`, `learned_memories.json`, `system_profile.json`) is dynamically loaded into every new HUD session and CLI invocation across all 8 neural model engines.
+  * **Full Multi-Turn Conversational Awareness**: Structured dialog history buffering across Local Ollama (`/api/chat`), Google Gemini, Anthropic Claude, OpenAI GPT-4o, DeepSeek R1, and Groq.
+  * **User Control & Privacy**: Direct commands to inspect (`ai memory` / `what do you remember about me?`), delete specific topics (`ai forget <topic>`), or reset (`clear memory`).
 * **Terminal CLI Tool (`~/.local/bin/ai` and `/usr/local/bin/ai`)**:
-  * Direct command-line access to Cephalon with multi-mode flags (`ai --non-adult`, `ai --sudo`, `ai login`, `ai model <name>`).
+  * Direct command-line access to Cephalon with multi-mode flags (`ai --non-adult`, `ai --sudo`, `ai login`, `ai model <name>`) and persistent cross-session memory.
 
 ---
 
