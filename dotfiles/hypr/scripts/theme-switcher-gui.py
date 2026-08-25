@@ -25,6 +25,22 @@ BORDER_COL = ACTIVE_T.get("border_col", "#334155")
 
 THEMES = [
     {
+        "name": "🌌 Garchy Theme",
+        "desc": "Official signature Garchy aesthetic: Sapphire blue, electric cyan, sleek slate & Orokin gold",
+        "colors": ["#0a0f1d", "#38bdf8", "#3b82f6", "#e2e8f0", "#fbbf24"],
+        "hypr_border": "rgba(38bdf8ee) rgba(3b82f6ee) rgba(fbbf24ee) 45deg",
+        "hypr_inactive": "rgba(0a0f1d88)",
+        "hypr_rounding": 14,
+        "waybar_radius": "14px",
+        "accent": "#38bdf8",
+        "accent_alt": "#fbbf24",
+        "bg": "#0a0f1d",
+        "bg_alt": "#131c31",
+        "fg": "#f1f5f9",
+        "fg_muted": "#94a3b8",
+        "icon_theme": "Tela-circle-dark"
+    },
+    {
         "name": "🌸 Tokyo Night",
         "desc": "Elegant dark navy blue with vibrant neon purple & cyan accents",
         "colors": ["#131622", "#7aa2f7", "#bb9af7", "#73daca", "#f7768e"],

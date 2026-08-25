@@ -14,16 +14,16 @@ import subprocess
 THEME_STATE_FILE = os.path.expanduser("~/.config/gally/active_theme.json")
 
 DEFAULT_THEME = {
-    "name": "🌸 Tokyo Night",
-    "bg": "#131622",
-    "bg_card": "#1a1d2e",
-    "bg_input": "#1a1d2e",
-    "fg": "#c0caf5",
-    "fg_muted": "#787c99",
-    "accent": "#7aa2f7",
-    "accent_alt": "#bb9af7",
-    "border_col": "#7aa2f7",
-    "rounding": 12,
+    "name": "🌌 Garchy Theme",
+    "bg": "#0a0f1d",
+    "bg_card": "#131c31",
+    "bg_input": "#1e293b",
+    "fg": "#f1f5f9",
+    "fg_muted": "#94a3b8",
+    "accent": "#38bdf8",
+    "accent_alt": "#fbbf24",
+    "border_col": "#38bdf8",
+    "rounding": 14,
     "border_width": 2,
     "icon_theme": "Tela-circle-dark"
 }

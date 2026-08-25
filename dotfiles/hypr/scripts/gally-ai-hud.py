@@ -301,6 +301,7 @@ class CephalonApp(ctk.CTk):
         self.voice_enabled = self.config_data.get("voice_enabled", True)
         self.voice_name = self.config_data.get("voice_name", "en-US-AriaNeural")
         self.internet_permitted = self.config_data.get("internet_permitted", False)
+        self.document_permitted = self.config_data.get("document_access_permitted", False)
         self.sudo_unlocked = False
         self.theme_mtime = gally_theme_helper.get_theme_mtime()
         self.directive_buttons = []
