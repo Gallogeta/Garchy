@@ -235,29 +235,29 @@ def update_cava_config(theme_dict):
     grad = CAVA_GRADIENTS.get(name, CAVA_GRADIENTS["🌌 Garchy Theme"])
     
     content = f"""## ==============================================================================
-## 🌌 Garchy OS CAVA Configuration (PipeWire + 144Hz + Dynamic Gradients)
+## 🌌 Garchy OS CAVA Configuration (Compact Frequency Spectrum: Bass ➔ Treble)
 ## ==============================================================================
 
 [general]
 mode = normal
 framerate = 144
 autosens = 1
-overshoot = 20
-sensitivity = 100
-bars = 0
+overshoot = 10
+sensitivity = 110
+bars = 20
 bar_width = 2
 bar_spacing = 1
-max_height = 100
-lower_cutoff_freq = 50
-higher_cutoff_freq = 12000
-sleep_timer = 3
+max_height = 6
+lower_cutoff_freq = 30
+higher_cutoff_freq = 14000
+sleep_timer = 2
 
 [input]
 method = pipewire
 source = auto
 
 [output]
-channels = stereo
+channels = mono
 mono_option = average
 
 [color]
