@@ -104,12 +104,13 @@ def speak_voice_neural_async(text, enabled=True, voice="en-US-AriaNeural"):
     threading.Thread(target=run_tts, daemon=True).start()
 
 class HighGraphicsCephalonMatrix(tk.Canvas):
-    def __init__(self, parent, width=280, height=175, bg_color="#0f172a", accent_color="#00f0ff"):
+    def __init__(self, parent, width=280, height=175, bg_color="#0f172a", accent_color="#00f0ff", accent_alt="#bb9af7"):
         super().__init__(parent, width=width, height=height, bg=bg_color, highlightthickness=0)
         self.w = width
         self.h = height
         self.cx = width // 2
         self.cy = height // 2
+        self.bg_color = bg_color
         
         self.rot_x = 0.0
         self.rot_y = 0.0
@@ -119,6 +120,7 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
         self.pulse = 0.0
         self.core_color = "#fbbf24"
         self.accent_color = accent_color
+        self.accent_alt = accent_alt
         
         phi = (1.0 + math.sqrt(5.0)) / 2.0
         scale = 32.0
@@ -159,7 +161,7 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
                 "phi": random.uniform(-0.8, 0.8),
                 "speed": random.uniform(0.015, 0.035) * random.choice([1, -1]),
                 "size": random.uniform(1.2, 3.0),
-                "color": random.choice([self.accent_color, "#fbbf24", "#c084fc", "#38bdf8"])
+                "color": random.choice([self.accent_color, self.accent_alt, "#ffffff"])
             })
         
         self.animate()
@@ -175,6 +177,14 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
         else:
             self.core_color = "#fbbf24"
 
+    def set_theme(self, bg_color, accent_color, accent_alt):
+        self.bg_color = bg_color
+        self.accent_color = accent_color
+        self.accent_alt = accent_alt
+        self.configure(bg=bg_color)
+        for p in self.particles:
+            p["color"] = random.choice([accent_color, accent_alt, "#ffffff", self.core_color])
+
     def animate(self):
         self.delete("all")
         self.rot_x += 0.015
@@ -189,9 +199,9 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
         r_inner = 68 * pulse_scale
         r_outer = 85 * pulse_scale
         self.create_oval(self.cx - r_inner, self.cy - r_inner, self.cx + r_inner, self.cy + r_inner,
-                          outline="#1e3a5f", width=1, dash=(3, 6))
+                          outline=self.accent_color, width=1, dash=(3, 6))
         self.create_oval(self.cx - r_outer, self.cy - r_outer, self.cx + r_outer, self.cy + r_outer,
-                          outline="#0e243d", width=1, dash=(1, 5))
+                          outline=self.accent_alt, width=1, dash=(1, 5))
 
         if self.is_speaking:
             num_bands = 24
@@ -248,7 +258,7 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
             x1, y1, z1 = outer_proj[u]
             x2, y2, z2 = outer_proj[v]
             avg_z = (z1 + z2) / 2
-            edge_col = self.accent_color if avg_z > -10 else "#034977"
+            edge_col = self.accent_color if avg_z > -10 else self.accent_alt
             self.create_line(x1, y1, x2, y2, fill=edge_col, width=2 if self.is_speaking else 1)
 
         for u, v in self.inner_edges:
@@ -263,7 +273,7 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
         core_r = 6 if not self.is_speaking else 10 + 2 * math.sin(self.pulse * 2.5)
         self.create_oval(self.cx - core_r - 4, self.cy - core_r - 4,
                           self.cx + core_r + 4, self.cy + core_r + 4,
-                          outline="#c084fc", width=1)
+                          outline=self.accent_alt, width=1)
         self.create_oval(self.cx - core_r, self.cy - core_r,
                           self.cx + core_r, self.cy + core_r,
                           fill=self.core_color, outline="#ffffff", width=2)
@@ -291,8 +301,8 @@ class CephalonApp(ctk.CTk):
         self.voice_enabled = self.config_data.get("voice_enabled", True)
         self.voice_name = self.config_data.get("voice_name", "en-US-AriaNeural")
         self.internet_permitted = self.config_data.get("internet_permitted", False)
-        self.document_permitted = self.config_data.get("document_access_permitted", False)
-        self.sudo_unlocked =        self.theme_mtime = gally_theme_helper.get_theme_mtime()
+        self.sudo_unlocked = False
+        self.theme_mtime = gally_theme_helper.get_theme_mtime()
         self.directive_buttons = []
 
         # --- 1. Top Glass Header Card ---
@@ -531,9 +541,7 @@ class CephalonApp(ctk.CTk):
         self.input_bar.configure(fg_color=c["bg_card"], border_color=c["accent"])
         self.btn_send.configure(fg_color=c["accent"], hover_color=c["accent_alt"])
         
-        self.matrix_canvas.bg_color = c["bg_card"]
-        self.matrix_canvas.accent_color = c["accent"]
-        self.matrix_canvas.configure(bg=c["bg_card"])
+        self.matrix_canvas.set_theme(c["bg_card"], c["accent"], c["accent_alt"])
         self.update_mode_buttons_ui()
         self.update_toggle_buttons_ui()
         self.render_history()
