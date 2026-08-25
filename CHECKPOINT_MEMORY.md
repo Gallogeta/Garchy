@@ -129,7 +129,14 @@
   * High-security lock screen with `garchy-minimal.jpg` backdrop, battery/clock widgets, Cephalon status, and Orokin gold glowing input pill.
   * Wlogout glassmorphic power menu (`Super + Escape`) with hover glows and quick power controls.
 * **Thunar File Manager Context Extensions (`~/.config/Thunar/uca.xml`)**:
-  * Right-click shortcuts: *"Open in Garchy Terminal"*, *"Inspect with Cephalon AI"*, *"Set as Wallpaper"*, *"Compress to .tar.zst"*, *"Open in VS Code"*, *"Verify SHA256"*.
+  * **🤖 Inspect with Cephalon AI (`~/.config/hypr/scripts/gally_inspect_file.py`)**:
+    * Right-clicking any file or folder opens a dedicated streaming AI diagnostic window.
+    * Parses file metadata (MIME type, permissions, size, directory trees, line counts) and feeds content directly to Cephalon AI for deep code/config explanation, security checks, and interactive follow-up Q&A.
+  * **🌌 Open in Garchy Terminal**: Opens Kitty directly in that folder.
+  * **💻 Open with VS Code**: Launches VS Code for selected files/folders.
+  * **🖼️ Set as Desktop Wallpaper**: Instantly applies image with 144Hz wave animation.
+  * **📦 Compress to High-Speed .tar.zst**: Multi-threaded ZSTD compression.
+  * **🔒 Verify SHA256 Checksum**: Cryptographic hash generator.
 
 ---
 
