@@ -74,7 +74,7 @@
   * **Custom Garchy Fastfetch Banner (`~/.config/fastfetch/`)**:
     * Custom digitalized **G-Shield ASCII Core** with live hardware specs (Ryzen 9 5900X, RTX 3080 Ti, dual 144Hz displays, Btrfs), Cephalon AI status indicator, and **sleek circular color palette rings (`● ● ● ● ● ● ● ●`)**.
   * **Starship Prompt Digitalized G Glyph (`~/.config/starship.toml`)**:
-    * Replaced default Arch Linux icon with a glowing electric cyan digital **`◈ G`** glyph in front of the username without any background block.
+    * Set to the glowing electric cyan **squared digital `🅶` glyph** in front of the username (`🅶  gallo ~/Garchy ❯`).
   * **CAVA 144Hz Audio Visualizer (`~/.config/cava/config`)**:
     * Reset to **full responsive default mode** (`bars = 0` auto fill, `max_height = 100`, `framerate = 144`) with dynamic theme gradient synchronization.
     * Launchable on-demand in floating glass mode via **`Super + Shift + V`** or CLI `cava` / `visualizer`.
