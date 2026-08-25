@@ -131,7 +131,12 @@
 * **Thunar File Manager Context Extensions (`~/.config/Thunar/uca.xml`)**:
   * **🤖 Inspect with Cephalon AI (`~/.config/hypr/scripts/gally_inspect_file.py`)**:
     * Right-clicking any file or folder opens a dedicated streaming AI diagnostic window.
-    * Parses file metadata (MIME type, permissions, size, directory trees, line counts) and feeds content directly to Cephalon AI for deep code/config explanation, security checks, and interactive follow-up Q&A.
+    * **Format-Aware Manifest Extraction**:
+      * **Archives (`.7z`, `.zip`, `.tar*`)**: Auto-extracts full file listing with `7z l` / `tar` (e.g. tracks, sizes, dates) rather than raw binary bytes.
+      * **Audio/Video (`.mp3`, `.wav`, `.flac`, `.mp4`, `.mkv`)**: Reads artist, title, album, bitrate, duration, and codecs via `ffprobe`.
+      * **Images (`.png`, `.jpg`, `.webp`)**: Inspects resolution, color modes, and formats via Pillow.
+      * **Code/Configs (`.py`, `.sh`, `.toml`, `.json`)**: Syntax-checked UTF-8 source inspection.
+    * Real-time streaming Cephalon AI analysis with interactive follow-up Q&A prompt.
   * **🌌 Open in Garchy Terminal**: Opens Kitty directly in that folder.
   * **💻 Open with VS Code**: Launches VS Code for selected files/folders.
   * **🖼️ Set as Desktop Wallpaper**: Instantly applies image with 144Hz wave animation.
