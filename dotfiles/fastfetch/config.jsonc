@@ -70,11 +70,16 @@
       "format": "Online ⚡ (Super+Shift+Space / 'ai')"
     },
     {
+      "type": "custom",
+      "key": "Audio Spectrum",
+      "format": " ▂▃▄▅▆▇█  (30Hz Sub-Bass ➔ 14kHz Treble)"
+    },
+    {
       "type": "break"
     },
     {
       "type": "colors",
-      "symbol": "circle"
+      "symbol": "block"
     }
   ]
 }
