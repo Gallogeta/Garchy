@@ -67,42 +67,47 @@ class WallpaperGalleryApp(tk.Tk):
             except Exception:
                 pass
 
+        self.theme_mtime = gally_theme_helper.get_theme_mtime()
+
         # 1. Glassmorphic Header
-        hdr = tk.Frame(self, bg=self.bg_main, padx=25, pady=12)
-        hdr.pack(fill="x")
+        self.hdr = tk.Frame(self, bg=self.bg_main, padx=25, pady=12)
+        self.hdr.pack(fill="x")
         
-        top_bar = tk.Frame(hdr, bg=self.bg_main)
-        top_bar.pack(fill="x")
+        self.top_bar = tk.Frame(self.hdr, bg=self.bg_main)
+        self.top_bar.pack(fill="x")
         
-        tk.Label(top_bar, text="🌌 Gally Wallpaper Gallery", font=("Sans", 16, "bold"),
-                 fg=self.accent_primary, bg=self.bg_main).pack(side="left")
+        self.lbl_title = tk.Label(self.top_bar, text="🌌 Gally Wallpaper Gallery", font=("Sans", 16, "bold"),
+                                  fg=self.accent_primary, bg=self.bg_main)
+        self.lbl_title.pack(side="left")
         
-        self.lbl_count = tk.Label(top_bar, text=f"🖼️ {len(self.wallpapers)} Wallpapers Ready",
+        self.lbl_count = tk.Label(self.top_bar, text=f"🖼️ {len(self.wallpapers)} Wallpapers Ready",
                                   font=("Sans", 10, "bold"), fg=self.accent_secondary, bg=self.bg_card, padx=12, pady=4,
                                   highlightthickness=1, highlightbackground=self.border_col)
         self.lbl_count.pack(side="right")
         
-        tk.Label(hdr, text="Browse via Arrow Keys or Filmstrip • Press [ Enter ] to Apply Wallpaper",
-                 font=("Sans", 9), fg=self.fg_muted, bg=self.bg_main).pack(anchor="w", pady=(2, 0))
-        tk.Frame(hdr, height=2, bg=self.accent_primary).pack(fill="x", pady=(8, 0))
+        self.lbl_sub = tk.Label(self.hdr, text="Browse via Arrow Keys or Filmstrip • Press [ Enter ] to Apply Wallpaper",
+                                font=("Sans", 9), fg=self.fg_muted, bg=self.bg_main)
+        self.lbl_sub.pack(anchor="w", pady=(2, 0))
+        self.sep = tk.Frame(self.hdr, height=2, bg=self.accent_primary)
+        self.sep.pack(fill="x", pady=(8, 0))
 
         # 2. Main Large Preview Canvas
         self.preview_frame = tk.Frame(self, bg=self.bg_card, padx=10, pady=10, relief="flat",
                                       highlightthickness=1, highlightbackground=self.border_col)
         self.preview_frame.pack(fill="both", expand=True, padx=25, pady=(5, 10))
         
-        nav_row = tk.Frame(self.preview_frame, bg=self.bg_card)
-        nav_row.pack(fill="x", pady=(0, 6))
+        self.nav_row = tk.Frame(self.preview_frame, bg=self.bg_card)
+        self.nav_row.pack(fill="x", pady=(0, 6))
         
-        self.btn_prev = tk.Button(nav_row, text="◀  Prev", font=("Sans", 10, "bold"),
+        self.btn_prev = tk.Button(self.nav_row, text="◀  Prev", font=("Sans", 10, "bold"),
                                   bg=self.bg_input, fg=self.fg_light, activebackground=self.accent_secondary, activeforeground="#000",
                                   relief="flat", padx=14, pady=5, cursor="hand2", command=self.prev_wallpaper)
         self.btn_prev.pack(side="left")
         
-        self.lbl_wall_name = tk.Label(nav_row, text="", font=("Sans", 11, "bold"), fg=self.accent_primary, bg=self.bg_card)
+        self.lbl_wall_name = tk.Label(self.nav_row, text="", font=("Sans", 11, "bold"), fg=self.accent_primary, bg=self.bg_card)
         self.lbl_wall_name.pack(side="left", padx=15)
         
-        self.btn_next = tk.Button(nav_row, text="Next  ▶", font=("Sans", 10, "bold"),
+        self.btn_next = tk.Button(self.nav_row, text="Next  ▶", font=("Sans", 10, "bold"),
                                   bg=self.bg_input, fg=self.fg_light, activebackground=self.accent_secondary, activeforeground="#000",
                                   relief="flat", padx=14, pady=5, cursor="hand2", command=self.next_wallpaper)
         self.btn_next.pack(side="right")
@@ -112,14 +117,15 @@ class WallpaperGalleryApp(tk.Tk):
         self.lbl_preview_canvas.pack(fill="both", expand=True)
 
         # 3. Horizontal Auto-Sliding Thumbnail Filmstrip
-        ribbon_outer = tk.Frame(self, bg=self.bg_main, padx=25, pady=4)
-        ribbon_outer.pack(fill="x")
+        self.ribbon_outer = tk.Frame(self, bg=self.bg_main, padx=25, pady=4)
+        self.ribbon_outer.pack(fill="x")
         
-        tk.Label(ribbon_outer, text="Gallery Filmstrip (Auto-scrolls with selection):",
-                 font=("Sans", 9, "bold"), fg=self.fg_muted, bg=self.bg_main).pack(anchor="w", pady=(0, 4))
+        self.lbl_filmstrip = tk.Label(self.ribbon_outer, text="Gallery Filmstrip (Auto-scrolls with selection):",
+                                      font=("Sans", 9, "bold"), fg=self.fg_muted, bg=self.bg_main)
+        self.lbl_filmstrip.pack(anchor="w", pady=(0, 4))
                  
-        self.thumb_canvas = tk.Canvas(ribbon_outer, bg=self.bg_main, height=92, highlightthickness=0)
-        self.thumb_scrollbar = ttk.Scrollbar(ribbon_outer, orient="horizontal", command=self.thumb_canvas.xview)
+        self.thumb_canvas = tk.Canvas(self.ribbon_outer, bg=self.bg_main, height=92, highlightthickness=0)
+        self.thumb_scrollbar = ttk.Scrollbar(self.ribbon_outer, orient="horizontal", command=self.thumb_canvas.xview)
         
         self.thumb_container = tk.Frame(self.thumb_canvas, bg=self.bg_main)
         self.thumb_container.bind("<Configure>", lambda e: self.thumb_canvas.configure(scrollregion=self.thumb_canvas.bbox("all")))
@@ -131,20 +137,20 @@ class WallpaperGalleryApp(tk.Tk):
         self.thumb_scrollbar.pack(fill="x", pady=(3, 0))
 
         # 4. Action Buttons Footer
-        footer = tk.Frame(self, bg=self.bg_main, padx=25, pady=12)
-        footer.pack(fill="x", side="bottom")
+        self.footer = tk.Frame(self, bg=self.bg_main, padx=25, pady=12)
+        self.footer.pack(fill="x", side="bottom")
         
-        btn_random = tk.Button(footer, text="🎲  Random Wallpaper", font=("Sans", 10, "bold"),
-                               bg=self.bg_input, fg=self.accent_secondary, activebackground=self.accent_secondary, activeforeground="#000",
-                               relief="flat", padx=18, pady=8, cursor="hand2", command=self.apply_random)
-        btn_random.pack(side="left")
+        self.btn_random = tk.Button(self.footer, text="🎲  Random Wallpaper", font=("Sans", 10, "bold"),
+                                    bg=self.bg_input, fg=self.accent_secondary, activebackground=self.accent_secondary, activeforeground="#000",
+                                    relief="flat", padx=18, pady=8, cursor="hand2", command=self.apply_random)
+        self.btn_random.pack(side="left")
         
-        btn_close = tk.Button(footer, text="Close (Esc)", font=("Sans", 10),
-                              bg=self.bg_input, fg=self.fg_muted, activebackground=self.border_col, activeforeground="#fff",
-                              relief="flat", padx=16, pady=8, cursor="hand2", command=self.destroy)
-        btn_close.pack(side="left", padx=(10, 0))
+        self.btn_close = tk.Button(self.footer, text="Close (Esc)", font=("Sans", 10),
+                                   bg=self.bg_input, fg=self.fg_muted, activebackground=self.border_col, activeforeground="#fff",
+                                   relief="flat", padx=16, pady=8, cursor="hand2", command=self.destroy)
+        self.btn_close.pack(side="left", padx=(10, 0))
         
-        self.btn_apply = tk.Button(footer, text="✨  Apply This Wallpaper (Enter)", font=("Sans", 11, "bold"),
+        self.btn_apply = tk.Button(self.footer, text="✨  Apply This Wallpaper (Enter)", font=("Sans", 11, "bold"),
                                    bg=self.accent_primary, fg="#000", activebackground=self.accent_secondary, activeforeground="#000",
                                    relief="flat", padx=24, pady=8, cursor="hand2", command=self.apply_current)
         self.btn_apply.pack(side="right")
@@ -166,6 +172,49 @@ class WallpaperGalleryApp(tk.Tk):
         # Render first view and generate thumbnails in background
         self.update_preview()
         threading.Thread(target=self.generate_thumbnails_async, daemon=True).start()
+        self.check_theme_update()
+
+    def check_theme_update(self):
+        try:
+            cur_mtime = gally_theme_helper.get_theme_mtime()
+            if cur_mtime > self.theme_mtime:
+                self.theme_mtime = cur_mtime
+                self.theme = gally_theme_helper.get_active_theme()
+                self.bg_main = self.theme.get("bg", "#070b14")
+                self.bg_card = self.theme.get("bg_card", "#0f172a")
+                self.bg_input = self.theme.get("bg_input", "#1e293b")
+                self.fg_light = self.theme.get("fg", "#f1f5f9")
+                self.fg_muted = self.theme.get("fg_muted", "#94a3b8")
+                self.accent_primary = self.theme.get("accent", "#fbbf24")
+                self.accent_secondary = self.theme.get("accent_alt", "#38bdf8")
+                self.border_col = self.theme.get("border_col", self.accent_primary)
+                self.apply_theme_live()
+        except Exception:
+            pass
+        self.after(300, self.check_theme_update)
+
+    def apply_theme_live(self):
+        self.configure(bg=self.bg_main)
+        self.hdr.configure(bg=self.bg_main)
+        self.top_bar.configure(bg=self.bg_main)
+        self.lbl_title.configure(fg=self.accent_primary, bg=self.bg_main)
+        self.lbl_count.configure(fg=self.accent_secondary, bg=self.bg_card, highlightbackground=self.border_col)
+        self.lbl_sub.configure(fg=self.fg_muted, bg=self.bg_main)
+        self.sep.configure(bg=self.accent_primary)
+        self.preview_frame.configure(bg=self.bg_card, highlightbackground=self.border_col)
+        self.nav_row.configure(bg=self.bg_card)
+        self.lbl_wall_name.configure(fg=self.accent_primary, bg=self.bg_card)
+        self.btn_prev.configure(bg=self.bg_input, fg=self.fg_light, activebackground=self.accent_secondary)
+        self.btn_next.configure(bg=self.bg_input, fg=self.fg_light, activebackground=self.accent_secondary)
+        self.ribbon_outer.configure(bg=self.bg_main)
+        self.lbl_filmstrip.configure(fg=self.fg_muted, bg=self.bg_main)
+        self.thumb_canvas.configure(bg=self.bg_main)
+        self.thumb_container.configure(bg=self.bg_main)
+        self.footer.configure(bg=self.bg_main)
+        self.btn_random.configure(bg=self.bg_input, fg=self.accent_secondary, activebackground=self.accent_secondary)
+        self.btn_close.configure(bg=self.bg_input, fg=self.fg_muted, activebackground=self.border_col)
+        self.btn_apply.configure(bg=self.accent_primary, activebackground=self.accent_secondary)
+        self.highlight_and_auto_scroll()
 
     def load_cached_preview(self, path):
         if path in self.preview_cache:

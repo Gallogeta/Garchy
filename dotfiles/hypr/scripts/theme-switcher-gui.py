@@ -315,10 +315,10 @@ inactive_border_color {t['bg_alt']}
                 "fg_muted": t["fg_muted"],
                 "accent": t["accent"],
                 "accent_alt": t["accent_alt"],
-                "border_col": BORDER_COL,
+                "border_col": t["accent"],
                 "rounding": t["hypr_rounding"],
                 "border_width": 2,
-                "icon_theme": t.get("icon_theme", "Tela-circle-purple")
+                "icon_theme": t.get("icon_theme", "Tela-circle-dark")
             }
             gally_theme_helper.save_active_theme(theme_state)
         except Exception:

@@ -165,45 +165,44 @@ class LaunchpadApp(tk.Tk):
         self.configure(bg=self.bg_main)
         self.minsize(760, 520)
         
+        self.theme_mtime = gally_theme_helper.get_theme_mtime()
+
         # Style vertical scrollbar
-        style = ttk.Style()
-        try:
-            style.theme_use("clam")
-            style.configure("Vertical.TScrollbar", gripcount=0,
-                            background=self.bg_card, darkcolor=self.bg_main, lightcolor=self.bg_main,
-                            troughcolor=self.bg_main, bordercolor=self.border_col, arrowcolor=self.accent_secondary)
-        except Exception:
-            pass
+        self.style = ttk.Style()
+        self.apply_scrollbar_style()
 
         self.all_apps = load_apps_cached()
         self.filtered_apps = list(self.all_apps)
         
         # Header & Search Bar
-        hdr = tk.Frame(self, bg=self.bg_main, padx=25, pady=14)
-        hdr.pack(fill="x")
+        self.hdr = tk.Frame(self, bg=self.bg_main, padx=25, pady=14)
+        self.hdr.pack(fill="x")
         
-        top_bar = tk.Frame(hdr, bg=self.bg_main)
-        top_bar.pack(fill="x")
+        self.top_bar = tk.Frame(self.hdr, bg=self.bg_main)
+        self.top_bar.pack(fill="x")
         
-        tk.Label(top_bar, text="🌌 Gally Launchpad", font=("Sans", 16, "bold"),
-                 fg=self.accent_primary, bg=self.bg_main).pack(side="left")
+        self.lbl_title = tk.Label(self.top_bar, text="🌌 Gally Launchpad", font=("Sans", 16, "bold"),
+                                  fg=self.accent_primary, bg=self.bg_main)
+        self.lbl_title.pack(side="left")
         
         # Search Box Container
-        search_card = tk.Frame(top_bar, bg=self.bg_input, padx=12, pady=4, relief="flat",
-                               highlightthickness=1, highlightbackground=self.accent_secondary)
-        search_card.pack(side="right", fill="x", expand=True, padx=(30, 0))
+        self.search_card = tk.Frame(self.top_bar, bg=self.bg_input, padx=12, pady=4, relief="flat",
+                                    highlightthickness=1, highlightbackground=self.accent_secondary)
+        self.search_card.pack(side="right", fill="x", expand=True, padx=(30, 0))
         
-        tk.Label(search_card, text="🔍", font=("Sans", 11),
-                 fg=self.accent_secondary, bg=self.bg_input).pack(side="left", padx=(0, 6))
+        self.lbl_search_ico = tk.Label(self.search_card, text="🔍", font=("Sans", 11),
+                                       fg=self.accent_secondary, bg=self.bg_input)
+        self.lbl_search_ico.pack(side="left", padx=(0, 6))
         
-        self.ent_search = tk.Entry(search_card, font=("Sans", 11), bg=self.bg_input, fg="#ffffff",
+        self.ent_search = tk.Entry(self.search_card, font=("Sans", 11), bg=self.bg_input, fg="#ffffff",
                                    insertbackground=self.accent_primary, relief="flat", borderwidth=0)
         self.ent_search.pack(side="left", fill="x", expand=True)
         self.ent_search.bind("<KeyRelease>", self.on_search)
         self.ent_search.bind("<Return>", self.on_enter_press)
         self.ent_search.focus_set()
         
-        tk.Frame(hdr, height=2, bg=self.accent_primary).pack(fill="x", pady=(10, 0))
+        self.sep_line = tk.Frame(self.hdr, height=2, bg=self.accent_primary)
+        self.sep_line.pack(fill="x", pady=(10, 0))
         
         # Scrollable Canvas Grid
         self.canvas_frame = tk.Frame(self, bg=self.bg_main)
@@ -230,6 +229,51 @@ class LaunchpadApp(tk.Tk):
         self.render_grid()
         
         threading.Thread(target=self.refresh_cache_async, daemon=True).start()
+        self.check_theme_update()
+
+    def apply_scrollbar_style(self):
+        try:
+            self.style.theme_use("clam")
+            self.style.configure("Vertical.TScrollbar", gripcount=0,
+                                background=self.bg_card, darkcolor=self.bg_main, lightcolor=self.bg_main,
+                                troughcolor=self.bg_main, bordercolor=self.border_col, arrowcolor=self.accent_secondary)
+        except Exception:
+            pass
+
+    def check_theme_update(self):
+        try:
+            cur_mtime = gally_theme_helper.get_theme_mtime()
+            if cur_mtime > self.theme_mtime:
+                self.theme_mtime = cur_mtime
+                self.theme = gally_theme_helper.get_active_theme()
+                self.bg_main = self.theme.get("bg", "#070b14")
+                self.bg_card = self.theme.get("bg_card", "#0f172a")
+                self.bg_input = self.theme.get("bg_input", "#1e293b")
+                self.bg_hover = "#1e293b" if self.bg_main != "#1e293b" else "#2a2b3d"
+                self.fg_light = self.theme.get("fg", "#f1f5f9")
+                self.fg_muted = self.theme.get("fg_muted", "#94a3b8")
+                self.accent_primary = self.theme.get("accent", "#fbbf24")
+                self.accent_secondary = self.theme.get("accent_alt", "#38bdf8")
+                self.border_col = self.theme.get("border_col", self.accent_primary)
+                self.apply_theme_live()
+        except Exception:
+            pass
+        self.after(300, self.check_theme_update)
+
+    def apply_theme_live(self):
+        self.configure(bg=self.bg_main)
+        self.hdr.configure(bg=self.bg_main)
+        self.top_bar.configure(bg=self.bg_main)
+        self.lbl_title.configure(fg=self.accent_primary, bg=self.bg_main)
+        self.search_card.configure(bg=self.bg_input, highlightbackground=self.accent_secondary)
+        self.lbl_search_ico.configure(fg=self.accent_secondary, bg=self.bg_input)
+        self.ent_search.configure(bg=self.bg_input, insertbackground=self.accent_primary)
+        self.sep_line.configure(bg=self.accent_primary)
+        self.canvas_frame.configure(bg=self.bg_main)
+        self.canvas.configure(bg=self.bg_main)
+        self.grid_container.configure(bg=self.bg_main)
+        self.apply_scrollbar_style()
+        self.render_grid()
 
     def refresh_cache_async(self):
         new_apps = scan_apps_from_disk()

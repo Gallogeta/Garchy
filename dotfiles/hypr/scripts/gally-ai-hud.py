@@ -292,7 +292,8 @@ class CephalonApp(ctk.CTk):
         self.voice_name = self.config_data.get("voice_name", "en-US-AriaNeural")
         self.internet_permitted = self.config_data.get("internet_permitted", False)
         self.document_permitted = self.config_data.get("document_access_permitted", False)
-        self.sudo_unlocked = False
+        self.sudo_unlocked =        self.theme_mtime = gally_theme_helper.get_theme_mtime()
+        self.directive_buttons = []
 
         # --- 1. Top Glass Header Card ---
         self.hdr_frame = ctk.CTkFrame(self, fg_color=self.theme_colors["bg_card"],
@@ -303,10 +304,10 @@ class CephalonApp(ctk.CTk):
         hdr_inner = ctk.CTkFrame(self.hdr_frame, fg_color="transparent")
         hdr_inner.pack(fill="x", padx=14, pady=8)
         
-        lbl_title = ctk.CTkLabel(hdr_inner, text="🌌 CEPHALON GALLY",
-                                 font=ctk.CTkFont(family="Sans", size=16, weight="bold"),
-                                 text_color=self.theme_colors["accent"])
-        lbl_title.pack(side="left")
+        self.lbl_title = ctk.CTkLabel(hdr_inner, text="🌌 CEPHALON GALLY",
+                                      font=ctk.CTkFont(family="Sans", size=16, weight="bold"),
+                                      text_color=self.theme_colors["accent"])
+        self.lbl_title.pack(side="left")
         
         # Center: Live Model Switcher Dropdown
         model_names = [name for (name, _, _) in gally_ai_router.AVAILABLE_MODELS]
@@ -349,31 +350,31 @@ class CephalonApp(ctk.CTk):
         main_content.pack(fill="both", expand=True, padx=16, pady=4)
         
         # Left Panel (Width 300px)
-        left_panel = ctk.CTkFrame(main_content, fg_color=self.theme_colors["bg_card"],
-                                  corner_radius=self.theme_colors["radius"], width=300,
-                                  border_width=1, border_color=self.theme_colors["accent"])
-        left_panel.pack(side="left", fill="y", padx=(0, 10), pady=(0, 8))
-        left_panel.pack_propagate(False)
+        self.left_panel = ctk.CTkFrame(main_content, fg_color=self.theme_colors["bg_card"],
+                                       corner_radius=self.theme_colors["radius"], width=300,
+                                       border_width=1, border_color=self.theme_colors["accent"])
+        self.left_panel.pack(side="left", fill="y", padx=(0, 10), pady=(0, 8))
+        self.left_panel.pack_propagate(False)
         
         # 3D Matrix Canvas
-        self.matrix_canvas = HighGraphicsCephalonMatrix(left_panel, width=280, height=175,
+        self.matrix_canvas = HighGraphicsCephalonMatrix(self.left_panel, width=280, height=175,
                                                         bg_color=self.theme_colors["bg_card"],
                                                         accent_color=self.theme_colors["accent"])
         self.matrix_canvas.pack(pady=(8, 2))
         self.matrix_canvas.set_mode_color(self.mode)
         
-        self.lbl_status = ctk.CTkLabel(left_panel, text="● CEPHALON ONLINE",
+        self.lbl_status = ctk.CTkLabel(self.left_panel, text="● CEPHALON ONLINE",
                                        font=ctk.CTkFont(family="Sans", size=10, weight="bold"),
                                        text_color="#22c55e")
         self.lbl_status.pack(pady=(1, 4))
         
         # Persona Mode Pill Row
-        lbl_p = ctk.CTkLabel(left_panel, text="◈ OPERATION PERSONA ◈",
-                             font=ctk.CTkFont(family="Sans", size=9, weight="bold"),
-                             text_color=self.theme_colors["accent_alt"])
-        lbl_p.pack(pady=(2, 2))
+        self.lbl_p = ctk.CTkLabel(self.left_panel, text="◈ OPERATION PERSONA ◈",
+                                  font=ctk.CTkFont(family="Sans", size=9, weight="bold"),
+                                  text_color=self.theme_colors["accent_alt"])
+        self.lbl_p.pack(pady=(2, 2))
         
-        mode_btn_row = ctk.CTkFrame(left_panel, fg_color="transparent")
+        mode_btn_row = ctk.CTkFrame(self.left_panel, fg_color="transparent")
         mode_btn_row.pack(fill="x", padx=10, pady=1)
         
         self.btn_mode_non_adult = ctk.CTkButton(mode_btn_row, text="🌱 Non-Adult (10-16)", font=ctk.CTkFont(size=9, weight="bold"),
@@ -396,32 +397,32 @@ class CephalonApp(ctk.CTk):
         self.update_mode_buttons_ui()
         
         # Privacy & Sandboxing Controls
-        lbl_priv = ctk.CTkLabel(left_panel, text="─ PRIVACY & SANDBOX ─",
-                                font=ctk.CTkFont(family="Sans", size=9, weight="bold"),
-                                text_color=self.theme_colors["fg_muted"])
-        lbl_priv.pack(pady=(6, 2))
+        self.lbl_priv = ctk.CTkLabel(self.left_panel, text="─ PRIVACY & SANDBOX ─",
+                                     font=ctk.CTkFont(family="Sans", size=9, weight="bold"),
+                                     text_color=self.theme_colors["fg_muted"])
+        self.lbl_priv.pack(pady=(6, 2))
         
-        self.btn_internet = ctk.CTkButton(left_panel, text="", font=ctk.CTkFont(size=10, weight="bold"),
+        self.btn_internet = ctk.CTkButton(self.left_panel, text="", font=ctk.CTkFont(size=10, weight="bold"),
                                           fg_color=self.theme_colors["bg_input"], corner_radius=12, height=26,
                                           anchor="w", command=self.toggle_internet_permission)
         self.btn_internet.pack(fill="x", padx=10, pady=2)
         
-        self.btn_doc = ctk.CTkButton(left_panel, text="", font=ctk.CTkFont(size=10, weight="bold"),
+        self.btn_doc = ctk.CTkButton(self.left_panel, text="", font=ctk.CTkFont(size=10, weight="bold"),
                                      fg_color=self.theme_colors["bg_input"], corner_radius=12, height=26,
                                      anchor="w", command=self.toggle_document_permission)
         self.btn_doc.pack(fill="x", padx=10, pady=2)
         
-        self.btn_voice = ctk.CTkButton(left_panel, text="", font=ctk.CTkFont(size=10, weight="bold"),
+        self.btn_voice = ctk.CTkButton(self.left_panel, text="", font=ctk.CTkFont(size=10, weight="bold"),
                                        fg_color=self.theme_colors["bg_input"], corner_radius=12, height=26,
                                        anchor="w", command=self.toggle_voice)
         self.btn_voice.pack(fill="x", padx=10, pady=2)
         self.update_toggle_buttons_ui()
 
         # Directives
-        lbl_dir = ctk.CTkLabel(left_panel, text="─ DIRECTIVES ─",
-                               font=ctk.CTkFont(family="Sans", size=9, weight="bold"),
-                               text_color=self.theme_colors["fg_muted"])
-        lbl_dir.pack(pady=(6, 2))
+        self.lbl_dir = ctk.CTkLabel(self.left_panel, text="─ DIRECTIVES ─",
+                                    font=ctk.CTkFont(family="Sans", size=9, weight="bold"),
+                                    text_color=self.theme_colors["fg_muted"])
+        self.lbl_dir.pack(pady=(6, 2))
         
         directives = [
             ("🛡️ Full System Scan", "run_diagnostics"),
@@ -430,17 +431,18 @@ class CephalonApp(ctk.CTk):
             ("🌐 Open Web Link...", "open_web_prompt")
         ]
         for name, act in directives:
-            btn = ctk.CTkButton(left_panel, text=name, font=ctk.CTkFont(size=10),
+            btn = ctk.CTkButton(self.left_panel, text=name, font=ctk.CTkFont(size=10),
                                 fg_color=self.theme_colors["bg_input"], hover_color=self.theme_colors["accent"],
                                 corner_radius=12, height=26, anchor="w",
                                 command=lambda a=act, n=name: self.handle_directive_click(n, a))
             btn.pack(fill="x", padx=10, pady=1)
+            self.directive_buttons.append(btn)
 
-        btn_clear = ctk.CTkButton(left_panel, text="🗑️ Clear History", font=ctk.CTkFont(size=9),
-                                  fg_color="#1e1e2e", hover_color="#f43f5e",
-                                  corner_radius=12, height=26,
-                                  command=self.clear_console_history)
-        btn_clear.pack(fill="x", padx=10, pady=(6, 8), side="bottom")
+        self.btn_clear = ctk.CTkButton(self.left_panel, text="🗑️ Clear History", font=ctk.CTkFont(size=9),
+                                       fg_color=self.theme_colors["bg_input"], hover_color="#f43f5e",
+                                       corner_radius=12, height=26,
+                                       command=self.clear_console_history)
+        self.btn_clear.pack(fill="x", padx=10, pady=(6, 8), side="bottom")
 
         # Right Panel: Chat Console & Progress Card
         right_panel = ctk.CTkFrame(main_content, fg_color="transparent")
@@ -470,18 +472,18 @@ class CephalonApp(ctk.CTk):
         self.txt_chat.pack(fill="both", expand=True, pady=(0, 6))
         
         # Rounded Input Bar
-        input_bar = ctk.CTkFrame(right_panel, fg_color=self.theme_colors["bg_card"],
-                                 corner_radius=14, border_width=1, border_color=self.theme_colors["accent"])
-        input_bar.pack(fill="x")
+        self.input_bar = ctk.CTkFrame(right_panel, fg_color=self.theme_colors["bg_card"],
+                                      corner_radius=14, border_width=1, border_color=self.theme_colors["accent"])
+        self.input_bar.pack(fill="x")
         
-        self.ent_query = ctk.CTkEntry(input_bar, fg_color="transparent", border_width=0,
+        self.ent_query = ctk.CTkEntry(self.input_bar, fg_color="transparent", border_width=0,
                                       placeholder_text="Transmute a directive (or type 'login', 'model gemini')... (Enter)",
                                       text_color="#ffffff", font=ctk.CTkFont(family="Sans", size=12))
         self.ent_query.pack(side="left", fill="x", expand=True, padx=10, pady=5)
         self.ent_query.bind("<Return>", lambda e: self.send_query())
         self.ent_query.focus_set()
         
-        self.btn_send = ctk.CTkButton(input_bar, text="Transmute ↵",
+        self.btn_send = ctk.CTkButton(self.input_bar, text="Transmute ↵",
                                       font=ctk.CTkFont(family="Sans", size=11, weight="bold"),
                                       fg_color=self.theme_colors["accent"], text_color="#000000",
                                       hover_color=self.theme_colors["accent_alt"],
@@ -491,6 +493,49 @@ class CephalonApp(ctk.CTk):
         
         self.bind("<Escape>", lambda e: self.on_close())
         
+        self.render_history()
+        self.poll_msg_queue()
+        self.check_theme_update()
+
+    def check_theme_update(self):
+        try:
+            cur_mtime = gally_theme_helper.get_theme_mtime()
+            if cur_mtime > self.theme_mtime:
+                self.theme_mtime = cur_mtime
+                self.theme_colors = get_theme_colors()
+                self.apply_theme_live()
+        except Exception:
+            pass
+        self.after(300, self.check_theme_update)
+
+    def apply_theme_live(self):
+        c = self.theme_colors
+        self.configure(fg_color=c["bg"])
+        self.hdr_frame.configure(fg_color=c["bg_card"], border_color=c["accent"])
+        self.lbl_title.configure(text_color=c["accent"])
+        self.opt_model.configure(fg_color=c["bg_input"], button_color=c["accent"],
+                                 button_hover_color=c["accent_alt"], text_color=c["fg"])
+        self.btn_login_cli.configure(fg_color=c["bg_input"], hover_color=c["accent"])
+        self.lbl_telemetry.configure(text_color=c["accent_alt"], fg_color=c["bg_input"])
+        self.left_panel.configure(fg_color=c["bg_card"], border_color=c["accent"])
+        self.lbl_p.configure(text_color=c["accent_alt"])
+        self.lbl_priv.configure(text_color=c["fg_muted"])
+        self.lbl_dir.configure(text_color=c["fg_muted"])
+        for btn in self.directive_buttons:
+            btn.configure(fg_color=c["bg_input"], hover_color=c["accent"])
+        self.btn_clear.configure(fg_color=c["bg_input"])
+        self.progress_frame.configure(fg_color=c["bg_card"], border_color=c["accent"])
+        self.lbl_progress.configure(text_color=c["accent"])
+        self.prog_bar.configure(progress_color=c["accent"])
+        self.txt_chat.configure(fg_color=c["bg_card"], text_color=c["fg"], border_color=c["accent"])
+        self.input_bar.configure(fg_color=c["bg_card"], border_color=c["accent"])
+        self.btn_send.configure(fg_color=c["accent"], hover_color=c["accent_alt"])
+        
+        self.matrix_canvas.bg_color = c["bg_card"]
+        self.matrix_canvas.accent_color = c["accent"]
+        self.matrix_canvas.configure(bg=c["bg_card"])
+        self.update_mode_buttons_ui()
+        self.update_toggle_buttons_ui()
         self.render_history()
         self.poll_msg_queue()
 
