@@ -168,8 +168,8 @@ class HighGraphicsCephalonMatrix(tk.Canvas):
         self.is_speaking = state
 
     def set_mode_color(self, mode):
-        if mode == "child":
-            self.core_color = "#f472b6"
+        if mode in ("non_adult", "child", "non-adult", "junior"):
+            self.core_color = "#38bdf8"
         elif mode == "professional_sudo":
             self.core_color = "#ef4444"
         else:
@@ -376,13 +376,13 @@ class CephalonApp(ctk.CTk):
         mode_btn_row = ctk.CTkFrame(left_panel, fg_color="transparent")
         mode_btn_row.pack(fill="x", padx=10, pady=1)
         
-        self.btn_mode_child = ctk.CTkButton(mode_btn_row, text="🧸 Child", font=ctk.CTkFont(size=9, weight="bold"),
-                                            fg_color=self.theme_colors["bg_input"], hover_color="#f472b6",
-                                            corner_radius=12, height=26,
-                                            command=lambda: self.switch_mode("child"))
-        self.btn_mode_child.pack(side="left", fill="x", expand=True, padx=1)
+        self.btn_mode_non_adult = ctk.CTkButton(mode_btn_row, text="🌱 Non-Adult (10-16)", font=ctk.CTkFont(size=9, weight="bold"),
+                                                fg_color=self.theme_colors["bg_input"], hover_color="#38bdf8",
+                                                corner_radius=12, height=26,
+                                                command=lambda: self.switch_mode("non_adult"))
+        self.btn_mode_non_adult.pack(side="left", fill="x", expand=True, padx=1)
         
-        self.btn_mode_normal = ctk.CTkButton(mode_btn_row, text="🚀 Normal", font=ctk.CTkFont(size=9, weight="bold"),
+        self.btn_mode_normal = ctk.CTkButton(mode_btn_row, text="🚀 Normal (16+)", font=ctk.CTkFont(size=9, weight="bold"),
                                              fg_color=self.theme_colors["bg_input"], hover_color=self.theme_colors["accent"],
                                              corner_radius=12, height=26,
                                              command=lambda: self.switch_mode("normal"))
@@ -393,6 +393,7 @@ class CephalonApp(ctk.CTk):
                                            corner_radius=12, height=26,
                                            command=lambda: self.switch_mode("professional_sudo"))
         self.btn_mode_sudo.pack(side="left", fill="x", expand=True, padx=1)
+        self.update_mode_buttons_ui()
         
         # Privacy & Sandboxing Controls
         lbl_priv = ctk.CTkLabel(left_panel, text="─ PRIVACY & SANDBOX ─",
@@ -546,7 +547,24 @@ class CephalonApp(ctk.CTk):
         else:
             self.btn_voice.configure(text="🔇 Voice: OFF 🔇", text_color=self.theme_colors["fg_muted"])
 
+    def update_mode_buttons_ui(self):
+        if not hasattr(self, "btn_mode_non_adult"):
+            return
+        is_non_adult = self.mode in ("non_adult", "child")
+        is_normal = self.mode == "normal"
+        is_sudo = self.mode == "professional_sudo"
+        
+        self.btn_mode_non_adult.configure(fg_color="#0284c7" if is_non_adult else self.theme_colors["bg_input"],
+                                          text_color="#ffffff" if is_non_adult else self.theme_colors["fg_muted"])
+        self.btn_mode_normal.configure(fg_color=self.theme_colors["accent"] if is_normal else self.theme_colors["bg_input"],
+                                       text_color="#000000" if is_normal else self.theme_colors["fg_muted"])
+        self.btn_mode_sudo.configure(fg_color="#dc2626" if is_sudo else self.theme_colors["bg_input"],
+                                     text_color="#ffffff" if is_sudo else self.theme_colors["fg_muted"])
+
     def switch_mode(self, target_mode):
+        if target_mode in ["child", "non_adult", "non-adult", "junior"]:
+            target_mode = "non_adult"
+
         if target_mode == "professional_sudo" and not self.sudo_unlocked:
             pwd = ctk.CTkInputDialog(text="Enter sudo password to unlock Professional Sysadmin Mode:",
                                      title="Sudo Authentication Required").get_input()
@@ -563,8 +581,15 @@ class CephalonApp(ctk.CTk):
         self.config_data["mode"] = self.mode
         gally_ai_router.save_ai_config(self.config_data)
         self.matrix_canvas.set_mode_color(self.mode)
+        self.update_mode_buttons_ui()
         
-        msg = f"◈ Operation Mode switched to [{self.mode.upper()}], Operator."
+        if self.mode == "non_adult":
+            msg = "◈ Operation Mode switched to [NON-ADULT (AGES 10-16)], Operator. Youth mentoring, learning & safe gaming active."
+        elif self.mode == "normal":
+            msg = "◈ Operation Mode switched to [NORMAL (AGES 16+)], Operator. Full desktop intelligence & capabilities active."
+        else:
+            msg = f"◈ Operation Mode switched to [{self.mode.upper()}], Operator."
+
         self.append_message("cephalon", msg)
         speak_voice_neural_async(msg, self.voice_enabled, self.voice_name)
 

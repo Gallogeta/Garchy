@@ -145,28 +145,55 @@ class ThemeSwitcherApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Gally OS — Visual Theme Gallery")
-        self.geometry("780x560")
+        self.geometry("820x620")
         self.configure(bg=BG_MAIN)
-        self.resizable(False, False)
+        self.minsize(720, 480)
+        self.resizable(True, True)
         
+        # Configure dark scrollbar style
+        style = ttk.Style()
+        try:
+            style.theme_use("clam")
+            style.configure("Vertical.TScrollbar", gripcount=0,
+                            background=BG_CARD, darkcolor=BG_MAIN, lightcolor=BG_MAIN,
+                            troughcolor=BG_MAIN, bordercolor=BORDER_COL, arrowcolor=ACCENT_CYAN)
+        except Exception:
+            pass
+
         # Header
         hdr = tk.Frame(self, bg=BG_MAIN, padx=22, pady=14)
         hdr.pack(fill="x")
         
         tk.Label(hdr, text="🎨 Desktop Theme Gallery", font=("Sans", 16, "bold"), fg=ACCENT_GOLD, bg=BG_MAIN).pack(anchor="w")
-        tk.Label(hdr, text="Click any theme below to apply colors, borders, and bar styles instantly",
+        tk.Label(hdr, text="Click any theme below to apply colors, borders, and bar styles instantly (scroll to view all)",
                  font=("Sans", 10), fg=ACCENT_CYAN, bg=BG_MAIN).pack(anchor="w", pady=(2, 0))
         tk.Frame(hdr, height=2, bg=ACCENT_GOLD).pack(fill="x", pady=(10, 0))
         
-        # Scrollable Cards Grid Container
-        container = tk.Frame(self, bg=BG_MAIN, padx=22, pady=10)
-        container.pack(fill="both", expand=True)
+        # Scrollable Canvas Grid Container
+        self.canvas_frame = tk.Frame(self, bg=BG_MAIN, padx=14, pady=6)
+        self.canvas_frame.pack(fill="both", expand=True)
+
+        self.canvas = tk.Canvas(self.canvas_frame, bg=BG_MAIN, highlightthickness=0)
+        self.scrollbar = ttk.Scrollbar(self.canvas_frame, orient="vertical", command=self.canvas.yview)
+
+        self.container = tk.Frame(self.canvas, bg=BG_MAIN)
+        self.container.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+        self.canvas_window = self.canvas.create_window((0, 0), window=self.container, anchor="nw")
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.scrollbar.pack(side="right", fill="y")
         
+        self.bind("<Configure>", self.on_window_resize)
+        self.bind_all("<Button-4>", lambda e: self.canvas.yview_scroll(-2, "units"))
+        self.bind_all("<Button-5>", lambda e: self.canvas.yview_scroll(2, "units"))
+        self.bind_all("<MouseWheel>", lambda e: self.canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"))
+
         for idx, t in enumerate(THEMES):
             row = idx // 2
             col = idx % 2
             
-            card = tk.Frame(container, bg=BG_CARD, padx=14, pady=12, relief="flat",
+            card = tk.Frame(self.container, bg=BG_CARD, padx=14, pady=12, relief="flat",
                             highlightthickness=1, highlightbackground=BORDER_COL, cursor="hand2")
             card.grid(row=row, column=col, padx=8, pady=8, sticky="nsew")
             card.bind("<Button-1>", lambda e, th=t: self.apply_theme(th))
@@ -188,8 +215,8 @@ class ThemeSwitcherApp(tk.Tk):
                 s.pack(side="left", padx=2)
                 s.bind("<Button-1>", lambda e, th=t: self.apply_theme(th))
                 
-        container.grid_columnconfigure(0, weight=1)
-        container.grid_columnconfigure(1, weight=1)
+        self.container.grid_columnconfigure(0, weight=1)
+        self.container.grid_columnconfigure(1, weight=1)
         
         # Footer
         footer = tk.Frame(self, bg=BG_MAIN, padx=22, pady=12)
@@ -204,6 +231,10 @@ class ThemeSwitcherApp(tk.Tk):
         btn_close.pack(side="right")
         
         self.bind("<Escape>", lambda e: self.destroy())
+
+    def on_window_resize(self, event=None):
+        if hasattr(self, 'canvas') and hasattr(self, 'canvas_window'):
+            self.canvas.itemconfig(self.canvas_window, width=self.canvas.winfo_width())
 
     def apply_theme(self, t):
         waybar_theme = os.path.expanduser("~/.config/waybar/theme.css")

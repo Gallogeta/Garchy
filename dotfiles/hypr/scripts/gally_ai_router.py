@@ -218,14 +218,33 @@ def handle_terminal_command(raw_input, config):
         msg += "\nType 'model <name>' to switch (e.g. 'model local', 'model gemini', 'model claude')."
         return True, msg, config
 
-    # 5. General Status
+    # 5. Mode Switcher Directive (e.g. "mode non-adult", "mode normal", "mode sudo")
+    if len(parts) >= 2 and parts[0].lower() == "mode":
+        target_mode = parts[1].lower()
+        if target_mode in ["non_adult", "non-adult", "child", "junior", "teen", "teenager", "preteen"]:
+            config["mode"] = "non_adult"
+            save_ai_config(config)
+            return True, "◈ Switched Operation Persona to: [ 🌱 NON-ADULT MODE (Ages 10-16) ].", config
+        elif target_mode in ["normal", "standard", "default", "adult"]:
+            config["mode"] = "normal"
+            save_ai_config(config)
+            return True, "◈ Switched Operation Persona to: [ 🚀 NORMAL MODE (Ages 16+) ].", config
+        elif target_mode in ["sudo", "professional", "professional_sudo", "admin", "sysadmin"]:
+            config["mode"] = "professional_sudo"
+            save_ai_config(config)
+            return True, "◈ Switched Operation Persona to: [ ⚡ PROFESSIONAL SUDO MODE ].", config
+        else:
+            return True, f"◈ Unknown mode '{target_mode}'. Options: 'mode non-adult' (10-16), 'mode normal' (16+), 'mode sudo'.", config
+
+    # 6. General Status
     if cmd_lower in ["status", "info"]:
         cur_p = config.get("active_provider", "local_ollama").upper()
         cur_m = config.get("active_model", "gally-cephalon-ai")
         mode = config.get("mode", "normal").upper()
+        mode_label = "NON-ADULT (Ages 10-16)" if mode in ["NON_ADULT", "CHILD"] else ("NORMAL (Ages 16+)" if mode == "NORMAL" else "PROFESSIONAL SUDO")
         msg = f"""◈ CEPHALON SYSTEM STATUS:
   • Active Engine: {cur_p} ({cur_m})
-  • Operation Mode: [{mode}]
+  • Operation Persona: [{mode_label}]
   • Internet Sandbox: {'ALLOWED 🔓' if config.get('internet_permitted') else 'RESTRICTED 🔒'}
   • User Documents: {'PERMITTED 📂' if config.get('document_access_permitted') else 'PROTECTED 🛡️'}
   • Voice Synthesis: {'ON 🔊' if config.get('voice_enabled') else 'OFF 🔇'}"""
