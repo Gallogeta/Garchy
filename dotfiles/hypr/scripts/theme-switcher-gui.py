@@ -297,16 +297,9 @@ tooltip {{
         with open(waybar_theme, "w") as f:
             f.write(css_content)
 
-        # 2. Write Kitty terminal theme
+        # 2. Write Kitty terminal theme (Full 16-Color ANSI spectrum)
         os.makedirs(os.path.dirname(kitty_theme), exist_ok=True)
-        kitty_content = f"""foreground {t['fg']}
-background {t['bg']}
-selection_foreground {t['bg']}
-selection_background {t['accent']}
-cursor {t['accent']}
-active_border_color {t['accent']}
-inactive_border_color {t['bg_alt']}
-"""
+        kitty_content = gally_theme_helper.generate_kitty_theme_config(t)
         with open(kitty_theme, "w") as f:
             f.write(kitty_content)
 
