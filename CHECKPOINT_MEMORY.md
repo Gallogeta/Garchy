@@ -72,6 +72,7 @@
     * **Slanted Powerline Tabs**: `tab_bar_style powerline` with `tab_powerline_style slanted`.
     * **Tiling & Splits**: `Ctrl+Shift+D` (vsplit), `Ctrl+Shift+S` (hsplit), `Ctrl+Shift+H/J/K/L` (pane navigation).
   * **Custom Garchy Fastfetch Banner (`~/.config/fastfetch/`)**:
+    * **Official OS Branding**: **`Garchy OS Linux (Arch Rolling x86_64)`** based on CachyOS / Arch Linux.
     * Custom digitalized **G-Shield ASCII Core** with live hardware specs (Ryzen 9 5900X, RTX 3080 Ti, dual 144Hz displays, Btrfs), Cephalon AI status indicator, and **sleek circular color palette rings (`● ● ● ● ● ● ● ●`)**.
   * **Starship Prompt Digitalized G Glyph (`~/.config/starship.toml`)**:
     * Set to the glowing electric cyan **squared digital `🅶` glyph** in front of the username (`🅶  gallo ~/Garchy ❯`).
