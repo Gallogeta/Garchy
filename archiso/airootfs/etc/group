@@ -1,0 +1,11 @@
+root:x:0:root
+sys:x:3:bin
+adm:x:4:root,garchy
+wheel:x:998:root,garchy
+audio:x:995:garchy
+video:x:986:garchy
+storage:x:988:garchy
+input:x:987:garchy
+seat:x:977:garchy
+users:x:985:garchy
+garchy:x:1000:

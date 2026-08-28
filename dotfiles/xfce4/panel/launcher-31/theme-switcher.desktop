@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Theme Switcher
+Comment=Garchy OS Dynamic Desktop Theme Switcher
+Exec=/home/gallo/.config/hypr/scripts/theme-switcher.sh
+Icon=preferences-desktop-theme
+Terminal=false
+Categories=Settings;DesktopSettings;

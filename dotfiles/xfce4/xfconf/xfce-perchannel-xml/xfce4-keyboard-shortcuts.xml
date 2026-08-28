@@ -60,6 +60,13 @@
       <property name="HomePage" type="string" value="exo-open --launch WebBrowser"/>
       <property name="XF86Display" type="string" value="xfce4-display-settings --minimal"/>
       <property name="override" type="bool" value="true"/>
+      <property name="&lt;Super&gt;Return" type="string" value="kitty"/>
+      <property name="&lt;Super&gt;d" type="string" value="bash /home/gallo/.config/hypr/scripts/launchpad.sh"/>
+      <property name="&lt;Super&gt;space" type="string" value="bash /home/gallo/.config/hypr/scripts/launchpad.sh"/>
+      <property name="&lt;Super&gt;&lt;Shift&gt;s" type="string" value="xfce4-screenshooter -r"/>
+      <property name="&lt;Super&gt;i" type="string" value="bash /home/gallo/.config/hypr/scripts/gally-ai-hud.sh"/>
+      <property name="&lt;Super&gt;w" type="string" value="bash /home/gallo/.config/hypr/scripts/wallpaper-select.sh"/>
+      <property name="&lt;Super&gt;&lt;Shift&gt;t" type="string" value="bash /home/gallo/.config/hypr/scripts/theme-switcher.sh"/>
     </property>
   </property>
   <property name="xfwm4" type="empty">
@@ -187,6 +194,20 @@
       <property name="&lt;Alt&gt;Insert" type="string" value="add_workspace_key"/>
       <property name="&lt;Primary&gt;F1" type="string" value="workspace_1_key"/>
       <property name="override" type="bool" value="true"/>
+      <property name="&lt;Super&gt;q" type="string" value="close_window_key"/>
+      <property name="&lt;Super&gt;Left" type="string" value="tile_left_key"/>
+      <property name="&lt;Super&gt;Right" type="string" value="tile_right_key"/>
+      <property name="&lt;Super&gt;Up" type="string" value="maximize_window_key"/>
+      <property name="&lt;Super&gt;Down" type="string" value="hide_window_key"/>
+      <property name="&lt;Super&gt;f" type="string" value="fullscreen_key"/>
+      <property name="&lt;Super&gt;1" type="string" value="workspace_1_key"/>
+      <property name="&lt;Super&gt;2" type="string" value="workspace_2_key"/>
+      <property name="&lt;Super&gt;3" type="string" value="workspace_3_key"/>
+      <property name="&lt;Super&gt;4" type="string" value="workspace_4_key"/>
+      <property name="&lt;Super&gt;&lt;Shift&gt;exclam" type="string" value="move_window_workspace_1_key"/>
+      <property name="&lt;Super&gt;&lt;Shift&gt;at" type="string" value="move_window_workspace_2_key"/>
+      <property name="&lt;Super&gt;&lt;Shift&gt;numbersign" type="string" value="move_window_workspace_3_key"/>
+      <property name="&lt;Super&gt;&lt;Shift&gt;dollar" type="string" value="move_window_workspace_4_key"/>
     </property>
   </property>
   <property name="providers" type="array">

@@ -1,0 +1,14 @@
+[SddmGreeterTheme]
+Name=Garchy Warframe (Cephalon 3D Core)
+Description=Split-screen SDDM login theme featuring 3D Cephalon hologram on the left, blurred frosted glass login panel on the right, and Orokin HUD styling
+Author=Garchy OS Team
+Copyright=(c) 2026 Garchy OS
+License=GPL-3.0-or-later
+Type=sddm-theme
+Version=1.1.0
+Screenshot=background.jpg
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=garchy-warframe
+Theme-API=2.0
+QtVersion=6

@@ -1,0 +1,19 @@
+{
+  "user_name": "Operator",
+  "current_mode": "normal",
+  "preferred_theme": "\ud83c\udf0c Garchy Theme",
+  "active_projects": [
+    "Garchy OS",
+    "Garchy Operating System"
+  ],
+  "favorite_tools": [
+    "Kitty Terminal",
+    "VSCode",
+    "Hyprland"
+  ],
+  "preferences": [
+    "Prefers clean, concise, technical and direct answers.",
+    "Uses dual 144Hz displays with GameMode optimization.",
+    "Developing Garchy OS (Arch Linux rolling release)."
+  ]
+}

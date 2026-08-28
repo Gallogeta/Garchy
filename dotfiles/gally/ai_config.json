@@ -1,9 +1,19 @@
 {
-  "provider": "ollama",
-  "ollama_model": "gally-linux-ai",
+  "active_provider": "local_ollama",
+  "active_model": "qwen2.5:0.5b",
   "gemini_api_key": "",
-  "openai_api_key": "",
   "claude_api_key": "",
+  "openai_api_key": "",
+  "deepseek_api_key": "",
+  "groq_api_key": "",
+  "openrouter_api_key": "",
+  "voice_enabled": true,
+  "voice_name": "en-US-AriaNeural",
+  "mode": "normal",
+  "internet_permitted": false,
+  "document_access_permitted": false,
+  "provider": "ollama",
+  "ollama_model": "qwen2.5:0.5b",
   "tokens_used_total": 0,
   "total_queries": 0
 }

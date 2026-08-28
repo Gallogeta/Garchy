@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Gally AI Copilot
+Comment=AI System Diagnostics & Gaming Booster
+Exec=/home/gallo/.config/hypr/scripts/gally-ai-hud.sh
+Icon=system-run
+Terminal=false
+Categories=Utility;System;

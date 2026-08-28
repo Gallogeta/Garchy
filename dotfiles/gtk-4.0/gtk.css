@@ -1,0 +1,40 @@
+/* =============================================================================
+   🌌 Garchy OS — Cybernetic Obsidian Glassmorphism Design (GTK 4.0)
+   =============================================================================
+   1. Light Blue: #38bdf8 / #7dd3fc (Borders, Active Highlights, Icons)
+   2. Blue:       #3b82f6 / #1d4ed8 (Button Halos, Gradients, Secondary Accents)
+   3. Golden:     #fbbf24 / #f59e0b (Clock Borders, Button Cores, AI Badges)
+   4. Light Grey: #e2e8f0 / #cbd5e1 (Crisp Typography, Active Labels)
+   5. Dark Grey:  #0a0f1d / #131c31 / #1e293b (Obsidian Glass Surfaces, Cards)
+   ============================================================================= */
+
+@import 'colors.css';
+
+/* --- Core Palette Variables --- */
+@define-color light_blue #38bdf8;
+@define-color light_blue_glow rgba(56, 189, 248, 0.4);
+@define-color blue #3b82f6;
+@define-color golden #fbbf24;
+@define-color golden_glow rgba(251, 191, 36, 0.45);
+@define-color light_grey #e2e8f0;
+@define-color dark_grey #0a0f1d;
+@define-color dark_grey_card #131c31;
+@define-color dark_grey_border #1e293b;
+
+/* Libadwaita & Standard GTK mappings */
+@define-color accent_color @light_blue;
+@define-color accent_bg_color @light_blue;
+@define-color accent_fg_color @dark_grey;
+@define-color window_bg_color @dark_grey;
+@define-color window_fg_color @light_grey;
+@define-color view_bg_color @dark_grey;
+@define-color view_fg_color @light_grey;
+@define-color headerbar_bg_color @dark_grey;
+@define-color headerbar_fg_color @light_grey;
+@define-color card_bg_color @dark_grey_card;
+@define-color card_fg_color @light_grey;
+@define-color popover_bg_color @dark_grey_card;
+@define-color popover_fg_color @light_grey;
+@define-color destructive_color @golden;
+@define-color success_color @light_blue;
+@define-color warning_color @golden;

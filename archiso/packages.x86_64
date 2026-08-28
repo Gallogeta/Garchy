@@ -24,6 +24,7 @@ mkinitcpio-archiso
 arch-install-scripts
 archinstall
 efibootmgr
+grub
 dosfstools
 e2fsprogs
 btrfs-progs
@@ -45,10 +46,17 @@ kitty
 thunar
 thunar-archive-plugin
 file-roller
-xfce4
-xfce4-goodies
+xfce4-session
+xfce4-panel
+xfdesktop
+xfwm4
+xfce4-settings
+xfconf
+tumbler
 tk
 python-pillow
+python-requests
+python-packaging
 wl-clipboard
 cliphist
 grim
@@ -69,6 +77,11 @@ xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
 qt5-wayland
 qt6-wayland
+qt6-5compat
+qt6-declarative
+qt6-svg
+rofi
+zenity
 papirus-icon-theme
 tela-circle-icon-theme-all
 
@@ -109,3 +122,8 @@ rsync
 pacman-contrib
 reflector
 ollama
+socat
+xorg-server
+xorg-xinit
+xf86-video-fbdev
+xf86-video-vesa

@@ -1,0 +1,131 @@
+/**
+ * Gally OS - Launchpad (Fullscreen 6x4 App Grid)
+ */
+
+configuration {
+    modi: "drun";
+    show-icons: true;
+    icon-theme: "Papirus-Dark";
+    display-drun: "🔍 Search Apps:";
+    drun-display-format: "{name}";
+    hover-select: true;
+    me-select-entry: "MouseSecondary";
+    me-accept-entry: "MousePrimary";
+    font: "JetBrainsMono Nerd Font 12";
+}
+
+* {
+    background-color: transparent;
+    text-color: #f1f5f9;
+    margin: 0px;
+    padding: 0px;
+}
+
+window {
+    transparency: "real";
+    fullscreen: true;
+    background-color: rgba(7, 11, 20, 0.94);
+    padding: 60px 120px;
+    cursor: "default";
+}
+
+mainbox {
+    spacing: 24px;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    enabled: true;
+    spacing: 12px;
+    margin: 0px 200px;
+    padding: 12px 24px;
+    border: 2px;
+    border-color: #fbbf24;
+    border-radius: 20px;
+    background-color: rgba(15, 23, 42, 0.85);
+    text-color: #ffffff;
+    children: [ prompt, entry ];
+}
+
+prompt {
+    font: "JetBrainsMono Nerd Font Bold 12";
+    text-color: #38bdf8;
+    vertical-align: 0.5;
+}
+
+entry {
+    placeholder: "Type to filter or click any application...";
+    placeholder-color: rgba(224, 230, 237, 0.45);
+    text-color: #ffffff;
+    cursor: text;
+    vertical-align: 0.5;
+}
+
+listview {
+    enabled: true;
+    columns: 6;
+    lines: 4;
+    cycle: true;
+    dynamic: true;
+    scrollbar: true;
+    layout: vertical;
+    spacing: 18px;
+    margin: 15px 0px 0px 0px;
+    background-color: transparent;
+    cursor: "default";
+}
+
+scrollbar {
+    width: 6px;
+    border: 0px;
+    handle-width: 6px;
+    handle-color: #38bdf8;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.08);
+    margin: 0px 0px 0px 10px;
+}
+
+element {
+    enabled: true;
+    orientation: vertical;
+    spacing: 10px;
+    padding: 20px 10px;
+    border-radius: 16px;
+    background-color: rgba(15, 23, 42, 0.55);
+    border: 1px;
+    border-color: rgba(255, 255, 255, 0.06);
+    cursor: pointer;
+}
+
+element normal.normal {
+    background-color: rgba(15, 23, 42, 0.55);
+    text-color: #f1f5f9;
+}
+
+element selected.normal {
+    background-color: rgba(56, 189, 248, 0.25);
+    border: 2px;
+    border-color: #38bdf8;
+    text-color: #ffffff;
+}
+
+element selected.active {
+    background-color: rgba(251, 191, 36, 0.25);
+    border: 2px;
+    border-color: #fbbf24;
+    text-color: #ffffff;
+}
+
+element-icon {
+    size: 56px;
+    cursor: inherit;
+    horizontal-align: 0.5;
+}
+
+element-text {
+    font: "JetBrainsMono Nerd Font Medium 11";
+    cursor: inherit;
+    horizontal-align: 0.5;
+    vertical-align: 0.5;
+    text-color: inherit;
+}

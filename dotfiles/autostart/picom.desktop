@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Picom Compositor
+Comment=Garchy OS Glassmorphic Compositor
+Exec=picom -b --config /home/gallo/.config/picom/picom.conf
+Icon=preferences-system-windows
+Categories=Utility;
+StartupNotify=false
+Terminal=false

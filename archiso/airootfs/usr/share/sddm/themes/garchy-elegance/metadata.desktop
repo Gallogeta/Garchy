@@ -1,0 +1,14 @@
+[SddmGreeterTheme]
+Name=Garchy Elegance (Minimal Obsidian 3D)
+Description=Refined frosted glassmorphism SDDM theme for adults & professionals
+Author=Garchy OS Team
+Copyright=(c) 2026 Garchy OS
+License=GPL-3.0-or-later
+Type=sddm-theme
+Version=2.0.0
+Screenshot=background.jpg
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=garchy-elegance
+Theme-API=2.0
+QtVersion=6

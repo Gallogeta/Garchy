@@ -10,23 +10,23 @@
       <property name="EDID" type="string" value="0bca81860be1c756db06ec1fd6a187fff7fc8c6c"/>
       <property name="DuplicateEDID" type="bool" value="false"/>
       <property name="Resolution" type="string" value="1920x1080"/>
-      <property name="RefreshRate" type="double" value="60"/>
+      <property name="RefreshRate" type="double" value="144"/>
       <property name="ModeFlags" type="uint64" value="5"/>
       <property name="Rotation" type="int" value="0"/>
       <property name="Reflection" type="string" value="0"/>
-      <property name="Primary" type="bool" value="false"/>
+      <property name="Primary" type="bool" value="true"/>
       <property name="Scale" type="double" value="1"/>
       <property name="Position" type="empty">
         <property name="X" type="int" value="0"/>
         <property name="Y" type="int" value="0"/>
       </property>
     </property>
-    <property name="DP-4" type="string" value="Acer Technologies 27&quot;">
+    <property name="DP-0" type="string" value="Acer Technologies 27&quot;">
       <property name="Active" type="bool" value="true"/>
       <property name="EDID" type="string" value="1fdb6b0f74cbaa5d31bb8b9655b36243824dbe8c"/>
       <property name="DuplicateEDID" type="bool" value="false"/>
       <property name="Resolution" type="string" value="1920x1080"/>
-      <property name="RefreshRate" type="double" value="60"/>
+      <property name="RefreshRate" type="double" value="144"/>
       <property name="ModeFlags" type="uint64" value="5"/>
       <property name="Rotation" type="int" value="0"/>
       <property name="Reflection" type="string" value="0"/>

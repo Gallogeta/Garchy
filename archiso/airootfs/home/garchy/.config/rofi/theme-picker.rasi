@@ -1,0 +1,95 @@
+/**
+ * Gally OS - Desktop Theme Picker Menu
+ */
+
+@import "colors.rasi"
+
+configuration {
+    show-icons: true;
+    font: "JetBrainsMono Nerd Font 11";
+    hover-select: true;
+    me-select-entry: "MouseSecondary";
+    me-accept-entry: "MousePrimary";
+}
+
+* {
+    background-color: transparent;
+    text-color: @fg;
+    margin: 0;
+    padding: 0;
+    spacing: 0;
+}
+
+window {
+    location: center;
+    anchor: center;
+    width: 620px;
+    height: 420px;
+    background-color: @bg;
+    border: 2px solid;
+    border-color: @accent;
+    border-radius: @radius;
+    padding: 16px;
+}
+
+mainbox {
+    spacing: 12px;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    padding: 10px 14px;
+    background-color: @bg-alt;
+    border-radius: 10px;
+    border: 1px solid @border-accent;
+    children: [ prompt, entry ];
+    spacing: 8px;
+}
+
+prompt {
+    text-color: @accent;
+    font: "JetBrainsMono Nerd Font Bold 11";
+}
+
+entry {
+    placeholder: "Click or search theme...";
+    placeholder-color: @fg-muted;
+    text-color: @fg;
+}
+
+listview {
+    columns: 1;
+    lines: 6;
+    scrollbar: true;
+    spacing: 6px;
+}
+
+scrollbar {
+    width: 5px;
+    handle-width: 5px;
+    handle-color: @accent;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+element {
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+element selected.normal,
+element:hover {
+    background-color: @accent;
+    text-color: @fg-active;
+}
+
+element-icon {
+    size: 22px;
+    margin: 0 10px 0 0;
+}
+
+element-text {
+    font: "JetBrainsMono Nerd Font Medium 11";
+    text-color: inherit;
+}

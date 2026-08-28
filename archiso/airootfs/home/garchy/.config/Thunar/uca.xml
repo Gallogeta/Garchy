@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+<action>
+	<icon>utilities-terminal</icon>
+	<name>🌌 Open in Garchy Terminal</name>
+	<submenu></submenu>
+	<unique-id>1753617536042303-1</unique-id>
+	<command>kitty --directory %f</command>
+	<description>Open Kitty terminal in the current directory</description>
+	<range></range>
+	<patterns>*</patterns>
+	<startup-notify/>
+	<directories/>
+</action>
+<action>
+	<icon>com.visualstudio.code</icon>
+	<name>💻 Open with VS Code</name>
+	<submenu></submenu>
+	<unique-id>1753617536042303-2</unique-id>
+	<command>code %F</command>
+	<description>Open selected files or directories in VS Code</description>
+	<range></range>
+	<patterns>*</patterns>
+	<startup-notify/>
+	<directories/>
+	<other-files/>
+	<text-files/>
+</action>
+<action>
+	<icon>preferences-system-search</icon>
+	<name>🤖 Inspect with Cephalon AI</name>
+	<submenu></submenu>
+	<unique-id>1753617536042303-3</unique-id>
+	<command>kitty --title "Cephalon AI File Inspector" python3 ~/.config/hypr/scripts/gally_inspect_file.py %f</command>
+	<description>Have Cephalon AI inspect, explain, or diagnose this file</description>
+	<range></range>
+	<patterns>*</patterns>
+	<startup-notify/>
+	<directories/>
+	<other-files/>
+	<text-files/>
+</action>
+<action>
+	<icon>package-x-generic</icon>
+	<name>📦 Compress to High-Speed .tar.zst</name>
+	<submenu></submenu>
+	<unique-id>1753617536042303-5</unique-id>
+	<command>kitty --title "ZSTD Archiver" sh -c "echo 'Compressing %N with multi-threaded ZSTD...'; tar --zstd -cf '%n.tar.zst' %N &amp;&amp; echo '✔ Archive created: %n.tar.zst' &amp;&amp; sleep 1.5"</command>
+	<description>Create an ultra-fast ZSTD compressed archive</description>
+	<range></range>
+	<patterns>*</patterns>
+	<startup-notify/>
+	<directories/>
+	<other-files/>
+</action>
+<action>
+	<icon>system-run</icon>
+	<name>🔒 Verify SHA256 Checksum</name>
+	<submenu></submenu>
+	<unique-id>1753617536042303-6</unique-id>
+	<command>kitty --title "SHA256 Checksum" sh -c "echo 'Calculating SHA256 Checksum for %n:'; sha256sum %N; echo ''; read -p 'Press Enter to close...'"</command>
+	<description>Calculate cryptographic SHA256 hash</description>
+	<range></range>
+	<patterns>*</patterns>
+<action>
+	<icon>preferences-desktop-wallpaper</icon>
+	<name>🌌 Set as SDDM Login Wallpaper</name>
+	<submenu></submenu>
+	<unique-id>1753617536042303-7</unique-id>
+	<command>~/.config/hypr/scripts/set-sddm-wallpaper.sh %f</command>
+	<description>Set the selected image as the Garchy OS SDDM Login Screen background</description>
+	<range></range>
+	<patterns>*.jpg;*.JPG;*.jpeg;*.JPEG;*.png;*.PNG;*.webp;*.WEBP</patterns>
+	<startup-notify/>
+	<image-files/>
+</action>
+</actions>

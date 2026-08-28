@@ -5,12 +5,12 @@
     <property name="font" type="string" value="Sans Bold 20"/>
   </property>
   <property name="folders" type="empty">
-    <property name="last-used-media" type="string" value="/run/media/gallo/GAME/myporn/bu/Vidsss"/>
+    <property name="last-used-media" type="string" value="/home/gallo/Videos"/>
   </property>
   <property name="window" type="empty">
     <property name="maximized" type="bool" value="true"/>
-    <property name="width" type="int" value="1920"/>
-    <property name="height" type="int" value="1004"/>
+    <property name="width" type="int" value="952"/>
+    <property name="height" type="int" value="1024"/>
   </property>
   <property name="audio" type="empty">
     <property name="volume" type="int" value="50"/>

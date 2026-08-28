@@ -14,17 +14,23 @@
       </property>
       <property name="monitorDP-0" type="empty">
         <property name="workspace0" type="empty">
-          <property name="last-image" type="string" value="/home/gallo/Pictures/dikwalls/qa/dik20.jpg"/>
+          <property name="last-image" type="string" value="/home/gallo/Pictures/Wallpapers/garchy-minimal.jpg"/>
           <property name="image-style" type="int" value="4"/>
-          <property name="backdrop-cycle-enable" type="bool" value="true"/>
+          <property name="backdrop-cycle-enable" type="bool" value="false"/>
           <property name="backdrop-cycle-timer" type="uint" value="5"/>
           <property name="backdrop-cycle-random-order" type="bool" value="true"/>
         </property>
       </property>
       <property name="monitorDP-2" type="empty">
         <property name="workspace0" type="empty">
-          <property name="last-image" type="string" value="/usr/share/backgrounds/xfce/xfce-cp-dark.svg"/>
+          <property name="last-image" type="string" value="/home/gallo/Pictures/Wallpapers/garchy-minimal.jpg"/>
+          <property name="image-style" type="int" value="4"/>
         </property>
+      </property>
+      <property name="monitor0" type="empty">
+        <property name="image-path" type="string" value="/home/gallo/Pictures/Wallpapers/garchy-minimal.jpg"/>
+        <property name="image-show" type="bool" value="true"/>
+        <property name="image-style" type="int" value="5"/>
       </property>
     </property>
   </property>
@@ -35,5 +41,12 @@
   <property name="desktop-icons" type="empty">
     <property name="icon-size" type="uint" value="42"/>
     <property name="show-hidden-files" type="bool" value="false"/>
+    <property name="style" type="int" value="0"/>
+    <property name="file-icons" type="empty">
+      <property name="show-filesystem" type="bool" value="false"/>
+      <property name="show-home" type="bool" value="false"/>
+      <property name="show-trash" type="bool" value="false"/>
+      <property name="show-removable" type="bool" value="false"/>
+    </property>
   </property>
 </channel>

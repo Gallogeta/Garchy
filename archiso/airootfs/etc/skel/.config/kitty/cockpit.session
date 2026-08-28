@@ -1,0 +1,14 @@
+# ==============================================================================
+# 🌌 Garchy OS Terminal Session (Main Shell 75% | Compact Audio Spectrum 25%)
+# ==============================================================================
+
+layout tall
+
+# Left Main Area (75%): Interactive Shell with fastfetch banner
+launch --title "🌌 Garchy Core" zsh
+
+# Right Side (25%): Compact Frequency Spectrum (Bass on Left ➔ Treble on Right)
+launch --title "🎵 Audio Spectrum" cava
+
+# Focus the interactive shell
+focus

@@ -1,0 +1,15 @@
+{
+  "name": "\ud83c\udf0c Garchy Theme",
+  "bg": "#0a0f1d",
+  "bg_card": "#131c31",
+  "bg_input": "#131c31",
+  "bg_alt": "#131c31",
+  "fg": "#f1f5f9",
+  "fg_muted": "#94a3b8",
+  "accent": "#38bdf8",
+  "accent_alt": "#fbbf24",
+  "border_col": "#38bdf8",
+  "rounding": 14,
+  "border_width": 2,
+  "icon_theme": "Tela-circle-dark"
+}

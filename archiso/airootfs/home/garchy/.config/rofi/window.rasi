@@ -1,0 +1,103 @@
+/**
+ * Gally OS - Window & Minimized Manager
+ */
+
+configuration {
+    show-icons: true;
+    font: "JetBrainsMono Nerd Font 11";
+    hover-select: true;
+    me-select-entry: "MouseSecondary";
+    me-accept-entry: "MousePrimary";
+}
+
+* {
+    background-color: transparent;
+    text-color: #f1f5f9;
+    margin: 0px;
+    padding: 0px;
+    spacing: 0px;
+}
+
+window {
+    location: center;
+    anchor: center;
+    width: 720px;
+    height: 480px;
+    background-color: #070b14;
+    border: 2px;
+    border-color: #fbbf24;
+    border-radius: 16px;
+    padding: 16px;
+    cursor: "default";
+}
+
+mainbox {
+    spacing: 12px;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    padding: 10px 14px;
+    background-color: #0f172a;
+    border-radius: 10px;
+    border: 1px;
+    border-color: #fbbf24;
+    children: [ prompt, entry ];
+    spacing: 8px;
+}
+
+prompt {
+    text-color: #fbbf24;
+    font: "JetBrainsMono Nerd Font Bold 11";
+    vertical-align: 0.5;
+}
+
+entry {
+    placeholder: "Click any item to restore or close...";
+    placeholder-color: #94a3b8;
+    text-color: #ffffff;
+    vertical-align: 0.5;
+}
+
+listview {
+    columns: 1;
+    lines: 7;
+    scrollbar: true;
+    spacing: 6px;
+}
+
+scrollbar {
+    width: 5px;
+    border: 0px;
+    handle-width: 5px;
+    handle-color: #fbbf24;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+element {
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+element normal.normal {
+    background-color: transparent;
+    text-color: #f1f5f9;
+}
+
+element selected.normal {
+    background-color: #fbbf24;
+    text-color: #000000;
+}
+
+element-icon {
+    size: 24px;
+    margin: 0px 10px 0px 0px;
+}
+
+element-text {
+    font: "JetBrainsMono Nerd Font Medium 11";
+    text-color: inherit;
+    vertical-align: 0.5;
+}

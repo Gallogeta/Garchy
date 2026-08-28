@@ -3,7 +3,7 @@ set -e
 
 # Garchy Linux ISO Local Build Script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WORK_DIR="/tmp/garchy-archiso-work"
+WORK_DIR="$SCRIPT_DIR/work"
 OUT_DIR="$SCRIPT_DIR/out"
 
 echo "Building Garchy Linux ISO..."

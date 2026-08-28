@@ -1,0 +1,57 @@
+add_newline = false
+command_timeout = 1200
+
+format = """
+$os$username$directory$line_break$character
+"""
+
+[palettes.terminal_reef]
+foam = "#ecfff9"
+mint = "#1ff48a"
+teal = "#00e5c0"
+cyan = "#31f0ff"
+sky = "#3b98ff"
+blue = "#00b8ff"
+deep = "#08131a"
+slate = "#98b7d1"
+danger = "#f87171"
+
+palette = "terminal_reef"
+
+[character]
+success_symbol = "[❯](bold mint)"
+error_symbol = "[❯](bold danger)"
+vicmd_symbol = "[❮](bold sky)"
+
+[username]
+show_always = true
+style_user = "bold cyan"
+style_root = "bold danger"
+format = " [$user](bold cyan)"
+
+[line_break]
+disabled = true
+
+[os]
+disabled = false
+style = "bold cyan"
+format = "[$symbol](bold cyan) "
+
+[os.symbols]
+CachyOS = "🅶"
+Arch = "🅶"
+EndeavourOS = "🅶"
+Linux = "🅶"
+
+[directory]
+truncation_length = 3
+truncation_symbol = "…/"
+style = "bold sky"
+read_only_style = "bold danger"
+format = " [$path](bold mint)"
+
+[rust]
+disabled = true
+
+[nodejs]
+disabled = true

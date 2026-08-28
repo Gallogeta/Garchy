@@ -183,4 +183,14 @@
 | `~/.config/Thunar/uca.xml` | Custom right-click file manager actions |
 | `~/.config/starship.toml` | Starship prompt with squared digital G (`🅶`) icon |
 | `~/.config/fastfetch/config.jsonc` | Fastfetch hardware telemetry with G-Shield ASCII and circular dots |
-| `Garchy/dotfiles/plymouth/garchy-minimal/` | Garchy Minimal Plymouth boot splash theme |
+| `Garchy/archiso/airootfs/usr/share/sddm/themes/garchy-warframe/` | ⚡ Warframe Cephalon 3D Core SDDM Theme (Interactive 3D Hologram) |
+| `Garchy/archiso/airootfs/usr/share/sddm/themes/garchy/` | 🌌 Garchy Signature SDDM Theme (Glassmorphic Hyprlock Design) |
+| `Garchy/archiso/airootfs/usr/share/sddm/themes/garchy-kids/` | 🌟 Garchy Junior SDDM Theme (Kids & Young Explorers Edition) |
+| `Garchy/archiso/airootfs/usr/share/sddm/themes/garchy-cyber/` | ⚡ Garchy Cyber Neon SDDM Theme (Teens & Esports Gamers Edition) |
+| `Garchy/archiso/airootfs/usr/share/sddm/themes/garchy-matrix/` | 💻 Garchy Dev Matrix SDDM Theme (Programmers & Terminal Hacker) |
+| `Garchy/archiso/airootfs/usr/share/sddm/themes/garchy-elegance/` | ✨ Garchy Elegance SDDM Theme (Minimalist Obsidian Glass / Adults) |
+| `Garchy/scripts/preview-sddm-themes.sh` | Interactive 1-click previewer for all SDDM themes |
+| `Garchy/scripts/install-sddm-theme.sh` | Deploy & switch active SDDM theme on the system |
+| `Garchy/scripts/set-sddm-wallpaper.sh` | SDDM Login Screen Wallpaper switcher (CLI, GUI & Thunar right-click) |
+
+

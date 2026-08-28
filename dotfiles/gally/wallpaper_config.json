@@ -1,0 +1,8 @@
+{
+  "timer_enabled": false,
+  "interval_minutes": 10,
+  "directories": [
+    "/home/gallo/Pictures/Wallpapers",
+    "/home/gallo/Pictures/wallpapers"
+  ]
+}

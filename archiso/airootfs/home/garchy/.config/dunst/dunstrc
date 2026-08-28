@@ -1,0 +1,62 @@
+[global]
+    font = JetBrainsMono Nerd Font 10
+    markup = yes
+    format = "<b>%s</b>\n%b"
+    sort = yes
+    indicate_hidden = yes
+    alignment = left
+    show_age_threshold = 60
+    word_wrap = yes
+    ignore_newline = no
+    stack_duplicates = true
+    hide_duplicate_count = false
+
+    width = 360
+    height = (0, 200)
+    offset = (16, 48)
+    origin = top-right
+    
+    padding = 12
+    horizontal_padding = 14
+    separator_height = 2
+    separator_color = frame
+
+    frame_width = 1
+    frame_color = "#7aa2f7"
+    corner_radius = 12
+
+    idle_threshold = 120
+    monitor = 0
+    follow = mouse
+    sticky_history = yes
+    history_length = 20
+    show_indicators = yes
+
+    icon_position = left
+    min_icon_size = 24
+    max_icon_size = 48
+
+    icon_theme = "Papirus-Dark, Tela-dark, breeze-dark"
+    enable_recursive_icon_lookup = true
+
+    mouse_left_click = close_current
+    mouse_middle_click = do_action
+    mouse_right_click = close_all
+
+[urgency_low]
+    background = "#12141edd"
+    foreground = "#c0caf5"
+    frame_color = "#565f89"
+    timeout = 4
+
+[urgency_normal]
+    background = "#12141edd"
+    foreground = "#c0caf5"
+    frame_color = "#7aa2f7"
+    timeout = 6
+
+[urgency_critical]
+    background = "#1a131add"
+    foreground = "#ffffff"
+    frame_color = "#f7768e"
+    timeout = 0

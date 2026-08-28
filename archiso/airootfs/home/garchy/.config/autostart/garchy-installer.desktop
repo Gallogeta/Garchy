@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Garchy OS Guided Setup Wizard
+Comment=Launch Guided Installation Wizard
+Exec=sudo /usr/bin/garchy-gui-installer
+Icon=system-software-install
+Terminal=false
+StartupNotify=true
+Categories=System;

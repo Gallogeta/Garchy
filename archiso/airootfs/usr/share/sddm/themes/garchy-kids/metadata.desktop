@@ -1,0 +1,14 @@
+[SddmGreeterTheme]
+Name=Garchy Junior (Space Explorer 3D)
+Description=Junior edition SDDM theme for young explorers featuring 3D rotating star matrix
+Author=Garchy OS Team
+Copyright=(c) 2026 Garchy OS
+License=GPL-3.0-or-later
+Type=sddm-theme
+Version=2.0.0
+Screenshot=background.jpg
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=garchy-kids
+Theme-API=2.0
+QtVersion=6

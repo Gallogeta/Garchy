@@ -1,0 +1,563 @@
+/* =============================================================================
+   🌌 Garchy OS — Cybernetic Obsidian Glassmorphism Design (GTK 3.0)
+   =============================================================================
+   1. Light Blue: #38bdf8 / #7dd3fc (Borders, Active Highlights, Icons)
+   2. Blue:       #3b82f6 / #1d4ed8 (Button Halos, Gradients, Secondary Accents)
+   3. Golden:     #fbbf24 / #f59e0b (Clock Borders, Button Cores, AI Badges)
+   4. Light Grey: #e2e8f0 / #cbd5e1 (Crisp Typography, Active Labels)
+   5. Dark Grey:  #0a0f1d / #131c31 / #1e293b (Obsidian Glass Surfaces, Cards)
+   ============================================================================= */
+
+/* --- Core Palette Variables --- */
+@define-color light_blue #38bdf8;
+@define-color light_blue_glow rgba(56, 189, 248, 0.4);
+@define-color blue #3b82f6;
+@define-color golden #fbbf24;
+@define-color golden_glow rgba(251, 191, 36, 0.45);
+@define-color light_grey #e2e8f0;
+@define-color dark_grey #0a0f1d;
+@define-color dark_grey_card #131c31;
+@define-color dark_grey_border #1e293b;
+
+/* Libadwaita & Standard GTK mappings */
+@define-color accent_color @light_blue;
+@define-color accent_bg_color @light_blue;
+@define-color accent_fg_color @dark_grey;
+@define-color window_bg_color @dark_grey;
+@define-color window_fg_color @light_grey;
+@define-color view_bg_color @dark_grey;
+@define-color view_fg_color @light_grey;
+@define-color headerbar_bg_color @dark_grey;
+@define-color headerbar_fg_color @light_grey;
+@define-color card_bg_color @dark_grey_card;
+@define-color card_fg_color @light_grey;
+@define-color popover_bg_color @dark_grey_card;
+@define-color popover_fg_color @light_grey;
+@define-color destructive_color @golden;
+@define-color success_color @light_blue;
+@define-color warning_color @golden;
+
+/* =============================================================================
+   FLOATING ISLAND CONTAINERS (Panels 1, 2, and 3)
+   ============================================================================= */
+
+.xfce4-panel#XfcePanelWindow,
+.xfce4-panel,
+.xfce4-panel.background {
+    background-color: rgba(10, 15, 29, 0.88);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    border-radius: 12px;
+    color: @light_grey;
+    font-family: 'JetBrainsMono Nerd Font', 'Noto Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    padding: 0 4px;
+}
+
+/* Island 2: Center Gold Clock Island */
+.xfce4-panel#panel-2,
+.xfce4-panel.background#panel-2 {
+    border-color: rgba(251, 191, 36, 0.65);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 14px rgba(251, 191, 36, 0.25);
+    padding: 0 6px;
+}
+
+/* =============================================================================
+   TOTAL BORDER DESTRUCTION FOR ALL PANEL & WRAPPER-2.0 PLUGINS
+   (Zero borders on Whisker, Volume, Launchers, Systray, Steam, Bluetooth, Network)
+   ============================================================================= */
+
+/* Universal Reset: Main Panel Window AND Wrapper-2.0 GtkPlug Windows */
+.xfce4-panel button,
+.xfce4-panel button:hover,
+.xfce4-panel button:active,
+.xfce4-panel button:checked,
+.xfce4-panel button:focus,
+.xfce4-panel button:disabled,
+.xfce4-panel button:backdrop,
+.xfce4-panel.background button,
+.xfce4-panel.background button:hover,
+.xfce4-panel.background button:active,
+.xfce4-panel.background button:checked,
+.xfce4-panel.background button:focus,
+.xfce4-panel.background button:disabled,
+.xfce4-panel.background button:backdrop,
+.xfce4-panel-plugin,
+.xfce4-panel-plugin button,
+.xfce4-panel-plugin button:hover,
+.xfce4-panel-plugin button:active,
+.xfce4-panel-plugin button:checked,
+.xfce4-panel-plugin button:focus,
+.xfce4-panel-plugin button:backdrop,
+.xfce4-panel-plugin togglebutton,
+.xfce4-panel-button,
+.xfce4-panel-button button,
+#XfcePanelWindow button,
+#XfcePanelWindow.background button,
+window.xfce4-panel-plugin,
+window.xfce4-panel-plugin button,
+window.xfce4-panel-plugin togglebutton,
+window.xfce4-panel-plugin widget,
+window.xfce4-panel-plugin box,
+window.xfce4-panel-plugin frame,
+window.xfce4-panel-plugin image,
+#panel-1 button,
+#panel-2 button,
+#panel-3 button,
+#whiskermenu-button,
+button#whiskermenu-button,
+#pulseaudio-button,
+button#pulseaudio-button,
+#screenshooter-button,
+button#screenshooter-button,
+#actions-button,
+button#actions-button,
+.launcher,
+.launcher button,
+.systray,
+.systray *,
+.systray button,
+.systray .sn-button,
+.systray box,
+.systray widget,
+.systray frame,
+.systray image {
+    border-image: none;
+    border-style: none;
+    border-width: 0px;
+    border: none;
+    border-color: transparent;
+    outline-style: none;
+    outline-width: 0px;
+    outline: none;
+    box-shadow: none;
+    -gtk-icon-shadow: none;
+    background-image: none;
+    background-color: transparent;
+}
+
+/* 1. Garchy Shield Start Menu Button */
+#whiskermenu-button,
+button#whiskermenu-button,
+.xfce4-panel #whiskermenu-button,
+.xfce4-panel button#whiskermenu-button {
+    min-width: 32px;
+    min-height: 28px;
+    padding: 0;
+    margin: 3px 2px;
+    border-radius: 8px;
+    background-color: transparent;
+    border: none;
+    border-width: 0;
+    outline: none;
+    box-shadow: none;
+    color: @light_blue;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#whiskermenu-button image,
+#whiskermenu-button > *,
+button#whiskermenu-button image,
+button#whiskermenu-button > * {
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-width: 0;
+    box-shadow: none;
+    outline: none;
+}
+
+#whiskermenu-button:hover,
+button#whiskermenu-button:hover,
+.xfce4-panel button#whiskermenu-button:hover {
+    background-color: rgba(56, 189, 248, 0.2);
+    border: none;
+    border-width: 0;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+/* 2. Workspace Pager (Island 1) */
+.xfce4-panel .pager,
+.xfce4-panel.background .pager {
+    background-color: transparent;
+    border: none;
+    border-width: 0;
+    margin: 3px 2px;
+    padding: 1px 2px;
+}
+
+.xfce4-panel .pager button,
+.xfce4-panel.background .pager button {
+    background-color: rgba(30, 41, 59, 0.8);
+    border: none;
+    border-width: 0;
+    border-radius: 6px;
+    color: #94a3b8;
+    margin: 1px 1px;
+    min-width: 20px;
+    min-height: 24px;
+    padding: 1px 5px;
+    font-weight: 800;
+    font-size: 11px;
+    transition: all 0.15s ease;
+}
+
+.xfce4-panel .pager button:hover,
+.xfce4-panel.background .pager button:hover {
+    background-color: rgba(56, 189, 248, 0.3);
+    color: @light_grey;
+    border: none;
+}
+
+.xfce4-panel .pager button:checked,
+.xfce4-panel .pager button:active,
+.xfce4-panel.background .pager button:checked,
+.xfce4-panel.background .pager button:active {
+    background: linear-gradient(135deg, @light_blue, @blue);
+    color: @dark_grey;
+    font-weight: 900;
+    border: none;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+}
+
+/* 3. Icon-Only Running Applications Tasklist (Island 1) */
+.xfce4-panel .tasklist,
+.xfce4-panel.background .tasklist {
+    margin: 0 2px;
+    border: none;
+    border-width: 0;
+}
+
+.xfce4-panel .tasklist button,
+.xfce4-panel.background .tasklist button {
+    min-width: 34px;
+    min-height: 28px;
+    padding: 2px 4px;
+    margin: 3px 2px;
+    border-radius: 8px;
+    background-color: rgba(19, 28, 49, 0.6);
+    border: 1px solid transparent;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.xfce4-panel .tasklist button image {
+    min-width: 18px;
+    min-height: 18px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    -gtk-icon-style: regular;
+}
+
+.xfce4-panel .tasklist button arrow {
+    min-width: 6px;
+    min-height: 6px;
+    color: @golden;
+    margin: 0;
+    padding: 0;
+}
+
+.xfce4-panel .tasklist button:hover,
+.xfce4-panel.background .tasklist button:hover {
+    background-color: rgba(56, 189, 248, 0.25);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+.xfce4-panel .tasklist button:checked,
+.xfce4-panel .tasklist button:active,
+.xfce4-panel.background .tasklist button:checked,
+.xfce4-panel.background .tasklist button:active {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.38), rgba(59, 130, 246, 0.3));
+    border: 1px solid @light_blue;
+    border-bottom: 2px solid @golden;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+}
+
+/* 4. Center Clock Island (Island 2) */
+.xfce4-panel #clock-button,
+.xfce4-panel.background #clock-button {
+    background-color: transparent;
+    border: none;
+    border-width: 0;
+    padding: 0 8px;
+    color: @golden;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    transition: all 0.2s ease;
+}
+
+.xfce4-panel #clock-button:hover,
+.xfce4-panel.background #clock-button:hover {
+    color: @light_blue;
+    border: none;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+}
+
+/* =============================================================================
+   5. RIGHT ISLAND (PANEL 3): 100% BORDERLESS FLOATING ICONS
+   (Gally AI, Theme Switcher, Volume, Screenshooter, Power, Systray)
+   ============================================================================= */
+
+#panel-3,
+#panel-3.background,
+.xfce4-panel#panel-3 {
+    border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+/* Launchers on Right Panel */
+.launcher,
+.launcher button,
+.xfce4-panel .launcher button,
+#panel-3 .launcher button {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 0;
+    margin: 3px 2px;
+    border-radius: 8px;
+    border: none;
+    border-width: 0;
+    box-shadow: none;
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.launcher button:hover,
+.xfce4-panel .launcher button:hover,
+#panel-3 .launcher button:hover {
+    background-color: rgba(56, 189, 248, 0.2);
+    border: none;
+    border-width: 0;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+/* PulseAudio Volume Module */
+#pulseaudio-button,
+button#pulseaudio-button,
+.xfce4-panel #pulseaudio-button,
+#panel-3 #pulseaudio-button {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 0 4px;
+    margin: 3px 2px;
+    border-radius: 8px;
+    border: none;
+    border-width: 0;
+    box-shadow: none;
+    background-color: transparent;
+    color: @light_blue;
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+
+#pulseaudio-button:hover,
+button#pulseaudio-button:hover,
+.xfce4-panel #pulseaudio-button:hover,
+#panel-3 #pulseaudio-button:hover {
+    background-color: rgba(56, 189, 248, 0.2);
+    border: none;
+    border-width: 0;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    color: #ffffff;
+}
+
+/* System Tray (Bluetooth, Network, Steam, Applets) */
+.systray,
+.xfce4-panel .systray,
+#panel-3 .systray {
+    margin: 3px 2px;
+    padding: 0 2px;
+    border: none;
+    border-width: 0;
+    box-shadow: none;
+    background-color: transparent;
+}
+
+.systray button,
+.systray .sn-button,
+.systray box,
+.systray widget,
+.systray frame,
+.systray image,
+.xfce4-panel .systray button,
+.xfce4-panel .systray .sn-button,
+#panel-3 .systray button,
+#panel-3 .systray .sn-button {
+    min-width: 22px;
+    min-height: 22px;
+    padding: 0 2px;
+    margin: 0 1px;
+    border-radius: 6px;
+    border: none;
+    border-width: 0;
+    outline: none;
+    box-shadow: none;
+    -gtk-icon-shadow: none;
+    background-color: transparent;
+    background-image: none;
+}
+
+.systray button:hover,
+.systray .sn-button:hover,
+.xfce4-panel .systray button:hover,
+.xfce4-panel .systray .sn-button:hover,
+#panel-3 .systray button:hover,
+#panel-3 .systray .sn-button:hover {
+    background-color: rgba(56, 189, 248, 0.2);
+    border: none;
+    border-width: 0;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
+}
+
+/* =============================================================================
+   🌌 REDESIGNED GARCHY START MENU (WHISKER MENU)
+   ============================================================================= */
+
+#whiskermenu-window {
+    background-color: rgba(10, 15, 29, 0.96);
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 24px rgba(56, 189, 248, 0.2);
+}
+
+/* Search Header Bar */
+#whiskermenu-window entry {
+    background-color: rgba(19, 28, 49, 0.85);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 12px;
+    color: @light_grey;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 16px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+#whiskermenu-window entry:focus {
+    border-color: @golden;
+    box-shadow: 0 0 16px rgba(251, 191, 36, 0.45), inset 0 2px 4px rgba(0, 0, 0, 0.4);
+    color: #ffffff;
+}
+
+#whiskermenu-window entry image {
+    color: @golden;
+}
+
+/* Category Sidebar (Left) */
+#whiskermenu-window treeview,
+#whiskermenu-window .sidebar treeview {
+    background-color: transparent;
+    color: #94a3b8;
+    padding: 4px;
+    border-radius: 10px;
+}
+
+#whiskermenu-window treeview:selected,
+#whiskermenu-window .sidebar treeview:selected {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.35), rgba(59, 130, 246, 0.25));
+    color: @light_blue;
+    border-left: 3px solid @golden;
+    border-radius: 8px;
+    font-weight: 800;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+}
+
+#whiskermenu-window treeview:hover {
+    color: @light_grey;
+}
+
+/* Application Grid & List (Right) */
+#whiskermenu-window iconview,
+#whiskermenu-window .view {
+    background-color: transparent;
+    color: @light_grey;
+    padding: 6px;
+}
+
+#whiskermenu-window iconview:selected,
+#whiskermenu-window .view:selected {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.35), rgba(59, 130, 246, 0.25));
+    border: 1px solid @light_blue;
+    color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.4);
+}
+
+/* Action Command Buttons (Lock, Logout, Settings, Edit Apps) */
+#whiskermenu-window button {
+    background-color: rgba(19, 28, 49, 0.7);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 10px;
+    color: @light_grey;
+    padding: 7px 12px;
+    margin: 2px;
+    transition: all 0.2s ease;
+}
+
+#whiskermenu-window button:hover {
+    background-color: rgba(251, 191, 36, 0.2);
+    border-color: @golden;
+    color: @golden;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.45);
+}
+
+/* =============================================================================
+   GROUPED TASKLIST DROPDOWN MENU & POPUPS
+   ============================================================================= */
+
+menu, .menu {
+    background-color: rgba(10, 15, 29, 0.96);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
+}
+
+menuitem {
+    border-radius: 8px;
+    padding: 6px 12px;
+    color: @light_grey;
+    transition: all 0.15s ease;
+}
+
+menuitem:hover {
+    background-color: rgba(56, 189, 248, 0.25);
+    color: @light_blue;
+}
+
+/* Thunar, Tooltips & Scrollbars */
+.thunar .sidebar {
+    background-color: #0c1222;
+    border-right: 1px solid rgba(56, 189, 248, 0.15);
+}
+
+.thunar .view {
+    background-color: #080d1a;
+}
+
+tooltip {
+    background-color: rgba(15, 23, 42, 0.96);
+    border: 1px solid @light_blue;
+    border-radius: 10px;
+    color: @light_grey;
+    padding: 6px 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+scrollbar slider {
+    background-color: rgba(56, 189, 248, 0.25);
+    border-radius: 8px;
+    min-width: 6px;
+    min-height: 6px;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+scrollbar slider:hover {
+    background-color: @light_blue;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+}
