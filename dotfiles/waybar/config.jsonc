@@ -11,12 +11,10 @@
     "modules-left": [
         "custom/launcher",
         "hyprland/workspaces",
-        "wlr/taskbar",
-        "custom/active-app",
+        "custom/taskbar-icons",
         "custom/btn-minimize",
         "custom/btn-maximize",
-        "custom/btn-close",
-        "custom/minimized"
+        "custom/btn-close"
     ],
     "modules-center": [
         "clock"
@@ -61,28 +59,13 @@
         }
     },
 
-    "wlr/taskbar": {
-        "format": "{icon}",
-        "icon-size": 18,
-        "icon-theme": "Papirus-Dark",
-        "tooltip-format": "🗔 {title}\n───────────────────────\n• Left Click: Focus Window\n• Right Click: Close Window",
-        "on-click": "activate",
-        "on-click-middle": "close",
-        "on-click-right": "close",
-        "ignore-list": [
-            "wlogout",
-            "rofi"
-        ]
-    },
-
-    "custom/active-app": {
+    "custom/taskbar-icons": {
         "format": "{}",
         "return-type": "json",
         "interval": 1,
-        "exec": "python3 ~/.config/hypr/scripts/active-window-status.py",
-        "on-click": "bash -c '~/.config/hypr/scripts/taskbar-click.sh minimize-active'",
-        "on-click-right": "bash -c '~/.config/hypr/scripts/taskbar-click.sh close-active'",
-        "on-click-middle": "bash -c '~/.config/hypr/scripts/taskbar-click.sh maximize-active'",
+        "exec": "python3 ~/.config/hypr/scripts/taskbar-icons.py",
+        "on-click": "python3 ~/.config/hypr/scripts/taskbar-group-click.py",
+        "on-click-right": "python3 ~/.config/hypr/scripts/taskbar-group-click.py",
         "tooltip": true
     },
 
@@ -102,16 +85,6 @@
         "format": "✕",
         "tooltip-format": "✕ Close Active Window\n───────────────────────\n• Left Click: Close window\n• Shortcut: Super + Q",
         "on-click": "bash -c '~/.config/hypr/scripts/taskbar-click.sh close-active'"
-    },
-
-    "custom/minimized": {
-        "format": "{}",
-        "return-type": "json",
-        "interval": 1,
-        "exec": "bash -c '~/.config/hypr/scripts/minimized-status.sh'",
-        "on-click": "bash -c '~/.config/hypr/scripts/minimize-window.sh restore-last'",
-        "on-click-right": "bash -c 'python3 ~/.config/hypr/scripts/minimized-manager.py'",
-        "tooltip": true
     },
 
     "clock": {

@@ -1,0 +1,99 @@
+/**
+ * Garchy OS — Taskbar Dropdown Menu
+ * Obsidian glass dropdown positioned directly below the top bar left island.
+ */
+
+configuration {
+    show-icons: true;
+    font: "JetBrainsMono Nerd Font 11";
+    hover-select: true;
+    me-select-entry: "";
+    me-accept-entry: "MousePrimary";
+}
+
+* {
+    background-color: transparent;
+    text-color: #e2e8f0;
+    margin: 0px;
+    padding: 0px;
+    spacing: 0px;
+}
+
+window {
+    location: north-west;
+    anchor: north-west;
+    x-offset: 180px;
+    y-offset: 44px;
+    width: 540px;
+    max-height: 520px;
+    background-color: #0a0f1d;
+    border: 2px;
+    border-color: #38bdf8;
+    border-radius: 14px;
+    padding: 12px;
+    cursor: "default";
+}
+
+mainbox {
+    spacing: 8px;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    padding: 8px 12px;
+    background-color: #131c31;
+    border-radius: 8px;
+    border: 1px;
+    border-color: #1e293b;
+    children: [ prompt, entry ];
+    spacing: 6px;
+}
+
+prompt {
+    text-color: #38bdf8;
+    font: "JetBrainsMono Nerd Font Bold 11";
+    vertical-align: 0.5;
+}
+
+entry {
+    placeholder: "Click to focus, restore, or close window...";
+    placeholder-color: #64748b;
+    text-color: #ffffff;
+    vertical-align: 0.5;
+}
+
+listview {
+    columns: 1;
+    lines: 8;
+    scrollbar: false;
+    spacing: 4px;
+}
+
+element {
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+element normal.normal {
+    background-color: transparent;
+    text-color: #e2e8f0;
+}
+
+element selected.normal {
+    background-color: #131c31;
+    border: 1px;
+    border-color: #38bdf8;
+    text-color: #38bdf8;
+}
+
+element-icon {
+    size: 22px;
+    margin: 0px 10px 0px 0px;
+}
+
+element-text {
+    font: "JetBrainsMono Nerd Font Medium 11";
+    text-color: inherit;
+    vertical-align: 0.5;
+}
