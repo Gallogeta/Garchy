@@ -113,7 +113,7 @@ def get_grouped_icons():
     tooltip_lines.append("• <b>Left Click</b>: Toggle / Select Window")
     tooltip_lines.append("• <b>Right Click</b>: Open Dropdown Menu")
 
-    output_text = "  ".join(icon_elements)
+    output_text = "    ".join(icon_elements)
     tooltip_text = "\n".join(tooltip_lines)
 
     return {

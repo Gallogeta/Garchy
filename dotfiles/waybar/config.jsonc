@@ -11,7 +11,7 @@
     "modules-left": [
         "custom/launcher",
         "hyprland/workspaces",
-        "wlr/taskbar"
+        "custom/taskbar-icons"
     ],
     "modules-center": [
         "clock"
@@ -61,16 +61,14 @@
         }
     },
 
-    "wlr/taskbar": {
-        "format": "{icon}",
-        "icon-size": 20,
-        "icon-theme": "Papirus-Dark",
-        "tooltip-format": "🗔 {title}\n───────────────────────\n• Left Click: Focus Window\n• Middle Click: Close Window\n• Right Click: Toggle Maximize",
-        "on-click": "activate",
-        "on-click-middle": "close",
-        "on-click-right": "maximize",
-        "active-first": false,
-        "all-outputs": true
+    "custom/taskbar-icons": {
+        "format": "{}",
+        "return-type": "json",
+        "interval": 1,
+        "exec": "python3 /home/gallo/.config/hypr/scripts/taskbar-icons.py",
+        "on-click": "python3 /home/gallo/.config/hypr/scripts/taskbar-group-click.py",
+        "on-click-right": "python3 /home/gallo/.config/hypr/scripts/taskbar-group-click.py",
+        "tooltip": true
     },
 
     "clock": {
