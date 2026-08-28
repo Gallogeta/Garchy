@@ -75,7 +75,9 @@ hl.window_rule({
     match = { title = "^(Gally OS — Visual Theme Gallery)$" },
     float = true,
     center = true,
-    size = { 820, 620 },
+    size = { 900, 660 },
+    rounding = 16,
+    opacity = "1.0 1.0",
 })
 
 hl.window_rule({
