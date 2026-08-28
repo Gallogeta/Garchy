@@ -65,10 +65,10 @@
         "format": "{icon}",
         "icon-size": 20,
         "icon-theme": "Papirus-Dark",
-        "tooltip-format": "🗔 {title}\n───────────────────────\n• Left Click: Focus Window\n• Middle Click: Close Window\n• Right Click: Close Window",
-        "on-click": "activate",
+        "tooltip-format": "🗔 {title}\n───────────────────────\n• Left Click: Toggle Minimize / Restore\n• Middle Click: Close Window\n• Right Click: Toggle Maximize",
+        "on-click": "minimize-raise",
         "on-click-middle": "close",
-        "on-click-right": "close",
+        "on-click-right": "maximize",
         "active-first": false,
         "all-outputs": true,
         "ignore-list": [
