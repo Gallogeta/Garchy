@@ -380,15 +380,15 @@ ShellRoot {
                                         acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
 
                                         onClicked: mouse => {
-                                            if (groupData.windows.length === 1) {
-                                                var addr = groupData.windows[0].address;
-                                                if (mouse.button === Qt.LeftButton) {
-                                                    root.dispatchAction("toggle", addr);
-                                                } else if (mouse.button === Qt.MiddleButton) {
-                                                    root.dispatchAction("close", addr);
-                                                }
-                                            } else {
-                                                if (mouse.button === Qt.LeftButton) {
+                                            if (mouse.button === Qt.RightButton || (mouse.button === Qt.LeftButton && groupData.windows.length > 1 && groupData.is_minimized)) {
+                                                groupMenuPopup.currentGroup = groupData;
+                                                var p = appItem.mapToItem(null, 0, 0);
+                                                groupMenuPopup.anchor.rect.x = Math.max(10, Math.min(winMain.width - 320, p.x - 20));
+                                                groupMenuPopup.visible = !groupMenuPopup.visible;
+                                            } else if (mouse.button === Qt.LeftButton) {
+                                                if (groupData.windows.length === 1) {
+                                                    root.dispatchAction("toggle", groupData.windows[0].address);
+                                                } else {
                                                     var act = groupData.windows.find(w => w.is_active);
                                                     if (act) {
                                                         root.dispatchAction("toggle", act.address);
@@ -396,6 +396,208 @@ ShellRoot {
                                                         root.dispatchAction("focus", groupData.windows[0].address);
                                                     }
                                                 }
+                                            } else if (mouse.button === Qt.MiddleButton) {
+                                                if (groupData.windows.length === 1) {
+                                                    root.dispatchAction("close", groupData.windows[0].address);
+                                                } else {
+                                                    groupMenuPopup.currentGroup = groupData;
+                                                    groupMenuPopup.visible = true;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 📂 Primary Screen Multi-Window Popup (Right-Click Selection)
+            PopupWindow {
+                id: groupMenuPopup
+                property var currentGroup: null
+
+                anchor.window: winMain
+                anchor.rect.x: 120
+                anchor.rect.y: 46
+                anchor.rect.width: 320
+                anchor.rect.height: 0
+                anchor.edges: Edges.Bottom
+                anchor.gravity: Edges.Bottom
+                implicitWidth: 320
+                implicitHeight: Math.min(380, menuCol.implicitHeight + 24)
+                color: "transparent"
+                visible: false
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: root.popupRadius
+                    color: root.colBg
+                    border.color: root.colAccent
+                    border.width: 1.5
+
+                    ColumnLayout {
+                        id: menuCol
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 8
+
+                        // Header: Icon + Title + Window Count
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+
+                            Item {
+                                width: 22
+                                height: 22
+                                Layout.alignment: Qt.AlignVCenter
+
+                                Image {
+                                    anchors.fill: parent
+                                    source: Quickshell.iconPath(groupMenuPopup.currentGroup ? groupMenuPopup.currentGroup.icon : "")
+                                    fillMode: Image.PreserveAspectFit
+                                    visible: status === Image.Ready
+                                }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: !parent.children[0].visible
+                                    text: "󰖯"
+                                    font.pixelSize: 16
+                                    color: root.colAccent
+                                }
+                            }
+
+                            Text {
+                                text: (groupMenuPopup.currentGroup ? groupMenuPopup.currentGroup.class : "App") + " (" + (groupMenuPopup.currentGroup ? groupMenuPopup.currentGroup.count : 0) + " open)"
+                                font.pixelSize: 12
+                                font.bold: true
+                                color: root.colFg
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            Rectangle {
+                                width: 20
+                                height: 20
+                                radius: root.buttonRadius
+                                color: closeGrpMouse.containsMouse ? root.colRed : root.colBgAlt
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "✕"
+                                    font.pixelSize: 9
+                                    color: closeGrpMouse.containsMouse ? "#ffffff" : root.colFgMuted
+                                }
+
+                                MouseArea {
+                                    id: closeGrpMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    onClicked: groupMenuPopup.visible = false
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 1
+                            color: root.colBorder
+                        }
+
+                        // Window List (Scrollable if more than 5 windows)
+                        ScrollView {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Math.min(260, winListCol.implicitHeight)
+                            clip: true
+                            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                            ScrollBar.vertical.policy: winListCol.implicitHeight > 260 ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
+
+                            ColumnLayout {
+                                id: winListCol
+                                width: 296
+                                spacing: 6
+
+                                Repeater {
+                                    model: groupMenuPopup.currentGroup ? groupMenuPopup.currentGroup.windows : []
+
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: 38
+                                        radius: root.cardRadius
+                                        color: itemMouse.containsMouse ? root.colBgAlt : (modelData.is_active ? root.colAccent + "22" : "#131c3166")
+                                        border.color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold + "88" : root.colBorder)
+                                        border.width: 1
+
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 10
+                                            anchors.rightMargin: 10
+                                            spacing: 8
+
+                                            Rectangle {
+                                                width: 8
+                                                height: 8
+                                                radius: 4
+                                                color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold : root.colFgMuted)
+                                            }
+
+                                            ColumnLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 1
+
+                                                Text {
+                                                    Layout.fillWidth: true
+                                                    text: modelData.title || "Window"
+                                                    font.pixelSize: 11
+                                                    font.bold: modelData.is_active
+                                                    elide: Text.ElideRight
+                                                    color: modelData.is_active ? root.colAccent : root.colFg
+                                                }
+
+                                                Text {
+                                                    Layout.fillWidth: true
+                                                    text: modelData.is_minimized ? "🗕 Minimized (Click to Restore)" : (modelData.is_active ? "● Active Window" : "Workspace " + (modelData.workspace_name || modelData.workspace_id))
+                                                    font.pixelSize: 9
+                                                    color: modelData.is_minimized ? root.colGold : root.colFgMuted
+                                                }
+                                            }
+
+                                            Rectangle {
+                                                width: 22
+                                                height: 22
+                                                radius: root.buttonRadius
+                                                color: winCloseMouse.containsMouse ? root.colRed : root.colBgAlt
+                                                border.color: root.colBorder
+                                                border.width: 1
+
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: "✕"
+                                                    font.pixelSize: 9
+                                                    color: winCloseMouse.containsMouse ? "#ffffff" : root.colFgMuted
+                                                }
+
+                                                MouseArea {
+                                                    id: winCloseMouse
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    onClicked: {
+                                                        root.dispatchAction("close", modelData.address);
+                                                        groupMenuPopup.visible = false;
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        MouseArea {
+                                            id: itemMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            onClicked: {
+                                                root.dispatchAction("focus", modelData.address);
+                                                groupMenuPopup.visible = false;
                                             }
                                         }
                                     }
@@ -1329,17 +1531,28 @@ ShellRoot {
                                     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
 
                                     onClicked: mouse => {
-                                        if (groupData.windows.length === 1) {
-                                            var addr = groupData.windows[0].address;
-                                            if (mouse.button === Qt.LeftButton) {
-                                                root.dispatchAction("toggle", addr);
-                                            } else if (mouse.button === Qt.MiddleButton) {
-                                                root.dispatchAction("close", addr);
+                                        if (mouse.button === Qt.RightButton || (mouse.button === Qt.LeftButton && groupData.windows.length > 1 && groupData.is_minimized)) {
+                                            secGroupMenuPopup.currentGroup = groupData;
+                                            var p = secAppItem.mapToItem(null, 0, 0);
+                                            secGroupMenuPopup.anchor.rect.x = Math.max(10, Math.min(winSec.width - 320, p.x - 20));
+                                            secGroupMenuPopup.visible = !secGroupMenuPopup.visible;
+                                        } else if (mouse.button === Qt.LeftButton) {
+                                            if (groupData.windows.length === 1) {
+                                                root.dispatchAction("toggle", groupData.windows[0].address);
+                                            } else {
+                                                var act = groupData.windows.find(w => w.is_active);
+                                                if (act) {
+                                                    root.dispatchAction("toggle", act.address);
+                                                } else {
+                                                    root.dispatchAction("focus", groupData.windows[0].address);
+                                                }
                                             }
-                                        } else {
-                                            if (mouse.button === Qt.LeftButton || mouse.button === Qt.RightButton) {
+                                        } else if (mouse.button === Qt.MiddleButton) {
+                                            if (groupData.windows.length === 1) {
+                                                root.dispatchAction("close", groupData.windows[0].address);
+                                            } else {
                                                 secGroupMenuPopup.currentGroup = groupData;
-                                                secGroupMenuPopup.visible = !secGroupMenuPopup.visible;
+                                                secGroupMenuPopup.visible = true;
                                             }
                                         }
                                     }
@@ -1350,7 +1563,7 @@ ShellRoot {
                 }
             }
 
-            // 📂 Secondary Monitor Multi-Window Popup
+            // 📂 Secondary Screen Multi-Window Popup (Right-Click Selection)
             PopupWindow {
                 id: secGroupMenuPopup
                 property var currentGroup: null
@@ -1358,12 +1571,12 @@ ShellRoot {
                 anchor.window: winSec
                 anchor.rect.x: 120
                 anchor.rect.y: 46
-                anchor.rect.width: 260
+                anchor.rect.width: 320
                 anchor.rect.height: 0
                 anchor.edges: Edges.Bottom
                 anchor.gravity: Edges.Bottom
-                implicitWidth: 260
-                implicitHeight: secMenuCol.implicitHeight + 20
+                implicitWidth: 320
+                implicitHeight: Math.min(380, secMenuCol.implicitHeight + 24)
                 color: "transparent"
                 visible: false
 
@@ -1377,14 +1590,64 @@ ShellRoot {
                     ColumnLayout {
                         id: secMenuCol
                         anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 6
+                        anchors.margins: 12
+                        spacing: 8
 
-                        Text {
-                            text: (secGroupMenuPopup.currentGroup ? secGroupMenuPopup.currentGroup.class : "") + " Windows"
-                            font.pixelSize: 11
-                            font.bold: true
-                            color: root.colAccent
+                        // Header: Icon + Title + Window Count
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+
+                            Item {
+                                width: 22
+                                height: 22
+                                Layout.alignment: Qt.AlignVCenter
+
+                                Image {
+                                    anchors.fill: parent
+                                    source: Quickshell.iconPath(secGroupMenuPopup.currentGroup ? secGroupMenuPopup.currentGroup.icon : "")
+                                    fillMode: Image.PreserveAspectFit
+                                    visible: status === Image.Ready
+                                }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: !parent.children[0].visible
+                                    text: "󰖯"
+                                    font.pixelSize: 16
+                                    color: root.colAccent
+                                }
+                            }
+
+                            Text {
+                                text: (secGroupMenuPopup.currentGroup ? secGroupMenuPopup.currentGroup.class : "App") + " (" + (secGroupMenuPopup.currentGroup ? secGroupMenuPopup.currentGroup.count : 0) + " open)"
+                                font.pixelSize: 12
+                                font.bold: true
+                                color: root.colFg
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            Rectangle {
+                                width: 20
+                                height: 20
+                                radius: root.buttonRadius
+                                color: secCloseGrpMouse.containsMouse ? root.colRed : root.colBgAlt
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "✕"
+                                    font.pixelSize: 9
+                                    color: secCloseGrpMouse.containsMouse ? "#ffffff" : root.colFgMuted
+                                }
+
+                                MouseArea {
+                                    id: secCloseGrpMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    onClicked: secGroupMenuPopup.visible = false
+                                }
+                            }
                         }
 
                         Rectangle {
@@ -1393,69 +1656,100 @@ ShellRoot {
                             color: root.colBorder
                         }
 
-                        Repeater {
-                            model: secGroupMenuPopup.currentGroup ? secGroupMenuPopup.currentGroup.windows : []
+                        // Window List (Scrollable if more than 5 windows)
+                        ScrollView {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Math.min(260, secWinListCol.implicitHeight)
+                            clip: true
+                            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                            ScrollBar.vertical.policy: secWinListCol.implicitHeight > 260 ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
 
-                            Rectangle {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 32
-                                radius: root.buttonRadius
-                                color: secItemMouse.containsMouse ? root.colBgAlt : "transparent"
-                                border.color: modelData.is_active ? root.colAccent : "transparent"
-                                border.width: 1
+                            ColumnLayout {
+                                id: secWinListCol
+                                width: 296
+                                spacing: 6
 
-                                RowLayout {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: 8
-                                    anchors.rightMargin: 8
-                                    spacing: 8
-
-                                    Text {
-                                        text: modelData.is_minimized ? "🗕" : "🗖"
-                                        font.pixelSize: 12
-                                        color: modelData.is_minimized ? root.colGold : root.colAccent
-                                    }
-
-                                    Text {
-                                        Layout.fillWidth: true
-                                        text: modelData.title || "Window"
-                                        font.pixelSize: 11
-                                        elide: Text.ElideRight
-                                        color: root.colFg
-                                    }
+                                Repeater {
+                                    model: secGroupMenuPopup.currentGroup ? secGroupMenuPopup.currentGroup.windows : []
 
                                     Rectangle {
-                                        width: 20
-                                        height: 20
-                                        radius: Math.max(1, root.buttonRadius - 2)
-                                        color: secCloseMouse.containsMouse ? root.colRed : "transparent"
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: 38
+                                        radius: root.cardRadius
+                                        color: secItemMouse.containsMouse ? root.colBgAlt : (modelData.is_active ? root.colAccent + "22" : "#131c3166")
+                                        border.color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold + "88" : root.colBorder)
+                                        border.width: 1
 
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: "✕"
-                                            font.pixelSize: 9
-                                            color: secCloseMouse.containsMouse ? "#ffffff" : root.colFgMuted
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 10
+                                            anchors.rightMargin: 10
+                                            spacing: 8
+
+                                            Rectangle {
+                                                width: 8
+                                                height: 8
+                                                radius: 4
+                                                color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold : root.colFgMuted)
+                                            }
+
+                                            ColumnLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 1
+
+                                                Text {
+                                                    Layout.fillWidth: true
+                                                    text: modelData.title || "Window"
+                                                    font.pixelSize: 11
+                                                    font.bold: modelData.is_active
+                                                    elide: Text.ElideRight
+                                                    color: modelData.is_active ? root.colAccent : root.colFg
+                                                }
+
+                                                Text {
+                                                    Layout.fillWidth: true
+                                                    text: modelData.is_minimized ? "🗕 Minimized (Click to Restore)" : (modelData.is_active ? "● Active Window" : "Workspace " + (modelData.workspace_name || modelData.workspace_id))
+                                                    font.pixelSize: 9
+                                                    color: modelData.is_minimized ? root.colGold : root.colFgMuted
+                                                }
+                                            }
+
+                                            Rectangle {
+                                                width: 22
+                                                height: 22
+                                                radius: root.buttonRadius
+                                                color: secWinCloseMouse.containsMouse ? root.colRed : root.colBgAlt
+                                                border.color: root.colBorder
+                                                border.width: 1
+
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: "✕"
+                                                    font.pixelSize: 9
+                                                    color: secWinCloseMouse.containsMouse ? "#ffffff" : root.colFgMuted
+                                                }
+
+                                                MouseArea {
+                                                    id: secWinCloseMouse
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    onClicked: {
+                                                        root.dispatchAction("close", modelData.address);
+                                                        secGroupMenuPopup.visible = false;
+                                                    }
+                                                }
+                                            }
                                         }
 
                                         MouseArea {
-                                            id: secCloseMouse
+                                            id: secItemMouse
                                             anchors.fill: parent
                                             hoverEnabled: true
                                             onClicked: {
-                                                root.dispatchAction("close", modelData.address);
+                                                root.dispatchAction("focus", modelData.address);
                                                 secGroupMenuPopup.visible = false;
                                             }
                                         }
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: secItemMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: {
-                                        root.dispatchAction("toggle", modelData.address);
-                                        secGroupMenuPopup.visible = false;
                                     }
                                 }
                             }
