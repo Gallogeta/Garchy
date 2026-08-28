@@ -78,6 +78,44 @@ window#waybar {
     font-weight: 500;
 }
 
+/* Individual Selectable Taskbar Window Buttons */
+#taskbar {
+    margin-left: 8px;
+    margin-right: 8px;
+}
+
+#taskbar button {
+    padding: 0 12px;
+    margin: 0 6px; /* Generous space between icons */
+    color: @fg-muted;
+    background: @bg-alt;
+    border: 1px solid @border-col;
+    border-radius: 8px;
+    min-width: 34px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#taskbar button:hover {
+    color: @fg;
+    background: @border-col;
+    border-color: @accent;
+}
+
+#taskbar button.active {
+    color: @fg;
+    background: rgba(56, 189, 248, 0.18);
+    border: 1.5px solid @accent;
+}
+
+#taskbar button.maximized {
+    border-color: @accent;
+}
+
+#taskbar button.minimized {
+    opacity: 0.6;
+    border-color: @yellow;
+}
+
 /* Grouped Taskbar Icons Module */
 #custom-taskbar-icons {
     color: @fg;
