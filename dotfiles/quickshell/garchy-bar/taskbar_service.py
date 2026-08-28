@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Garchy OS — Quickshell High-Performance Taskbar & Window State Service
-Streams real-time window states, multi-instance groupings, and handles
+Streams real-time window states, multi-instance groupings, tray services, and handles
 Windows 11 / KDE style click-to-minimize and monitor-preserving restoration.
 """
 
@@ -28,8 +28,11 @@ ICON_MAP = {
     "Code": "code",
     "code-oss": "code",
     "steam": "steam",
+    "Steam": "steam",
     "heroic": "heroic",
+    "Heroic": "heroic",
     "discord": "discord",
+    "Discord": "discord",
     "vesktop": "vesktop",
     "spotify": "spotify",
     "Spotify": "spotify",
@@ -39,6 +42,15 @@ ICON_MAP = {
     "smplayer": "smplayer",
     "mpv": "mpv"
 }
+
+TRAY_TARGETS = [
+    {"name": "Discord", "class_names": ["discord", "vesktop", "Discord"], "icon": "discord", "cmd": "discord"},
+    {"name": "Steam", "class_names": ["steam", "Steam"], "icon": "steam", "cmd": "steam"},
+    {"name": "Spotify", "class_names": ["spotify", "Spotify"], "icon": "spotify", "cmd": "spotify"},
+    {"name": "Heroic Games", "class_names": ["heroic", "Heroic"], "icon": "heroic", "cmd": "heroic"},
+    {"name": "Brave Browser", "class_names": ["brave-browser", "Brave-browser"], "icon": "brave-browser", "cmd": "brave"},
+    {"name": "Audio Mixer", "class_names": ["pavucontrol", "org.pulseaudio.pavucontrol"], "icon": "org.pulseaudio.pavucontrol", "cmd": "pavucontrol"}
+]
 
 def eval_lua(code):
     try:
@@ -93,7 +105,7 @@ def get_windows_state():
         active_win = json.loads(subprocess.check_output(['hyprctl', 'activewindow', '-j'], stderr=subprocess.DEVNULL))
         monitors = json.loads(subprocess.check_output(['hyprctl', 'monitors', '-j'], stderr=subprocess.DEVNULL))
     except Exception:
-        return {"groups": [], "active_addr": "", "monitors": []}
+        return {"groups": [], "tray_services": [], "minimized_windows": [], "active_addr": "", "monitors": []}
 
     active_addr = active_win.get('address', '')
 
@@ -140,6 +152,7 @@ def get_windows_state():
             "windows": win_list
         })
 
+    # Minimized windows list
     minimized_windows = []
     for grp in groups_list:
         for w in grp['windows']:
@@ -148,15 +161,78 @@ def get_windows_state():
                 w_copy['icon'] = grp['icon']
                 minimized_windows.append(w_copy)
 
+    # Rich Tray Services (Discord, Steam, Spotify, etc.)
+    tray_services = []
+    for t in TRAY_TARGETS:
+        # Check if window exists
+        matching_win = None
+        for c in valid_clients:
+            if c.get('class') in t['class_names']:
+                matching_win = c
+                break
+
+        if matching_win:
+            ws_name = matching_win.get('workspace', {}).get('name', '1')
+            ws_id = matching_win.get('workspace', {}).get('id', 1)
+            is_min = ws_name.startswith('special') or ws_id == MINIMIZED_WS
+            tray_services.append({
+                "name": t["name"],
+                "icon": t["icon"],
+                "cmd": t["cmd"],
+                "is_running": True,
+                "has_window": True,
+                "address": matching_win.get('address', ''),
+                "title": matching_win.get('title', t["name"]),
+                "is_minimized": is_min,
+                "status_text": "Minimized" if is_min else f"Active on WS {ws_name}"
+            })
+        else:
+            # Check process
+            try:
+                p_check = subprocess.run(["pgrep", "-f", t["cmd"]], capture_output=True, text=True)
+                is_proc = bool(p_check.stdout.strip())
+            except Exception:
+                is_proc = False
+
+            if is_proc:
+                tray_services.append({
+                    "name": t["name"],
+                    "icon": t["icon"],
+                    "cmd": t["cmd"],
+                    "is_running": True,
+                    "has_window": False,
+                    "address": "",
+                    "title": "Running in Tray / Background",
+                    "is_minimized": True,
+                    "status_text": "Background Tray"
+                })
+            else:
+                tray_services.append({
+                    "name": t["name"],
+                    "icon": t["icon"],
+                    "cmd": t["cmd"],
+                    "is_running": False,
+                    "has_window": False,
+                    "address": "",
+                    "title": "Offline",
+                    "is_minimized": False,
+                    "status_text": "Offline"
+                })
+
     return {
         "groups": groups_list,
         "minimized_windows": minimized_windows,
+        "tray_services": tray_services,
         "active_addr": active_addr,
         "monitors": monitors
     }
 
-def handle_action(action, addr):
+def handle_action(action, addr, cmd=""):
     ensure_special_hidden()
+    if action == "launch" and cmd:
+        subprocess.Popen(["bash", "-c", cmd])
+        return
+
     if not addr:
         return
 
@@ -182,7 +258,6 @@ def handle_action(action, addr):
 
     if action == "toggle":
         if is_min:
-            # Restore to original workspace
             orig_ws = get_orig_workspace(addr, 1)
             eval_lua(f'''
             local wins = hl.get_windows()
@@ -196,7 +271,6 @@ def handle_action(action, addr):
             ''')
             ensure_special_hidden()
         elif is_active:
-            # Minimize active window
             save_minimized_history({
                 "address": addr,
                 "title": target_win.get('title', 'Window'),
@@ -215,7 +289,6 @@ def handle_action(action, addr):
             ''')
             ensure_special_hidden()
         else:
-            # Inactive -> Focus
             eval_lua(f'''
             local wins = hl.get_windows()
             for _, w in ipairs(wins) do
@@ -269,9 +342,10 @@ def main():
         if cmd == "dump":
             print(json.dumps(get_windows_state()))
             sys.exit(0)
-        elif cmd in ("toggle", "close", "focus", "restore", "minimize"):
+        elif cmd in ("toggle", "close", "focus", "restore", "minimize", "launch"):
             addr = sys.argv[2] if len(sys.argv) > 2 else ""
-            handle_action(cmd, addr)
+            extra_cmd = sys.argv[3] if len(sys.argv) > 3 else ""
+            handle_action(cmd, addr, extra_cmd)
             sys.exit(0)
 
     # Daemon mode: emit initial state and listen to Hyprland socket2
@@ -293,7 +367,7 @@ def main():
                 while "\n" in buf:
                     line, buf = buf.split("\n", 1)
                     if any(line.startswith(ev) for ev in ("openwindow", "closewindow", "movewindow", "activewindow", "workspace", "focusedmon")):
-                        time.sleep(0.04) # debounce slight state settles
+                        time.sleep(0.04)
                         print(json.dumps(get_windows_state()), flush=True)
         except Exception:
             time.sleep(1)

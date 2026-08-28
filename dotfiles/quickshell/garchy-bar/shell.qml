@@ -591,37 +591,103 @@ ShellRoot {
                 }
             }
 
-            // 🗕 Minimized Programs & Tray Menu Popover
+            // 🗕 GARCHY SHELL LUXURY OBSIDIAN TRAY & SYSTEM HUB
             PopupWindow {
                 id: trayMenuPopup
                 anchor.window: winMain
-                anchor.rect.x: rightIsland.x
+                anchor.rect.x: rightIsland.x - (340 - rightIsland.width)
                 anchor.rect.y: rightIsland.y
-                anchor.rect.width: rightIsland.width
+                anchor.rect.width: 340
                 anchor.rect.height: rightIsland.height
                 anchor.edges: Edges.Bottom
                 anchor.gravity: Edges.Bottom
                 visible: false
 
                 Rectangle {
-                    width: 290
-                    height: trayCol.implicitHeight + 24
-                    radius: 12
+                    width: 340
+                    height: hubCol.implicitHeight + 28
+                    radius: 16
                     color: root.colBg
                     border.color: root.colAccent
-                    border.width: 1
+                    border.width: 1.5
 
                     ColumnLayout {
-                        id: trayCol
+                        id: hubCol
                         anchors.fill: parent
-                        anchors.margins: 12
-                        spacing: 8
+                        anchors.margins: 14
+                        spacing: 10
 
-                        Text {
-                            text: "Minimized & Background Apps"
-                            font.pixelSize: 12
-                            font.bold: true
-                            color: root.colAccent
+                        // 1. TOP HEADER
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+
+                            Text {
+                                text: "󰣇"
+                                font.pixelSize: 18
+                                color: root.colAccent
+                            }
+
+                            Text {
+                                text: "Garchy Shell Hub"
+                                font.pixelSize: 13
+                                font.bold: true
+                                color: root.colFg
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            // Emerald Active Badge
+                            Rectangle {
+                                width: statusRow.implicitWidth + 10
+                                height: 20
+                                radius: 10
+                                color: root.colGreen + "22"
+                                border.color: root.colGreen
+                                border.width: 1
+
+                                RowLayout {
+                                    id: statusRow
+                                    anchors.centerIn: parent
+                                    spacing: 4
+
+                                    Rectangle {
+                                        width: 6
+                                        height: 6
+                                        radius: 3
+                                        color: root.colGreen
+                                    }
+
+                                    Text {
+                                        text: "Active"
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        color: root.colGreen
+                                    }
+                                }
+                            }
+
+                            // Close Button
+                            Rectangle {
+                                width: 22
+                                height: 22
+                                radius: 11
+                                color: closeHubMouse.containsMouse ? root.colRed : root.colBgAlt
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "✕"
+                                    font.pixelSize: 10
+                                    color: closeHubMouse.containsMouse ? "#ffffff" : root.colFgMuted
+                                }
+
+                                MouseArea {
+                                    id: closeHubMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    onClicked: trayMenuPopup.visible = false
+                                }
+                            }
                         }
 
                         Rectangle {
@@ -630,107 +696,103 @@ ShellRoot {
                             color: root.colBorder
                         }
 
-                        // If no minimized apps
+                        // 2. BACKGROUND & TRAY SERVICES SECTION
                         Text {
-                            visible: !root.taskbarState.minimized_windows || root.taskbarState.minimized_windows.length === 0
-                            text: "No minimized programs"
-                            font.pixelSize: 11
-                            color: root.colFgMuted
-                            Layout.topMargin: 4
-                            Layout.bottomMargin: 4
+                            text: "BACKGROUND & TRAY SERVICES"
+                            font.pixelSize: 9
+                            font.bold: true
+                            color: root.colAccent
+                            Layout.topMargin: 2
                         }
 
-                        // List of Minimized Programs (Discord, Steam, Brave, Kitty, etc.)
                         Repeater {
-                            model: root.taskbarState.minimized_windows || []
+                            model: root.taskbarState.tray_services || []
 
                             Rectangle {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 34
+                                Layout.preferredHeight: 38
                                 radius: 8
-                                color: minCardMouse.containsMouse ? root.colBgAlt : "transparent"
-                                border.color: minCardMouse.containsMouse ? root.colBorder : "transparent"
+                                color: svcMouse.containsMouse ? root.colBgAlt : "#131c3188"
+                                border.color: modelData.is_running ? root.colBorder : "transparent"
                                 border.width: 1
 
                                 RowLayout {
                                     anchors.fill: parent
-                                    anchors.leftMargin: 8
-                                    anchors.rightMargin: 8
-                                    spacing: 8
+                                    anchors.leftMargin: 10
+                                    anchors.rightMargin: 10
+                                    spacing: 10
 
+                                    // App Desktop Vector Icon
                                     Image {
-                                        width: 18
-                                        height: 18
+                                        width: 20
+                                        height: 20
                                         source: Quickshell.iconPath(modelData.icon)
                                         fillMode: Image.PreserveAspectFit
+                                        opacity: modelData.is_running ? 1.0 : 0.4
                                         visible: status === Image.Ready
                                     }
 
-                                    Text {
+                                    ColumnLayout {
                                         Layout.fillWidth: true
-                                        text: modelData.title
-                                        font.pixelSize: 11
-                                        elide: Text.ElideRight
-                                        color: root.colFg
+                                        spacing: 1
+
+                                        Text {
+                                            text: modelData.name
+                                            font.pixelSize: 12
+                                            font.bold: true
+                                            color: modelData.is_running ? root.colFg : root.colFgMuted
+                                        }
+
+                                        Text {
+                                            text: modelData.status_text
+                                            font.pixelSize: 10
+                                            color: modelData.is_running ? (modelData.is_minimized ? root.colGold : root.colAccent) : root.colFgMuted
+                                        }
                                     }
 
-                                    // Restore Button
+                                    // Action Button (Restore / Open / Launch)
                                     Rectangle {
-                                        width: 54
-                                        height: 22
-                                        radius: 5
-                                        color: rstArea.containsMouse ? root.colAccent : root.colBgAlt
+                                        width: modelData.is_running ? 64 : 54
+                                        height: 24
+                                        radius: 6
+                                        color: actArea.containsMouse ? root.colAccent : root.colBgAlt
                                         border.color: root.colAccent
                                         border.width: 1
 
                                         Text {
                                             anchors.centerIn: parent
-                                            text: "Restore"
+                                            text: modelData.has_window ? (modelData.is_minimized ? "Restore" : "Focus") : (modelData.is_running ? "Open" : "Launch")
                                             font.pixelSize: 10
                                             font.bold: true
-                                            color: rstArea.containsMouse ? "#0a0f1d" : root.colAccent
+                                            color: actArea.containsMouse ? "#0a0f1d" : root.colAccent
                                         }
 
                                         MouseArea {
-                                            id: rstArea
+                                            id: actArea
                                             anchors.fill: parent
                                             hoverEnabled: true
                                             onClicked: {
-                                                root.dispatchAction("toggle", modelData.address);
+                                                if (modelData.has_window) {
+                                                    root.dispatchAction("toggle", modelData.address);
+                                                } else {
+                                                    root.runCmd(["bash", "-c", modelData.cmd]);
+                                                }
                                                 trayMenuPopup.visible = false;
                                             }
-                                        }
-                                    }
-
-                                    // Close Button
-                                    Rectangle {
-                                        width: 22
-                                        height: 22
-                                        radius: 5
-                                        color: clsArea.containsMouse ? root.colRed : "transparent"
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: "✕"
-                                            font.pixelSize: 10
-                                            color: clsArea.containsMouse ? "#ffffff" : root.colFgMuted
-                                        }
-
-                                        MouseArea {
-                                            id: clsArea
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            onClicked: root.dispatchAction("close", modelData.address)
                                         }
                                     }
                                 }
 
                                 MouseArea {
-                                    id: minCardMouse
+                                    id: svcMouse
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     onClicked: {
-                                        root.dispatchAction("toggle", modelData.address);
+                                        if (modelData.has_window) {
+                                            root.dispatchAction("toggle", modelData.address);
+                                        } else {
+                                            root.runCmd(["bash", "-c", modelData.cmd]);
+                                        }
                                         trayMenuPopup.visible = false;
                                     }
                                 }
@@ -741,40 +803,230 @@ ShellRoot {
                             Layout.fillWidth: true
                             height: 1
                             color: root.colBorder
+                            Layout.topMargin: 2
                         }
 
-                        // Power / Session Shortcut
-                        Rectangle {
+                        // 3. QUICK SYSTEM SHORTCUTS
+                        RowLayout {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 28
-                            radius: 6
-                            color: pwrRowArea.containsMouse ? root.colRed + "22" : "transparent"
+                            spacing: 8
 
-                            RowLayout {
-                                anchors.centerIn: parent
-                                spacing: 6
+                            // 🎮 GameMode
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 30
+                                radius: 6
+                                color: gmMouse.containsMouse ? root.colAccent + "33" : root.colBgAlt
+                                border.color: root.colBorder
+                                border.width: 1
 
-                                Text {
-                                    text: ""
-                                    font.pixelSize: 12
-                                    color: root.colRed
+                                RowLayout {
+                                    anchors.centerIn: parent
+                                    spacing: 4
+
+                                    Text {
+                                        text: "🎮"
+                                        font.pixelSize: 11
+                                    }
+
+                                    Text {
+                                        text: "Gaming"
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        color: root.colFg
+                                    }
                                 }
 
-                                Text {
-                                    text: "Power Menu"
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                    color: root.colFg
+                                MouseArea {
+                                    id: gmMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    onClicked: {
+                                        root.runCmd(["bash", "-c", "garchy-game status"]);
+                                        trayMenuPopup.visible = false;
+                                    }
                                 }
                             }
 
-                            MouseArea {
-                                id: pwrRowArea
+                            // 🔊 Pavucontrol
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 30
+                                radius: 6
+                                color: pavuMouse.containsMouse ? root.colAccent + "33" : root.colBgAlt
+                                border.color: root.colBorder
+                                border.width: 1
+
+                                RowLayout {
+                                    anchors.centerIn: parent
+                                    spacing: 4
+
+                                    Text {
+                                        text: "󰕾"
+                                        font.pixelSize: 11
+                                        color: root.colAccent
+                                    }
+
+                                    Text {
+                                        text: "Mixer"
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        color: root.colFg
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: pavuMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    onClicked: {
+                                        root.runCmd(["pavucontrol"]);
+                                        trayMenuPopup.visible = false;
+                                    }
+                                }
+                            }
+
+                            // 🎨 Themes
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 30
+                                radius: 6
+                                color: thmQMouse.containsMouse ? root.colAccentAlt + "33" : root.colBgAlt
+                                border.color: root.colBorder
+                                border.width: 1
+
+                                RowLayout {
+                                    anchors.centerIn: parent
+                                    spacing: 4
+
+                                    Text {
+                                        text: "󰏘"
+                                        font.pixelSize: 11
+                                        color: root.colAccentAlt
+                                    }
+
+                                    Text {
+                                        text: "Theme"
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        color: root.colFg
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: thmQMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    onClicked: {
+                                        root.runCmd(["bash", "-c", "python3 ~/.config/hypr/scripts/theme-switcher-gui.py"]);
+                                        trayMenuPopup.visible = false;
+                                    }
+                                }
+                            }
+                        }
+
+                        // 4. POWER & SESSION BAR
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 32
+                            radius: 8
+                            color: root.colBgAlt
+                            border.color: root.colBorder
+                            border.width: 1
+
+                            RowLayout {
                                 anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: {
-                                    root.runCmd(["wlogout", "-b", "2", "-c", "20", "-r", "20"]);
-                                    trayMenuPopup.visible = false;
+                                anchors.leftMargin: 8
+                                anchors.rightMargin: 8
+
+                                // Lock
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    radius: 6
+                                    color: lckMouse.containsMouse ? root.colAccent + "33" : "transparent"
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: " Lock"
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        color: root.colFg
+                                    }
+
+                                    MouseArea {
+                                        id: lckMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        onClicked: {
+                                            root.runCmd(["hyprlock"]);
+                                            trayMenuPopup.visible = false;
+                                        }
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: 1
+                                    height: 16
+                                    color: root.colBorder
+                                }
+
+                                // Restart
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    radius: 6
+                                    color: rbtMouse.containsMouse ? root.colGold + "33" : "transparent"
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "󰜉 Reboot"
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        color: root.colGold
+                                    }
+
+                                    MouseArea {
+                                        id: rbtMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        onClicked: {
+                                            root.runCmd(["systemctl", "reboot"]);
+                                            trayMenuPopup.visible = false;
+                                        }
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: 1
+                                    height: 16
+                                    color: root.colBorder
+                                }
+
+                                // Power Menu
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    radius: 6
+                                    color: pwrMenuMouse.containsMouse ? root.colRed + "33" : "transparent"
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: " Power"
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        color: root.colRed
+                                    }
+
+                                    MouseArea {
+                                        id: pwrMenuMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        onClicked: {
+                                            root.runCmd(["wlogout", "-b", "2", "-c", "20", "-r", "20"]);
+                                            trayMenuPopup.visible = false;
+                                        }
+                                    }
                                 }
                             }
                         }
