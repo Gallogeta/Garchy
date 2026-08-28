@@ -207,7 +207,7 @@ ShellRoot {
                 width: leftLayout.implicitWidth + 20
                 color: root.colBg
                 border.color: root.colBorder
-                border.width: 1
+                border.width: 1.5
                 radius: root.islandRadius
 
                 RowLayout {
@@ -220,15 +220,15 @@ ShellRoot {
                         width: 32
                         height: 32
                         radius: root.buttonRadius
-                        color: launchArea.containsMouse ? root.colBgAlt : "transparent"
-                        border.color: launchArea.containsMouse ? root.colAccent : "transparent"
+                        color: launchArea.containsMouse ? root.colAccent + "33" : root.colBgAlt
+                        border.color: launchArea.containsMouse ? root.colAccent : root.colBorder
                         border.width: 1
 
                         Text {
                             anchors.centerIn: parent
                             text: "󰣇"
-                            font.pixelSize: 20
-                            color: launchArea.containsMouse ? root.colAccent : root.colFg
+                            font.pixelSize: 18
+                            color: root.colAccent
                         }
 
                         MouseArea {
@@ -415,7 +415,7 @@ ShellRoot {
                 width: clockLayout.implicitWidth + 36
                 color: root.colBg
                 border.color: clockArea.containsMouse ? root.colAccent : root.colBorder
-                border.width: 1
+                border.width: 1.5
                 radius: root.islandRadius
 
                 RowLayout {
@@ -521,7 +521,7 @@ ShellRoot {
                 width: rightLayout.implicitWidth + 24
                 color: root.colBg
                 border.color: root.colBorder
-                border.width: 1
+                border.width: 1.5
                 radius: root.islandRadius
 
                 RowLayout {
@@ -1153,7 +1153,7 @@ ShellRoot {
                 width: secWsRow.implicitWidth + 20
                 color: root.colBg
                 border.color: root.colBorder
-                border.width: 1
+                border.width: 1.5
                 radius: root.islandRadius
 
                 Row {
@@ -1206,7 +1206,7 @@ ShellRoot {
                 width: 90
                 color: root.colBg
                 border.color: root.colBorder
-                border.width: 1
+                border.width: 1.5
                 radius: root.islandRadius
 
                 Text {
