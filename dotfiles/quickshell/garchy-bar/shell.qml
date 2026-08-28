@@ -402,21 +402,23 @@ ShellRoot {
             PopupWindow {
                 id: datePopup
                 anchor.window: winMain
-                anchor.rect.x: centerIsland.x
-                anchor.rect.y: centerIsland.y
-                anchor.rect.width: centerIsland.width
-                anchor.rect.height: centerIsland.height
+                anchor.rect.x: Math.round((winMain.width - 280) / 2)
+                anchor.rect.y: 46
+                anchor.rect.width: 280
+                anchor.rect.height: 0
                 anchor.edges: Edges.Bottom
                 anchor.gravity: Edges.Bottom
+                implicitWidth: 280
+                implicitHeight: dateCol.implicitHeight + 28
+                color: "transparent"
                 visible: false
 
                 Rectangle {
-                    width: 260
-                    height: dateCol.implicitHeight + 24
-                    radius: 12
+                    anchors.fill: parent
+                    radius: 14
                     color: root.colBg
                     border.color: root.colAccent
-                    border.width: 1
+                    border.width: 1.5
 
                     ColumnLayout {
                         id: dateCol
@@ -595,17 +597,19 @@ ShellRoot {
             PopupWindow {
                 id: trayMenuPopup
                 anchor.window: winMain
-                anchor.rect.x: rightIsland.x - (340 - rightIsland.width)
-                anchor.rect.y: rightIsland.y
-                anchor.rect.width: 340
-                anchor.rect.height: rightIsland.height
+                anchor.rect.x: winMain.width - 364
+                anchor.rect.y: 46
+                anchor.rect.width: 350
+                anchor.rect.height: 0
                 anchor.edges: Edges.Bottom
                 anchor.gravity: Edges.Bottom
+                implicitWidth: 350
+                implicitHeight: hubCol.implicitHeight + 28
+                color: "transparent"
                 visible: false
 
                 Rectangle {
-                    width: 340
-                    height: hubCol.implicitHeight + 28
+                    anchors.fill: parent
                     radius: 16
                     color: root.colBg
                     border.color: root.colAccent
