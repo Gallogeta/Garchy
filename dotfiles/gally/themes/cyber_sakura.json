@@ -1,0 +1,20 @@
+{
+  "id": "cyber_sakura",
+  "name": "🌸 Cyber Sakura",
+  "desc": "MacBook liquid pastel cherry blossom pink, lavender mauve, and glacier teal glass.",
+  "colors": ["#16162a", "#f5bde6", "#c6a0f6", "#8bd5ca", "#eed49f"],
+  "hypr_border": "rgba(f5bde6ee) rgba(c6a0f6ee) rgba(8bd5caee) 45deg",
+  "hypr_inactive": "rgba(16162a88)",
+  "rounding": 18,
+  "bar_height": 42,
+  "layout_style": "macbook",
+  "accent": "#f5bde6",
+  "accent_alt": "#c6a0f6",
+  "bg": "#16162a",
+  "bg_card": "#242038",
+  "bg_alt": "#242038",
+  "fg": "#cad3f5",
+  "fg_muted": "#939ab7",
+  "border": "#c6a0f6",
+  "icon_theme": "Papirus-Dark"
+}

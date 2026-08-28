@@ -1,0 +1,20 @@
+{
+  "id": "fluent_mica",
+  "name": "🪟 Fluent Mica Pastel",
+  "desc": "Windows 11 Fluent dark mica glass with glowing sky cyan and champagne gold accents.",
+  "colors": ["#1a1d24", "#7dd3fc", "#93c5fd", "#fde047", "#38bdf8"],
+  "hypr_border": "rgba(7dd3fcee) rgba(93c5fdee) rgba(fde047ee) 45deg",
+  "hypr_inactive": "rgba(1a1d2488)",
+  "rounding": 12,
+  "bar_height": 48,
+  "layout_style": "windows11",
+  "accent": "#7dd3fc",
+  "accent_alt": "#93c5fd",
+  "bg": "#1a1d24",
+  "bg_card": "#232732",
+  "bg_alt": "#232732",
+  "fg": "#f1f5f9",
+  "fg_muted": "#94a3b8",
+  "border": "#7dd3fc",
+  "icon_theme": "Papirus-Dark"
+}

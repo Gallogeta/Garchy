@@ -1,0 +1,20 @@
+{
+  "id": "neo_matcha",
+  "name": "🍵 Neo-Tokyo Matcha",
+  "desc": "Organic Japanese matcha cream, sage green, and soft ivory bamboo glass.",
+  "colors": ["#131c17", "#a6e3a1", "#94e2d5", "#f9e2af", "#89dceb"],
+  "hypr_border": "rgba(a6e3a1ee) rgba(94e2d5ee) rgba(f9e2afee) 45deg",
+  "hypr_inactive": "rgba(131c1788)",
+  "rounding": 16,
+  "bar_height": 42,
+  "layout_style": "macbook",
+  "accent": "#a6e3a1",
+  "accent_alt": "#94e2d5",
+  "bg": "#131c17",
+  "bg_card": "#1c2b23",
+  "bg_alt": "#1c2b23",
+  "fg": "#e4f4e8",
+  "fg_muted": "#8ca395",
+  "border": "#a6e3a1",
+  "icon_theme": "Papirus-Dark"
+}

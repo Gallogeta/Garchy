@@ -285,6 +285,31 @@ noise_reduction = 0.77
     except Exception:
         pass
 
+def generate_gtk_css(theme_dict):
+    bg = theme_dict.get("bg", "#0a0f1d")
+    bg_card = theme_dict.get("bg_card", "#131c31")
+    fg = theme_dict.get("fg", "#f1f5f9")
+    accent = theme_dict.get("accent", "#38bdf8")
+    accent_alt = theme_dict.get("accent_alt", "#3b82f6")
+    border = theme_dict.get("border_col", accent)
+
+    return f"""/* Garchy OS System-wide Dynamic GTK Palette */
+@define-color accent_color {accent};
+@define-color accent_bg_color {accent};
+@define-color accent_fg_color #0a0f1d;
+@define-color window_bg_color {bg};
+@define-color window_fg_color {fg};
+@define-color view_bg_color {bg_card};
+@define-color view_fg_color {fg};
+@define-color headerbar_bg_color {bg_card};
+@define-color headerbar_fg_color {fg};
+@define-color card_bg_color {bg_card};
+@define-color card_fg_color {fg};
+@define-color popover_bg_color {bg};
+@define-color popover_fg_color {fg};
+@define-color borders {border};
+"""
+
 def save_active_theme(theme_dict):
     os.makedirs(os.path.dirname(THEME_STATE_FILE), exist_ok=True)
     with open(THEME_STATE_FILE, "w") as f:
@@ -300,11 +325,22 @@ def save_active_theme(theme_dict):
     except Exception:
         pass
 
-    # 2. Update CAVA audio visualizer gradient colors
+    # 2. Update GTK 3 & GTK 4 CSS themes
+    try:
+        gtk_css = generate_gtk_css(theme_dict)
+        for gtk_dir in ["~/.config/gtk-3.0", "~/.config/gtk-4.0"]:
+            full_dir = os.path.expanduser(gtk_dir)
+            os.makedirs(full_dir, exist_ok=True)
+            with open(os.path.join(full_dir, "gtk.css"), "w") as f:
+                f.write(gtk_css)
+    except Exception:
+        pass
+
+    # 3. Update CAVA audio visualizer gradient colors
     update_cava_config(theme_dict)
 
-    # 3. Sync GTK icon theme if specified
-    icon_th = theme_dict.get("icon_theme", "Tela-circle-dark")
+    # 4. Sync GTK icon theme if specified
+    icon_th = theme_dict.get("icon_theme", "Papirus-Dark")
     if icon_th:
         try:
             subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", icon_th],

@@ -1,0 +1,20 @@
+{
+  "id": "polar_aurora",
+  "name": "❄️ Polar Aurora",
+  "desc": "Arctic crystal ice, aurora borealis mint, and liquid diamond titanium glass.",
+  "colors": ["#141c26", "#a5f3fc", "#cbd5e1", "#86efac", "#38bdf8"],
+  "hypr_border": "rgba(a5f3fcee) rgba(86efacee) rgba(38bdf8ee) 45deg",
+  "hypr_inactive": "rgba(141c2688)",
+  "rounding": 20,
+  "bar_height": 42,
+  "layout_style": "macbook",
+  "accent": "#a5f3fc",
+  "accent_alt": "#86efac",
+  "bg": "#141c26",
+  "bg_card": "#1f2b3b",
+  "bg_alt": "#1f2b3b",
+  "fg": "#e6f7ff",
+  "fg_muted": "#8ea6b8",
+  "border": "#a5f3fc",
+  "icon_theme": "Papirus-Dark"
+}

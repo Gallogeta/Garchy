@@ -1,0 +1,20 @@
+{
+  "id": "sunset_vapour",
+  "name": "🌅 Sunset Vapour",
+  "desc": "Retro-futuristic cyber-apricot sunset glow, rose quartz, and twilight amethyst.",
+  "colors": ["#1f162b", "#ffb86c", "#ff79c6", "#bd93f9", "#8be9fd"],
+  "hypr_border": "rgba(ffb86cee) rgba(ff79c6ee) rgba(bd93f9ee) 45deg",
+  "hypr_inactive": "rgba(1f162b88)",
+  "rounding": 14,
+  "bar_height": 46,
+  "layout_style": "garchy",
+  "accent": "#ffb86c",
+  "accent_alt": "#ff79c6",
+  "bg": "#1f162b",
+  "bg_card": "#2d203f",
+  "bg_alt": "#2d203f",
+  "fg": "#f8f0fc",
+  "fg_muted": "#a896be",
+  "border": "#ffb86c",
+  "icon_theme": "Papirus-Dark"
+}

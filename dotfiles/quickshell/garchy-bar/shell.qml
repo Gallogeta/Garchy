@@ -23,6 +23,8 @@ ShellRoot {
     property color colRed: "#ef4444"
     property color colGreen: "#22c55e"
     property int themeRounding: 12
+    property string layoutStyle: "garchy"
+    property int barHeight: 46
 
     property int islandRadius: root.themeRounding
     property int cardRadius: Math.max(0, root.themeRounding - 3)
@@ -44,6 +46,8 @@ ShellRoot {
         if (json.gold) root.colGold = json.gold;
         if (json.rounding !== undefined) root.themeRounding = parseInt(json.rounding);
         else if (json.hypr_rounding !== undefined) root.themeRounding = parseInt(json.hypr_rounding);
+        if (json.layout_style) root.layoutStyle = json.layout_style;
+        if (json.bar_height) root.barHeight = parseInt(json.bar_height);
     }
 
     FileView {
@@ -168,7 +172,7 @@ ShellRoot {
             left: true
             right: true
         }
-        implicitHeight: 46
+        implicitHeight: root.barHeight
         color: "transparent"
 
         WlrLayershell.layer: WlrLayer.Top
@@ -1115,7 +1119,7 @@ ShellRoot {
             left: true
             right: true
         }
-        implicitHeight: 46
+        implicitHeight: root.barHeight
         color: "transparent"
 
         WlrLayershell.layer: WlrLayer.Top
