@@ -24,8 +24,7 @@ case "$ACTION" in
             local wins = hl.get_windows()
             for _, w in ipairs(wins) do
                 if w.address == "'"$TARGET_ADDR"'" then
-                    hl.dispatch(hl.dsp.focus({ window = w }))
-                    hl.dispatch(hl.dsp.window.move({ workspace = "special:minimized", silent = true }))
+                    hl.dispatch(hl.dsp.window.move({ window = w, workspace = "special:minimized", silent = true }))
                     break
                 end
             end
