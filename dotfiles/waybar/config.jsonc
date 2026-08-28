@@ -11,10 +11,7 @@
     "modules-left": [
         "custom/launcher",
         "hyprland/workspaces",
-        "custom/taskbar-icons",
-        "custom/btn-minimize",
-        "custom/btn-maximize",
-        "custom/btn-close"
+        "custom/taskbar-icons"
     ],
     "modules-center": [
         "clock"
@@ -41,6 +38,11 @@
         "active-only": false,
         "all-outputs": false,
         "disable-scroll": false,
+        "ignore-workspaces": [
+            "99",
+            "(special:)?minimized",
+            "special:.*"
+        ],
         "on-scroll-up": "hyprctl dispatch workspace e+1",
         "on-scroll-down": "hyprctl dispatch workspace e-1",
         "on-click": "activate",
@@ -67,24 +69,6 @@
         "on-click": "python3 /home/gallo/.config/hypr/scripts/taskbar-group-click.py",
         "on-click-right": "python3 /home/gallo/.config/hypr/scripts/taskbar-group-click.py",
         "tooltip": true
-    },
-
-    "custom/btn-minimize": {
-        "format": "🗕",
-        "tooltip-format": "🗕 Minimize Active Window\n───────────────────────\n• Left Click: Minimize window to background\n• Shortcut: Super + N",
-        "on-click": "python3 /home/gallo/.config/hypr/scripts/taskbar-click.py minimize"
-    },
-
-    "custom/btn-maximize": {
-        "format": "🗖",
-        "tooltip-format": "🗖 Maximize / Restore Window\n───────────────────────\n• Left Click: Toggle Fullscreen / Maximize\n• Shortcut: Super + M",
-        "on-click": "python3 /home/gallo/.config/hypr/scripts/taskbar-click.py maximize"
-    },
-
-    "custom/btn-close": {
-        "format": "✕",
-        "tooltip-format": "✕ Close Active Window\n───────────────────────\n• Left Click: Close window\n• Shortcut: Super + Q",
-        "on-click": "python3 /home/gallo/.config/hypr/scripts/taskbar-click.py close"
     },
 
     "clock": {
