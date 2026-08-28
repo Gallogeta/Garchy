@@ -149,12 +149,13 @@ ShellRoot {
             left: true
             right: true
         }
-        implicitHeight: 40
+        implicitHeight: 44
         color: "transparent"
 
         WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.namespace: "garchy-shell"
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-        exclusionMode: ExclusionMode.Normal
+        exclusionMode: ExclusionMode.Auto
 
         Item {
             anchors.fill: parent
@@ -579,12 +580,13 @@ ShellRoot {
             left: true
             right: true
         }
-        implicitHeight: 40
+        implicitHeight: 44
         color: "transparent"
 
         WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.namespace: "garchy-shell"
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-        exclusionMode: ExclusionMode.Normal
+        exclusionMode: ExclusionMode.Auto
 
         Item {
             anchors.fill: parent
