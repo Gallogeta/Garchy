@@ -285,14 +285,24 @@ ShellRoot {
                                     border.color: groupData.is_active ? root.colAccent : (appMouse.containsMouse ? root.colBorder : "transparent")
                                     border.width: groupData.is_active ? 1.5 : 1
 
-                                    // App Icon
-                                    IconImage {
+                                    // App Desktop Icon
+                                    Image {
                                         id: appIcon
                                         anchors.centerIn: parent
-                                        width: 18
-                                        height: 18
-                                        source: groupData.icon
+                                        width: 20
+                                        height: 20
+                                        source: Quickshell.iconPath(groupData.icon)
+                                        fillMode: Image.PreserveAspectFit
                                         opacity: groupData.is_minimized ? 0.5 : 1.0
+                                        visible: status === Image.Ready
+                                    }
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        visible: appIcon.status !== Image.Ready
+                                        text: "󰖯"
+                                        font.pixelSize: 16
+                                        color: groupData.is_active ? root.colAccent : root.colFg
                                     }
 
                                     // Active underline indicator
