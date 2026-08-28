@@ -10,7 +10,7 @@ ShellRoot {
     id: root
 
     // ========================================================
-    // DYNAMIC WALLUST / GARCHY PALETTE
+    // DYNAMIC WALLUST / THEME GALLERY PALETTE & GEOMETRY
     // ========================================================
     property color colBg: "#0a0f1dE6"
     property color colBgAlt: "#131c31"
@@ -22,21 +22,46 @@ ShellRoot {
     property color colGold: "#fbbf24"
     property color colRed: "#ef4444"
     property color colGreen: "#22c55e"
+    property int themeRounding: 12
+
+    property int islandRadius: root.themeRounding
+    property int cardRadius: Math.max(0, root.themeRounding - 3)
+    property int buttonRadius: Math.max(0, root.themeRounding - 6)
+    property int popupRadius: Math.max(0, root.themeRounding + 2)
+
+    function applyThemeJson(json) {
+        if (!json) return;
+        if (json.bg) {
+            var b = String(json.bg).trim();
+            root.colBg = b.length === 7 ? b + "E6" : b;
+        }
+        if (json.bg_alt || json.bg_card) root.colBgAlt = json.bg_alt || json.bg_card;
+        if (json.fg) root.colFg = json.fg;
+        if (json.fg_muted) root.colFgMuted = json.fg_muted;
+        if (json.accent) root.colAccent = json.accent;
+        if (json.accent_alt) root.colAccentAlt = json.accent_alt;
+        if (json.border || json.border_col) root.colBorder = json.border || json.border_col;
+        if (json.gold) root.colGold = json.gold;
+        if (json.rounding !== undefined) root.themeRounding = parseInt(json.rounding);
+        else if (json.hypr_rounding !== undefined) root.themeRounding = parseInt(json.hypr_rounding);
+    }
+
+    FileView {
+        path: "/home/gallo/.config/gally/active_theme.json"
+        watchChanges: true
+        onFileChanged: {
+            try {
+                root.applyThemeJson(JSON.parse(text()));
+            } catch(e) {}
+        }
+    }
 
     FileView {
         path: "/home/gallo/.cache/garchy_theme.json"
         watchChanges: true
         onFileChanged: {
             try {
-                var json = JSON.parse(text());
-                if (json.bg) root.colBg = json.bg + "E6";
-                if (json.bg_alt) root.colBgAlt = json.bg_alt;
-                if (json.fg) root.colFg = json.fg;
-                if (json.fg_muted) root.colFgMuted = json.fg_muted;
-                if (json.accent) root.colAccent = json.accent;
-                if (json.accent_alt) root.colAccentAlt = json.accent_alt;
-                if (json.border) root.colBorder = json.border;
-                if (json.gold) root.colGold = json.gold;
+                root.applyThemeJson(JSON.parse(text()));
             } catch(e) {}
         }
     }
@@ -168,7 +193,7 @@ ShellRoot {
                 color: root.colBg
                 border.color: root.colBorder
                 border.width: 1
-                radius: 12
+                radius: root.islandRadius
 
                 RowLayout {
                     id: leftLayout
@@ -179,7 +204,7 @@ ShellRoot {
                     Rectangle {
                         width: 32
                         height: 32
-                        radius: 9
+                        radius: root.buttonRadius
                         color: launchArea.containsMouse ? root.colBgAlt : "transparent"
                         border.color: launchArea.containsMouse ? root.colAccent : "transparent"
                         border.width: 1
@@ -210,7 +235,7 @@ ShellRoot {
                     Rectangle {
                         height: 30
                         width: wsRow.implicitWidth + 10
-                        radius: 8
+                        radius: root.cardRadius
                         color: root.colBgAlt
                         border.color: root.colBorder
                         border.width: 1
@@ -237,7 +262,7 @@ ShellRoot {
 
                                     width: 24
                                     height: 24
-                                    radius: 6
+                                    radius: root.buttonRadius
                                     color: isWsActive ? root.colAccent : (wsArea.containsMouse ? root.colBorder : "transparent")
 
                                     Text {
@@ -275,7 +300,7 @@ ShellRoot {
                                 Rectangle {
                                     id: appPill
                                     anchors.fill: parent
-                                    radius: 9
+                                    radius: root.buttonRadius
                                     color: groupData.is_active ? root.colAccent + "33" : (appMouse.containsMouse ? root.colBgAlt : "transparent")
                                     border.color: groupData.is_active ? root.colAccent : (appMouse.containsMouse ? root.colBorder : "transparent")
                                     border.width: groupData.is_active ? 1.5 : 1
@@ -307,7 +332,7 @@ ShellRoot {
                                         anchors.bottomMargin: 2
                                         width: groupData.is_active ? 18 : 4
                                         height: 2.5
-                                        radius: 1.5
+                                        radius: Math.max(1, root.buttonRadius / 4)
                                         color: groupData.is_active ? root.colAccent : (groupData.is_minimized ? root.colGold : root.colFgMuted)
                                         Behavior on width { NumberAnimation { duration: 150 } }
                                     }
@@ -321,7 +346,7 @@ ShellRoot {
                                         anchors.rightMargin: 2
                                         width: 14
                                         height: 14
-                                        radius: 7
+                                        radius: Math.max(2, root.buttonRadius - 2)
                                         color: root.colAccentAlt
 
                                         Text {
@@ -376,7 +401,7 @@ ShellRoot {
                 color: root.colBg
                 border.color: clockArea.containsMouse ? root.colAccent : root.colBorder
                 border.width: 1
-                radius: 12
+                radius: root.islandRadius
 
                 RowLayout {
                     id: clockLayout
@@ -415,7 +440,7 @@ ShellRoot {
 
                 Rectangle {
                     anchors.fill: parent
-                    radius: 14
+                    radius: root.popupRadius
                     color: root.colBg
                     border.color: root.colAccent
                     border.width: 1.5
@@ -445,7 +470,7 @@ ShellRoot {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 32
-                            radius: 8
+                            radius: root.buttonRadius
                             color: calBtnArea.containsMouse ? root.colAccent + "33" : root.colBgAlt
                             border.color: calBtnArea.containsMouse ? root.colAccent : root.colBorder
                             border.width: 1
@@ -482,7 +507,7 @@ ShellRoot {
                 color: root.colBg
                 border.color: root.colBorder
                 border.width: 1
-                radius: 12
+                radius: root.islandRadius
 
                 RowLayout {
                     id: rightLayout
@@ -493,7 +518,7 @@ ShellRoot {
                     Rectangle {
                         height: 28
                         width: volRow.implicitWidth + 16
-                        radius: 7
+                        radius: root.buttonRadius
                         color: root.colBgAlt
 
                         RowLayout {
@@ -526,7 +551,7 @@ ShellRoot {
                     Rectangle {
                         width: 30
                         height: 30
-                        radius: 8
+                        radius: root.buttonRadius
                         color: aiMouse.containsMouse ? root.colAccent + "33" : "transparent"
 
                         Text {
@@ -548,7 +573,7 @@ ShellRoot {
                     Rectangle {
                         width: 30
                         height: 30
-                        radius: 8
+                        radius: root.buttonRadius
                         color: thmMouse.containsMouse ? root.colAccentAlt + "33" : "transparent"
 
                         Text {
@@ -571,7 +596,7 @@ ShellRoot {
                         id: trayBtn
                         width: 28
                         height: 28
-                        radius: 7
+                        radius: root.buttonRadius
                         color: trayArea.containsMouse || trayMenuPopup.visible ? root.colBgAlt : "transparent"
                         border.color: trayArea.containsMouse || trayMenuPopup.visible ? root.colAccent : "transparent"
                         border.width: 1
@@ -610,7 +635,7 @@ ShellRoot {
 
                 Rectangle {
                     anchors.fill: parent
-                    radius: 16
+                    radius: root.popupRadius
                     color: root.colBg
                     border.color: root.colAccent
                     border.width: 1.5
@@ -645,7 +670,7 @@ ShellRoot {
                             Rectangle {
                                 width: statusRow.implicitWidth + 10
                                 height: 20
-                                radius: 10
+                                radius: root.buttonRadius
                                 color: root.colGreen + "22"
                                 border.color: root.colGreen
                                 border.width: 1
@@ -658,7 +683,7 @@ ShellRoot {
                                     Rectangle {
                                         width: 6
                                         height: 6
-                                        radius: 3
+                                        radius: Math.max(1, root.buttonRadius / 2)
                                         color: root.colGreen
                                     }
 
@@ -675,7 +700,7 @@ ShellRoot {
                             Rectangle {
                                 width: 22
                                 height: 22
-                                radius: 11
+                                radius: root.buttonRadius
                                 color: closeHubMouse.containsMouse ? root.colRed : root.colBgAlt
 
                                 Text {
@@ -727,7 +752,7 @@ ShellRoot {
                                     Rectangle {
                                         Layout.fillWidth: true
                                         Layout.preferredHeight: 38
-                                        radius: 8
+                                        radius: root.cardRadius
                                         color: svcMouse.containsMouse ? root.colBgAlt : "#131c3188"
                                         border.color: modelData.is_running ? root.colBorder : "transparent"
                                         border.width: 1
@@ -789,7 +814,7 @@ ShellRoot {
                                                 Layout.preferredWidth: 62
                                                 Layout.preferredHeight: 24
                                                 Layout.alignment: Qt.AlignVCenter
-                                                radius: 6
+                                                radius: root.buttonRadius
                                                 color: actArea.containsMouse ? root.colAccent : root.colBgAlt
                                                 border.color: root.colAccent
                                                 border.width: 1
@@ -852,7 +877,7 @@ ShellRoot {
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
-                                radius: 6
+                                radius: root.buttonRadius
                                 color: gmMouse.containsMouse ? root.colAccent + "33" : root.colBgAlt
                                 border.color: root.colBorder
                                 border.width: 1
@@ -889,7 +914,7 @@ ShellRoot {
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
-                                radius: 6
+                                radius: root.buttonRadius
                                 color: pavuMouse.containsMouse ? root.colAccent + "33" : root.colBgAlt
                                 border.color: root.colBorder
                                 border.width: 1
@@ -927,7 +952,7 @@ ShellRoot {
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
-                                radius: 6
+                                radius: root.buttonRadius
                                 color: thmQMouse.containsMouse ? root.colAccentAlt + "33" : root.colBgAlt
                                 border.color: root.colBorder
                                 border.width: 1
@@ -966,7 +991,7 @@ ShellRoot {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 32
-                            radius: 8
+                            radius: root.cardRadius
                             color: root.colBgAlt
                             border.color: root.colBorder
                             border.width: 1
@@ -980,7 +1005,7 @@ ShellRoot {
                                 Rectangle {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
-                                    radius: 6
+                                    radius: root.buttonRadius
                                     color: lckMouse.containsMouse ? root.colAccent + "33" : "transparent"
 
                                     Text {
@@ -1012,7 +1037,7 @@ ShellRoot {
                                 Rectangle {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
-                                    radius: 6
+                                    radius: root.buttonRadius
                                     color: rbtMouse.containsMouse ? root.colGold + "33" : "transparent"
 
                                     Text {
@@ -1044,7 +1069,7 @@ ShellRoot {
                                 Rectangle {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
-                                    radius: 6
+                                    radius: root.buttonRadius
                                     color: pwrMenuMouse.containsMouse ? root.colRed + "33" : "transparent"
 
                                     Text {
@@ -1114,7 +1139,7 @@ ShellRoot {
                 color: root.colBg
                 border.color: root.colBorder
                 border.width: 1
-                radius: 12
+                radius: root.islandRadius
 
                 Row {
                     id: secWsRow
@@ -1138,7 +1163,7 @@ ShellRoot {
 
                             width: 26
                             height: 26
-                            radius: 6
+                            radius: root.buttonRadius
                             color: isWsActive ? root.colAccentAlt : "transparent"
 
                             Text {
@@ -1167,7 +1192,7 @@ ShellRoot {
                 color: root.colBg
                 border.color: root.colBorder
                 border.width: 1
-                radius: 12
+                radius: root.islandRadius
 
                 Text {
                     anchors.centerIn: parent

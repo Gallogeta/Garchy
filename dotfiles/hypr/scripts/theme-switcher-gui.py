@@ -184,6 +184,42 @@ THEMES = [
     }
 ]
 
+CUSTOM_THEMES_DIR = os.path.expanduser("~/.config/gally/themes")
+os.makedirs(CUSTOM_THEMES_DIR, exist_ok=True)
+
+def load_all_themes():
+    all_themes = list(THEMES)
+    if os.path.exists(CUSTOM_THEMES_DIR):
+        for fname in sorted(os.listdir(CUSTOM_THEMES_DIR)):
+            if fname.endswith(".json"):
+                try:
+                    fpath = os.path.join(CUSTOM_THEMES_DIR, fname)
+                    with open(fpath, "r") as f:
+                        custom_data = json.load(f)
+                    if isinstance(custom_data, dict) and "name" in custom_data:
+                        custom_theme = {
+                            "id": custom_data.get("id", fname.replace(".json", "")),
+                            "name": custom_data.get("name", "Custom Theme"),
+                            "desc": custom_data.get("desc", f"User custom theme from {fname}"),
+                            "colors": custom_data.get("colors", [custom_data.get("bg", "#0a0f1d"), custom_data.get("accent", "#38bdf8"), custom_data.get("accent_alt", "#3b82f6"), custom_data.get("fg", "#e2e8f0"), "#fbbf24"]),
+                            "hypr_border": custom_data.get("hypr_border", f"rgba({custom_data.get('accent', '#38bdf8').lstrip('#')}ee) 45deg"),
+                            "hypr_inactive": custom_data.get("hypr_inactive", "rgba(0a0f1d88)"),
+                            "hypr_rounding": custom_data.get("rounding", custom_data.get("hypr_rounding", 12)),
+                            "waybar_radius": f"{custom_data.get('rounding', 12)}px",
+                            "accent": custom_data.get("accent", "#38bdf8"),
+                            "accent_alt": custom_data.get("accent_alt", "#3b82f6"),
+                            "bg": custom_data.get("bg", "#0a0f1d"),
+                            "bg_card": custom_data.get("bg_card", "#131c31"),
+                            "bg_alt": custom_data.get("bg_alt", "#131c31"),
+                            "fg": custom_data.get("fg", "#e2e8f0"),
+                            "fg_muted": custom_data.get("fg_muted", "#94a3b8"),
+                            "icon_theme": custom_data.get("icon_theme", "Papirus-Dark")
+                        }
+                        all_themes.append(custom_theme)
+                except Exception as err:
+                    print(f"Error loading custom theme {fname}: {err}")
+    return all_themes
+
 class ModernThemeSwitcherApp(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -194,6 +230,7 @@ class ModernThemeSwitcherApp(ctk.CTk):
         self.minsize(800, 540)
         self.configure(fg_color="#0a0f1d")
 
+        self.all_themes = load_all_themes()
         self.active_theme = gally_theme_helper.get_active_theme()
         self.active_name = self.active_theme.get("name", "Garchy Signature")
 
@@ -238,14 +275,14 @@ class ModernThemeSwitcherApp(ctk.CTk):
         self.grid_scroll = ctk.CTkScrollableFrame(self, fg_color="transparent")
         self.grid_scroll.pack(fill="both", expand=True, padx=16, pady=(0, 10))
 
-        self.render_cards(THEMES)
+        self.render_cards(self.all_themes)
 
     def filter_themes(self, event=None):
         q = self.ent_search.get().strip().lower()
         if not q:
-            self.render_cards(THEMES)
+            self.render_cards(self.all_themes)
         else:
-            filtered = [t for t in THEMES if q in t["name"].lower() or q in t["desc"].lower()]
+            filtered = [t for t in self.all_themes if q in t["name"].lower() or q in t["desc"].lower()]
             self.render_cards(filtered)
 
     def render_cards(self, theme_list):
@@ -398,19 +435,37 @@ tooltip {{
             "id": t["id"],
             "name": t["name"],
             "bg": t["bg"],
-            "bg_card": t["bg_card"],
-            "bg_input": t["bg_card"],
-            "bg_alt": t["bg_card"],
+            "bg_card": t.get("bg_card", t["bg"]),
+            "bg_input": t.get("bg_card", t["bg"]),
+            "bg_alt": t.get("bg_alt", t["bg"]),
             "fg": t["fg"],
-            "fg_muted": t["fg_muted"],
+            "fg_muted": t.get("fg_muted", "#94a3b8"),
             "accent": t["accent"],
-            "accent_alt": t["accent_alt"],
-            "border_col": t["accent"],
-            "rounding": t["hypr_rounding"],
+            "accent_alt": t.get("accent_alt", t["accent"]),
+            "border_col": t.get("accent", "#38bdf8"),
+            "rounding": t.get("hypr_rounding", t.get("rounding", 12)),
             "border_width": 2,
             "icon_theme": t.get("icon_theme", "Papirus-Dark")
         }
         gally_theme_helper.save_active_theme(theme_state)
+
+        # Sync to garchy_theme.json for immediate Quickshell FileView reactive reload
+        try:
+            cache_theme = {
+                "bg": t["bg"],
+                "bg_alt": t.get("bg_alt", t.get("bg_card", "#131c31")),
+                "fg": t["fg"],
+                "fg_muted": t.get("fg_muted", "#94a3b8"),
+                "accent": t["accent"],
+                "accent_alt": t.get("accent_alt", t["accent"]),
+                "border": t.get("accent", "#38bdf8"),
+                "gold": t.get("colors", ["#fbbf24"])[-1] if len(t.get("colors", [])) > 4 else "#fbbf24",
+                "rounding": t.get("hypr_rounding", t.get("rounding", 12))
+            }
+            with open(os.path.expanduser("~/.cache/garchy_theme.json"), "w") as f:
+                json.dump(cache_theme, f, indent=2)
+        except Exception:
+            pass
 
         # 7. Reload daemons (Waybar, Kitty, Dunst)
         subprocess.run(["killall", "-SIGUSR2", "waybar"], stderr=subprocess.DEVNULL)
