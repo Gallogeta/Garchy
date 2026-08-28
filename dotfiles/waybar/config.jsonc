@@ -10,7 +10,8 @@
 
     "modules-left": [
         "custom/launcher",
-        "hyprland/workspaces"
+        "hyprland/workspaces",
+        "wlr/taskbar"
     ],
     "modules-center": [
         "clock"
@@ -35,40 +36,41 @@
 
     "hyprland/workspaces": {
         "active-only": false,
-        "all-outputs": true,
+        "all-outputs": false,
         "disable-scroll": false,
         "ignore-workspaces": [
             "99",
             "(special:)?minimized",
             "special:.*"
         ],
-        "workspace-taskbar": {
-            "enable": true,
-            "icon-size": 20,
-            "icon-theme": "Papirus-Dark",
-            "format": "{icon}",
-            "on-click-window": "python3 /home/gallo/.config/hypr/scripts/window-click-toggle.py {address} {button}"
-        },
         "on-scroll-up": "hyprctl dispatch workspace e+1",
         "on-scroll-down": "hyprctl dispatch workspace e-1",
         "on-click": "activate",
-        "format": "{id}"
+        "format": "{icon}",
+        "format-icons": {
+            "1": "1",
+            "2": "2",
+            "3": "3",
+            "4": "4",
+            "5": "5",
+            "6": "6",
+            "7": "7",
+            "8": "8",
+            "9": "9",
+            "10": "10"
+        }
     },
 
     "wlr/taskbar": {
         "format": "{icon}",
         "icon-size": 20,
         "icon-theme": "Papirus-Dark",
-        "tooltip-format": "🗔 {title}\n───────────────────────\n• Left Click: Toggle Minimize / Restore\n• Middle Click: Close Window\n• Right Click: Toggle Maximize",
-        "on-click": "minimize-raise",
+        "tooltip-format": "🗔 {title}\n───────────────────────\n• Left Click: Focus Window\n• Middle Click: Close Window\n• Right Click: Toggle Maximize",
+        "on-click": "activate",
         "on-click-middle": "close",
         "on-click-right": "maximize",
         "active-first": false,
-        "all-outputs": true,
-        "ignore-list": [
-            "wlogout",
-            "rofi"
-        ]
+        "all-outputs": true
     },
 
     "clock": {
