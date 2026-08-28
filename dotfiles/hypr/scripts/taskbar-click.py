@@ -137,7 +137,8 @@ def do_minimize():
         "address": addr,
         "title": title,
         "class": c_class,
-        "workspace_id": ws_id
+        "workspace_id": win.get("workspace", {}).get("id", ws_id),
+        "monitor": win.get("monitor")
     })
     notify("Window Minimized", f"{c_class} — {title[:30]}")
 

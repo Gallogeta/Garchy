@@ -2,7 +2,7 @@
 """
 Garchy OS — Grouped Taskbar Click & Dropdown Handler
 Provides instant single-window minimize/restore toggle, and multi-window dropdown selector.
-Uses hidden background workspace 99 with atomic dual-monitor workspace retention.
+Preserves exact monitor and workspace origin on restore.
 """
 
 import sys
@@ -42,6 +42,34 @@ def restore_monitors_workspaces(monitors):
     if ws_list:
         batch_cmds = ' ; '.join([f'dispatch hl.dsp.focus({{ workspace = {ws} }})' for ws in ws_list])
         subprocess.run(['hyprctl', '--batch', batch_cmds], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+def save_minimized_history(win_data):
+    try:
+        os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
+        history = []
+        if os.path.exists(STATE_FILE):
+            with open(STATE_FILE, "r") as f:
+                history = json.load(f)
+        history = [h for h in history if h.get("address") != win_data.get("address")]
+        history.insert(0, win_data)
+        with open(STATE_FILE, "w") as f:
+            json.dump(history[:50], f, indent=2)
+    except Exception:
+        pass
+
+def get_orig_workspace(addr, fallback_ws_id=1):
+    try:
+        if os.path.exists(STATE_FILE):
+            with open(STATE_FILE, "r") as f:
+                history = json.load(f)
+            for h in history:
+                if h.get("address") == addr:
+                    saved_ws = h.get("workspace_id")
+                    if saved_ws and saved_ws != MINIMIZED_WS:
+                        return saved_ws
+    except Exception:
+        pass
+    return fallback_ws_id
 
 def get_active_workspace(monitors, cursor):
     cx = cursor.get('x', 0)
@@ -91,7 +119,8 @@ def open_dropdown_menu(clients, active_addr, active_ws_id, monitors):
         if is_focused:
             badge = "[Active ✓]"
         elif is_min:
-            badge = "[🗕 Minimized]"
+            orig_ws = get_orig_workspace(addr, ws_id)
+            badge = f"[🗕 WS {orig_ws}]"
         else:
             badge = f"[WS {ws_name}]"
 
@@ -107,7 +136,9 @@ def open_dropdown_menu(clients, active_addr, active_ws_id, monitors):
             'address': addr,
             'title': f"{cls} — {title[:28]}",
             'is_focused': is_focused,
-            'is_minimized': is_min
+            'is_minimized': is_min,
+            'workspace_id': ws_id,
+            'monitor': c.get('monitor')
         })
         rofi_lines.append(f"{display_text}\0icon\x1f{icon}")
 
@@ -142,23 +173,31 @@ def open_dropdown_menu(clients, active_addr, active_ws_id, monitors):
     if action == "restore_all":
         for c in valid_clients:
             addr = c.get('address')
-            if addr:
+            if addr and c.get('workspace', {}).get('id') == MINIMIZED_WS:
+                target_ws = get_orig_workspace(addr, active_ws_id)
                 eval_lua(f'''
                 local wins = hl.get_windows()
                 for _, w in ipairs(wins) do
                     if w.address == "{addr}" then
-                        hl.dispatch(hl.dsp.window.move({{ window = w, workspace = {active_ws_id} }}))
-                        hl.dispatch(hl.dsp.focus({{ window = w }}))
+                        hl.dispatch(hl.dsp.window.move({{ window = w, workspace = {target_ws} }}))
                         break
                     end
                 end
                 ''')
-        notify("Restored All", f"Restored {len(valid_clients)} windows to Workspace {active_ws_id}")
+        notify("Restored All", "Restored all windows to their original monitors and workspaces.")
 
     elif action == "minimize_all":
         for c in valid_clients:
             addr = c.get('address')
-            if addr:
+            if addr and c.get('workspace', {}).get('id') != MINIMIZED_WS:
+                cur_ws = c.get('workspace', {}).get('id', active_ws_id)
+                save_minimized_history({
+                    "address": addr,
+                    "class": c.get('class', 'App'),
+                    "title": c.get('title', 'Window'),
+                    "workspace_id": cur_ws,
+                    "monitor": c.get('monitor')
+                })
                 eval_lua(f'''
                 local wins = hl.get_windows()
                 for _, w in ipairs(wins) do
@@ -173,6 +212,14 @@ def open_dropdown_menu(clients, active_addr, active_ws_id, monitors):
 
     elif action == "select_window":
         if chosen.get('is_focused'):
+            cur_ws = chosen.get('workspace_id', active_ws_id)
+            save_minimized_history({
+                "address": target_addr,
+                "class": chosen.get('title', 'App').split(' — ')[0],
+                "title": target_title,
+                "workspace_id": cur_ws,
+                "monitor": chosen.get('monitor')
+            })
             eval_lua(f'''
             local wins = hl.get_windows()
             for _, w in ipairs(wins) do
@@ -185,11 +232,12 @@ def open_dropdown_menu(clients, active_addr, active_ws_id, monitors):
             restore_monitors_workspaces(monitors)
             notify("Window Minimized", target_title)
         else:
+            target_ws = get_orig_workspace(target_addr, active_ws_id)
             eval_lua(f'''
             local wins = hl.get_windows()
             for _, w in ipairs(wins) do
                 if w.address == "{target_addr}" then
-                    hl.dispatch(hl.dsp.window.move({{ window = w, workspace = {active_ws_id} }}))
+                    hl.dispatch(hl.dsp.window.move({{ window = w, workspace = {target_ws} }}))
                     hl.dispatch(hl.dsp.focus({{ window = w }}))
                     break
                 end
@@ -212,10 +260,19 @@ def main():
         only_win = valid_clients[0]
         addr = only_win.get('address', '')
         title = only_win.get('title', 'Window')
-        is_min = (only_win.get('workspace', {}).get('id') == MINIMIZED_WS)
+        c_class = only_win.get('class', 'App')
+        cur_ws = only_win.get('workspace', {}).get('id', active_ws_id)
+        is_min = (cur_ws == MINIMIZED_WS)
         is_focused = (addr == active_addr)
 
         if is_focused and not is_min:
+            save_minimized_history({
+                "address": addr,
+                "class": c_class,
+                "title": title,
+                "workspace_id": cur_ws,
+                "monitor": only_win.get('monitor')
+            })
             eval_lua(f'''
             local wins = hl.get_windows()
             for _, w in ipairs(wins) do
@@ -228,11 +285,12 @@ def main():
             restore_monitors_workspaces(monitors)
             notify("Window Minimized", title[:30])
         else:
+            target_ws = get_orig_workspace(addr, active_ws_id)
             eval_lua(f'''
             local wins = hl.get_windows()
             for _, w in ipairs(wins) do
                 if w.address == "{addr}" then
-                    hl.dispatch(hl.dsp.window.move({{ window = w, workspace = {active_ws_id} }}))
+                    hl.dispatch(hl.dsp.window.move({{ window = w, workspace = {target_ws} }}))
                     hl.dispatch(hl.dsp.focus({{ window = w }}))
                     break
                 end
