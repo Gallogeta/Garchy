@@ -7,6 +7,7 @@ Hyprland, Waybar, Kitty, Rofi, Quickshell, and Dunst.
 
 import os
 import sys
+import re
 import json
 import subprocess
 import tkinter as tk
@@ -205,6 +206,9 @@ def load_all_themes():
                             "hypr_border": custom_data.get("hypr_border", f"rgba({custom_data.get('accent', '#38bdf8').lstrip('#')}ee) 45deg"),
                             "hypr_inactive": custom_data.get("hypr_inactive", "rgba(0a0f1d88)"),
                             "hypr_rounding": custom_data.get("rounding", custom_data.get("hypr_rounding", 12)),
+                            "rounding": custom_data.get("rounding", custom_data.get("hypr_rounding", 12)),
+                            "bar_height": custom_data.get("bar_height", 46),
+                            "layout_style": custom_data.get("layout_style", "garchy"),
                             "waybar_radius": f"{custom_data.get('rounding', 12)}px",
                             "accent": custom_data.get("accent", "#38bdf8"),
                             "accent_alt": custom_data.get("accent_alt", "#3b82f6"),
@@ -358,53 +362,40 @@ class ModernThemeSwitcherApp(ctk.CTk):
         self.grid_scroll.grid_columnconfigure(1, weight=1)
 
     def apply_theme(self, t):
-        # 1. Write Waybar theme.css
-        waybar_theme = os.path.expanduser("~/.config/waybar/theme.css")
-        os.makedirs(os.path.dirname(waybar_theme), exist_ok=True)
-        css_content = f"""@define-color bg {t['bg']};
-@define-color bg-alt {t['bg_card']};
-@define-color border-col {t['accent']};
-@define-color accent {t['accent']};
-@define-color accent-alt {t['accent_alt']};
-@define-color fg {t['fg']};
-@define-color fg-muted {t['fg_muted']};
-@define-color fg-active {t['bg']};
-@define-color green #22c55e;
-@define-color red #ef4444;
-@define-color yellow #fbbf24;
-
-.modules-left,
-.modules-center,
-.modules-right,
-#workspaces button,
-#custom-btn-minimize,
-#custom-btn-maximize,
-#custom-btn-close,
-tooltip {{
-    border-radius: {t['waybar_radius']};
-}}
-"""
-        with open(waybar_theme, "w") as f:
-            f.write(css_content)
-
-        # 2. Write Kitty terminal theme (Full 16-Color ANSI spectrum)
-        kitty_theme = os.path.expanduser("~/.config/kitty/theme.conf")
-        os.makedirs(os.path.dirname(kitty_theme), exist_ok=True)
-        kitty_content = gally_theme_helper.generate_kitty_theme_config(t)
-        with open(kitty_theme, "w") as f:
-            f.write(kitty_content)
-
-        # 3. Write Rofi active theme
-        rofi_theme = os.path.expanduser("~/.config/rofi/active-theme.rasi")
+        # 1. Update Hyprland Lua configuration and reload
         try:
+            look_lua_path = os.path.expanduser("~/.config/hypr/lua/look.lua")
+            if os.path.exists(look_lua_path):
+                with open(look_lua_path, "r") as f:
+                    content = f.read()
+
+                rounding = t.get("hypr_rounding", t.get("rounding", 12))
+                colors_list = t.get("colors", [t["accent"], t.get("accent_alt", t["accent"])])
+                active_colors = [f'"rgba({c.lstrip("#")}ee)"' for c in colors_list[:3]]
+                inactive_col = f'"rgba({t.get("bg", "#0a0f1d").lstrip("#")}88)"'
+
+                content = re.sub(r'rounding\s*=\s*\d+', f'rounding = {rounding}', content)
+                content = re.sub(r'active_border\s*=\s*\{[\s\S]*?angle\s*=\s*\d+\s*\}(?:,\s*angle\s*=\s*\d+\s*\})?', f'active_border = {{ colors = {{ {", ".join(active_colors)} }}, angle = 45 }}', content)
+                content = re.sub(r'inactive_border\s*=\s*"[^"]*"', f'inactive_border = {inactive_col}', content)
+
+                with open(look_lua_path, "w") as f:
+                    f.write(content)
+
+                subprocess.run(["hyprctl", "reload"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception as err:
+            print("Error updating look.lua:", err)
+
+        # 2. Write Rofi active theme
+        try:
+            rofi_theme = os.path.expanduser("~/.config/rofi/active-theme.rasi")
             os.makedirs(os.path.dirname(rofi_theme), exist_ok=True)
             rofi_content = f"""* {{
     bg: {t['bg']};
-    bg-card: {t['bg_card']};
+    bg-card: {t.get('bg_card', t['bg'])};
     accent: {t['accent']};
-    accent-alt: {t['accent_alt']};
+    accent-alt: {t.get('accent_alt', t['accent'])};
     fg: {t['fg']};
-    fg-muted: {t['fg_muted']};
+    fg-muted: {t.get('fg_muted', '#94a3b8')};
 }}
 """
             with open(rofi_theme, "w") as f:
@@ -412,27 +403,9 @@ tooltip {{
         except Exception:
             pass
 
-        # 4. Update Hyprland Borders & Rounding Live
-        subprocess.run(["hyprctl", "keyword", "general:col.active_border", t["hypr_border"]], stdout=subprocess.DEVNULL)
-        subprocess.run(["hyprctl", "keyword", "general:col.inactive_border", t["hypr_inactive"]], stdout=subprocess.DEVNULL)
-        subprocess.run(["hyprctl", "keyword", "decoration:rounding", str(t["hypr_rounding"])], stdout=subprocess.DEVNULL)
-
-        # 5. Persist to Hyprland look.lua
-        look_lua_path = os.path.expanduser("~/.config/hypr/lua/look.lua")
-        try:
-            if os.path.exists(look_lua_path):
-                with open(look_lua_path, "r") as f:
-                    look_content = f.read()
-                # Update rounding
-                look_content = re.sub(r'rounding\s*=\s*\d+', f'rounding = {t["hypr_rounding"]}', look_content)
-                with open(look_lua_path, "w") as f:
-                    f.write(look_content)
-        except Exception:
-            pass
-
-        # 6. Save to Gally active theme state
+        # 3. Save to Gally active theme state (triggers Kitty, GTK 3/4, Cava, Quickshell)
         theme_state = {
-            "id": t["id"],
+            "id": t.get("id", "custom"),
             "name": t["name"],
             "bg": t["bg"],
             "bg_card": t.get("bg_card", t["bg"]),
@@ -442,14 +415,16 @@ tooltip {{
             "fg_muted": t.get("fg_muted", "#94a3b8"),
             "accent": t["accent"],
             "accent_alt": t.get("accent_alt", t["accent"]),
-            "border_col": t.get("accent", "#38bdf8"),
+            "border_col": t.get("border", t.get("accent", "#38bdf8")),
             "rounding": t.get("hypr_rounding", t.get("rounding", 12)),
+            "bar_height": t.get("bar_height", 46),
+            "layout_style": t.get("layout_style", "garchy"),
             "border_width": 2,
             "icon_theme": t.get("icon_theme", "Papirus-Dark")
         }
         gally_theme_helper.save_active_theme(theme_state)
 
-        # Sync to garchy_theme.json for immediate Quickshell FileView reactive reload
+        # 4. Sync to garchy_theme.json for immediate Quickshell FileView reactive reload
         try:
             cache_theme = {
                 "bg": t["bg"],
@@ -458,24 +433,27 @@ tooltip {{
                 "fg_muted": t.get("fg_muted", "#94a3b8"),
                 "accent": t["accent"],
                 "accent_alt": t.get("accent_alt", t["accent"]),
-                "border": t.get("accent", "#38bdf8"),
+                "border": t.get("border", t.get("accent", "#38bdf8")),
                 "gold": t.get("colors", ["#fbbf24"])[-1] if len(t.get("colors", [])) > 4 else "#fbbf24",
-                "rounding": t.get("hypr_rounding", t.get("rounding", 12))
+                "rounding": t.get("hypr_rounding", t.get("rounding", 12)),
+                "bar_height": t.get("bar_height", 46),
+                "layout_style": t.get("layout_style", "garchy")
             }
             with open(os.path.expanduser("~/.cache/garchy_theme.json"), "w") as f:
                 json.dump(cache_theme, f, indent=2)
         except Exception:
             pass
 
-        # 7. Reload daemons (Waybar, Kitty, Dunst)
-        subprocess.run(["killall", "-SIGUSR2", "waybar"], stderr=subprocess.DEVNULL)
-        subprocess.run(["killall", "-SIGUSR1", "kitty"], stderr=subprocess.DEVNULL)
-        
-        # 8. Notification and refresh UI
-        subprocess.Popen(["notify-send", "-a", "Theme Switcher", "✨ Theme Applied", t["name"]])
+        # 5. Send Desktop Notification
+        try:
+            subprocess.Popen(["notify-send", "-a", "Theme Switcher", "✨ Theme Applied", t["name"]])
+        except Exception:
+            pass
+
+        # 6. Refresh UI without dropping custom themes
         self.active_name = t["name"]
         self.lbl_active.configure(text=f"● ACTIVE: {self.active_name}")
-        self.render_cards(THEMES)
+        self.render_cards(self.all_themes)
 
 def main():
     app = ModernThemeSwitcherApp()
