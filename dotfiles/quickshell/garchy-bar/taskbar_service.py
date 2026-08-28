@@ -140,8 +140,17 @@ def get_windows_state():
             "windows": win_list
         })
 
+    minimized_windows = []
+    for grp in groups_list:
+        for w in grp['windows']:
+            if w['is_minimized']:
+                w_copy = dict(w)
+                w_copy['icon'] = grp['icon']
+                minimized_windows.append(w_copy)
+
     return {
         "groups": groups_list,
+        "minimized_windows": minimized_windows,
         "active_addr": active_addr,
         "monitors": monitors
     }

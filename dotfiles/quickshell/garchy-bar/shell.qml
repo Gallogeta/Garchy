@@ -44,7 +44,7 @@ ShellRoot {
     // ========================================================
     // HYPRLAND REAL-TIME WINDOW STATE
     // ========================================================
-    property var taskbarState: ({ groups: [], active_addr: "", monitors: [] })
+    property var taskbarState: ({ groups: [], minimized_windows: [], active_addr: "", monitors: [] })
 
     Process {
         id: taskbarProc
@@ -79,12 +79,10 @@ ShellRoot {
     }
 
     // ========================================================
-    // SYSTEM TELEMETRY (CPU, RAM, AUDIO, TIME)
+    // TIME & AUDIO TELEMETRY
     // ========================================================
     property string timeStr: "00:00"
-    property string dateStr: "Mon, 1 Jan"
-    property int cpuPercent: 0
-    property int ramPercent: 0
+    property string fullDateStr: "Monday, 1 January 2026"
     property int volPercent: 50
     property bool isMuted: false
 
@@ -99,26 +97,22 @@ ShellRoot {
             var mins = String(now.getMinutes()).padStart(2, '0');
             root.timeStr = hours + ":" + mins;
 
-            var days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-            var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            root.dateStr = days[now.getDay()] + ", " + now.getDate() + " " + months[now.getMonth()];
+            var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            root.fullDateStr = days[now.getDay()] + ", " + months[now.getMonth()] + " " + now.getDate() + ", " + now.getFullYear();
         }
     }
 
     Process {
-        id: statsProc
-        command: ["bash", "-c", "echo $(grep 'cpu ' /proc/stat | awk '{u=$2+$4; t=$2+$4+$5; print int(u*100/t)}') $(free | grep Mem | awk '{print int($3*100/$2)}') $(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print int($2*100), ($3==\"[MUTED]\"?1:0)}' 2>/dev/null || echo '50 0')"]
+        id: audioProc
+        command: ["bash", "-c", "wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print int($2*100), ($3==\"[MUTED]\"?1:0)}' 2>/dev/null || echo '50 0'"]
         running: false
         stdout: SplitParser {
             onRead: data => {
                 var p = data.trim().split(" ");
                 if (p.length >= 2) {
-                    root.cpuPercent = parseInt(p[0]) || 0;
-                    root.ramPercent = parseInt(p[1]) || 0;
-                }
-                if (p.length >= 4) {
-                    root.volPercent = parseInt(p[2]) || 50;
-                    root.isMuted = (p[3] === "1");
+                    root.volPercent = parseInt(p[0]) || 50;
+                    root.isMuted = (p[1] === "1");
                 }
             }
         }
@@ -129,11 +123,11 @@ ShellRoot {
         running: true
         repeat: true
         triggeredOnStart: true
-        onTriggered: statsProc.running = true
+        onTriggered: audioProc.running = true
     }
 
     // ========================================================
-    // PRIMARY SCREEN (DP-2) - 3 EXPANDED FLOATING ISLANDS
+    // PRIMARY SCREEN (DP-2) - 3 FLOATING ISLANDS
     // ========================================================
     PanelWindow {
         id: winMain
@@ -372,58 +366,117 @@ ShellRoot {
                 }
             }
 
-            // 2. CENTER ISLAND: Expanded Clock & Date Capsule
+            // 2. CENTER ISLAND: Single Digital Clock (Click opens Date & Calendar)
             Rectangle {
                 id: centerIsland
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: centerLayout.implicitWidth + 36
+                width: clockLayout.implicitWidth + 36
                 color: root.colBg
-                border.color: root.colBorder
+                border.color: clockArea.containsMouse ? root.colAccent : root.colBorder
                 border.width: 1
                 radius: 12
 
                 RowLayout {
-                    id: centerLayout
+                    id: clockLayout
                     anchors.centerIn: parent
-                    spacing: 12
 
                     Text {
-                        text: " " + root.timeStr
+                        text: root.timeStr
                         font.pixelSize: 14
                         font.bold: true
                         color: root.colFg
                     }
-
-                    Rectangle {
-                        width: 1.5
-                        height: 16
-                        radius: 1
-                        color: root.colBorder
-                    }
-
-                    Text {
-                        text: " " + root.dateStr
-                        font.pixelSize: 12
-                        color: root.colFgMuted
-                    }
                 }
 
                 MouseArea {
+                    id: clockArea
                     anchors.fill: parent
                     hoverEnabled: true
-                    onClicked: root.runCmd(["gnome-calendar"])
+                    onClicked: datePopup.visible = !datePopup.visible
                 }
             }
 
-            // 3. RIGHT ISLAND: Expanded AI, Theme, Volume, Telemetry, Power
+            // 📅 Center Clock Dropdown: Date & Calendar Menu
+            PopupWindow {
+                id: datePopup
+                anchor.window: winMain
+                anchor.rect.x: centerIsland.x
+                anchor.rect.y: centerIsland.y
+                anchor.rect.width: centerIsland.width
+                anchor.rect.height: centerIsland.height
+                anchor.edges: Edges.Bottom
+                anchor.gravity: Edges.Bottom
+                visible: false
+
+                Rectangle {
+                    width: 260
+                    height: dateCol.implicitHeight + 24
+                    radius: 12
+                    color: root.colBg
+                    border.color: root.colAccent
+                    border.width: 1
+
+                    ColumnLayout {
+                        id: dateCol
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 10
+
+                        // Full Date Header
+                        Text {
+                            text: root.fullDateStr
+                            font.pixelSize: 13
+                            font.bold: true
+                            color: root.colAccent
+                            Layout.alignment: Qt.AlignHCenter
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 1
+                            color: root.colBorder
+                        }
+
+                        // Open Calendar Button
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 32
+                            radius: 8
+                            color: calBtnArea.containsMouse ? root.colAccent + "33" : root.colBgAlt
+                            border.color: calBtnArea.containsMouse ? root.colAccent : root.colBorder
+                            border.width: 1
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "Open Full Calendar"
+                                font.pixelSize: 12
+                                font.bold: true
+                                color: root.colFg
+                            }
+
+                            MouseArea {
+                                id: calBtnArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: {
+                                    root.runCmd(["gnome-calendar"]);
+                                    datePopup.visible = false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. RIGHT ISLAND: Volume, Gally AI, Theme, Down Arrow Menu
             Rectangle {
                 id: rightIsland
                 anchors.right: parent.right
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: rightLayout.implicitWidth + 28
+                width: rightLayout.implicitWidth + 24
                 color: root.colBg
                 border.color: root.colBorder
                 border.width: 1
@@ -433,6 +486,39 @@ ShellRoot {
                     id: rightLayout
                     anchors.centerIn: parent
                     spacing: 10
+
+                    // 🔊 Volume Pill
+                    Rectangle {
+                        height: 28
+                        width: volRow.implicitWidth + 16
+                        radius: 7
+                        color: root.colBgAlt
+
+                        RowLayout {
+                            id: volRow
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            Text {
+                                text: root.isMuted ? "󰝟" : (root.volPercent > 50 ? "󰕾" : "󰖀")
+                                font.pixelSize: 14
+                                color: root.isMuted ? root.colRed : root.colAccent
+                            }
+
+                            Text {
+                                text: root.volPercent + "%"
+                                font.pixelSize: 12
+                                font.bold: true
+                                color: root.colFg
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: root.runCmd(["pavucontrol"])
+                        }
+                    }
 
                     // 🧠 Gally AI Hub
                     Rectangle {
@@ -478,84 +564,219 @@ ShellRoot {
                         }
                     }
 
-                    // 🔊 Volume Pill
+                    // 󰅀 Down Arrow / Minimized Tray Menu
                     Rectangle {
+                        id: trayBtn
+                        width: 28
                         height: 28
-                        width: volRow.implicitWidth + 18
                         radius: 7
-                        color: root.colBgAlt
-
-                        RowLayout {
-                            id: volRow
-                            anchors.centerIn: parent
-                            spacing: 6
-
-                            Text {
-                                text: root.isMuted ? "󰝟" : (root.volPercent > 50 ? "󰕾" : "󰖀")
-                                font.pixelSize: 14
-                                color: root.isMuted ? root.colRed : root.colAccent
-                            }
-
-                            Text {
-                                text: root.volPercent + "%"
-                                font.pixelSize: 12
-                                font.bold: true
-                                color: root.colFg
-                            }
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: root.runCmd(["pavucontrol"])
-                        }
-                    }
-
-                    // ⚡ CPU / RAM Telemetry Pill
-                    Rectangle {
-                        height: 28
-                        width: statRow.implicitWidth + 18
-                        radius: 7
-                        color: root.colBgAlt
-
-                        RowLayout {
-                            id: statRow
-                            anchors.centerIn: parent
-                            spacing: 8
-
-                            Text {
-                                text: " " + root.cpuPercent + "%"
-                                font.pixelSize: 12
-                                color: root.cpuPercent > 80 ? root.colRed : root.colFgMuted
-                            }
-
-                            Text {
-                                text: " " + root.ramPercent + "%"
-                                font.pixelSize: 12
-                                color: root.ramPercent > 85 ? root.colGold : root.colFgMuted
-                            }
-                        }
-                    }
-
-                    // ⏻ Power Menu Button
-                    Rectangle {
-                        width: 30
-                        height: 30
-                        radius: 8
-                        color: pwrMouse.containsMouse ? root.colRed + "33" : "transparent"
+                        color: trayArea.containsMouse || trayMenuPopup.visible ? root.colBgAlt : "transparent"
+                        border.color: trayArea.containsMouse || trayMenuPopup.visible ? root.colAccent : "transparent"
+                        border.width: 1
 
                         Text {
                             anchors.centerIn: parent
-                            text: ""
-                            font.pixelSize: 14
-                            color: pwrMouse.containsMouse ? root.colRed : root.colFgMuted
+                            text: "󰅀"
+                            font.pixelSize: 15
+                            color: root.taskbarState.minimized_windows && root.taskbarState.minimized_windows.length > 0 ? root.colGold : root.colFgMuted
                         }
 
                         MouseArea {
-                            id: pwrMouse
+                            id: trayArea
                             anchors.fill: parent
                             hoverEnabled: true
-                            onClicked: root.runCmd(["wlogout", "-b", "2", "-c", "20", "-r", "20"])
+                            onClicked: trayMenuPopup.visible = !trayMenuPopup.visible
+                        }
+                    }
+                }
+            }
+
+            // 🗕 Minimized Programs & Tray Menu Popover
+            PopupWindow {
+                id: trayMenuPopup
+                anchor.window: winMain
+                anchor.rect.x: rightIsland.x
+                anchor.rect.y: rightIsland.y
+                anchor.rect.width: rightIsland.width
+                anchor.rect.height: rightIsland.height
+                anchor.edges: Edges.Bottom
+                anchor.gravity: Edges.Bottom
+                visible: false
+
+                Rectangle {
+                    width: 290
+                    height: trayCol.implicitHeight + 24
+                    radius: 12
+                    color: root.colBg
+                    border.color: root.colAccent
+                    border.width: 1
+
+                    ColumnLayout {
+                        id: trayCol
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 8
+
+                        Text {
+                            text: "Minimized & Background Apps"
+                            font.pixelSize: 12
+                            font.bold: true
+                            color: root.colAccent
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 1
+                            color: root.colBorder
+                        }
+
+                        // If no minimized apps
+                        Text {
+                            visible: !root.taskbarState.minimized_windows || root.taskbarState.minimized_windows.length === 0
+                            text: "No minimized programs"
+                            font.pixelSize: 11
+                            color: root.colFgMuted
+                            Layout.topMargin: 4
+                            Layout.bottomMargin: 4
+                        }
+
+                        // List of Minimized Programs (Discord, Steam, Brave, Kitty, etc.)
+                        Repeater {
+                            model: root.taskbarState.minimized_windows || []
+
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 34
+                                radius: 8
+                                color: minCardMouse.containsMouse ? root.colBgAlt : "transparent"
+                                border.color: minCardMouse.containsMouse ? root.colBorder : "transparent"
+                                border.width: 1
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 8
+                                    anchors.rightMargin: 8
+                                    spacing: 8
+
+                                    Image {
+                                        width: 18
+                                        height: 18
+                                        source: Quickshell.iconPath(modelData.icon)
+                                        fillMode: Image.PreserveAspectFit
+                                        visible: status === Image.Ready
+                                    }
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: modelData.title
+                                        font.pixelSize: 11
+                                        elide: Text.ElideRight
+                                        color: root.colFg
+                                    }
+
+                                    // Restore Button
+                                    Rectangle {
+                                        width: 54
+                                        height: 22
+                                        radius: 5
+                                        color: rstArea.containsMouse ? root.colAccent : root.colBgAlt
+                                        border.color: root.colAccent
+                                        border.width: 1
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "Restore"
+                                            font.pixelSize: 10
+                                            font.bold: true
+                                            color: rstArea.containsMouse ? "#0a0f1d" : root.colAccent
+                                        }
+
+                                        MouseArea {
+                                            id: rstArea
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            onClicked: {
+                                                root.dispatchAction("toggle", modelData.address);
+                                                trayMenuPopup.visible = false;
+                                            }
+                                        }
+                                    }
+
+                                    // Close Button
+                                    Rectangle {
+                                        width: 22
+                                        height: 22
+                                        radius: 5
+                                        color: clsArea.containsMouse ? root.colRed : "transparent"
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "✕"
+                                            font.pixelSize: 10
+                                            color: clsArea.containsMouse ? "#ffffff" : root.colFgMuted
+                                        }
+
+                                        MouseArea {
+                                            id: clsArea
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            onClicked: root.dispatchAction("close", modelData.address)
+                                        }
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: minCardMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    onClicked: {
+                                        root.dispatchAction("toggle", modelData.address);
+                                        trayMenuPopup.visible = false;
+                                    }
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 1
+                            color: root.colBorder
+                        }
+
+                        // Power / Session Shortcut
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 28
+                            radius: 6
+                            color: pwrRowArea.containsMouse ? root.colRed + "22" : "transparent"
+
+                            RowLayout {
+                                anchors.centerIn: parent
+                                spacing: 6
+
+                                Text {
+                                    text: ""
+                                    font.pixelSize: 12
+                                    color: root.colRed
+                                }
+
+                                Text {
+                                    text: "Power Menu"
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                    color: root.colFg
+                                }
+                            }
+
+                            MouseArea {
+                                id: pwrRowArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: {
+                                    root.runCmd(["wlogout", "-b", "2", "-c", "20", "-r", "20"]);
+                                    trayMenuPopup.visible = false;
+                                }
+                            }
                         }
                     }
                 }
@@ -564,7 +785,7 @@ ShellRoot {
     }
 
     // ========================================================
-    // SECONDARY SCREEN (DP-1) - EXPANDED COMPANION BAR
+    // SECONDARY SCREEN (DP-1) - COMPANION BAR
     // ========================================================
     PanelWindow {
         id: winSec
@@ -648,12 +869,12 @@ ShellRoot {
                 }
             }
 
-            // Center: Time & Date Capsule
+            // Center: Digital Clock
             Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: 140
+                width: 90
                 color: root.colBg
                 border.color: root.colBorder
                 border.width: 1
@@ -661,7 +882,7 @@ ShellRoot {
 
                 Text {
                     anchors.centerIn: parent
-                    text: " " + root.timeStr
+                    text: root.timeStr
                     font.pixelSize: 14
                     font.bold: true
                     color: root.colFg
