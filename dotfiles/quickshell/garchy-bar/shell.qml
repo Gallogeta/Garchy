@@ -103,7 +103,7 @@ ShellRoot {
     }
 
     function dispatchAction(action, addr) {
-        cmdProc.exec(["python3", "/home/gallo/.config/quickshell/garchy-bar/taskbar_service.py", action, addr || ""]);
+        actionProc.exec(["python3", "/home/gallo/.config/quickshell/garchy-bar/taskbar_service.py", action, addr || ""]);
     }
 
     function runCmd(cmdList) {
@@ -111,8 +111,18 @@ ShellRoot {
     }
 
     Process {
+        id: actionProc
+        function exec(args) {
+            running = false;
+            command = args;
+            running = true;
+        }
+    }
+
+    Process {
         id: cmdProc
         function exec(args) {
+            running = false;
             command = args;
             running = true;
         }
@@ -531,62 +541,76 @@ ShellRoot {
                                         border.color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold + "88" : root.colBorder)
                                         border.width: 1
 
-                                        MouseArea {
-                                            id: itemMouse
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            onClicked: {
-                                                root.dispatchAction("focus", modelData.address);
-                                                groupMenuPopup.visible = false;
-                                            }
-                                        }
-
                                         RowLayout {
                                             anchors.fill: parent
                                             anchors.leftMargin: 10
-                                            anchors.rightMargin: 10
+                                            anchors.rightMargin: 8
                                             spacing: 8
 
-                                            Rectangle {
-                                                width: 8
-                                                height: 8
-                                                radius: 4
-                                                color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold : root.colFgMuted)
-                                            }
-
-                                            ColumnLayout {
+                                            // Left area: Focus / Restore Window
+                                            Item {
                                                 Layout.fillWidth: true
-                                                spacing: 1
+                                                Layout.fillHeight: true
 
-                                                Text {
-                                                    Layout.fillWidth: true
-                                                    text: modelData.title || "Window"
-                                                    font.pixelSize: 11
-                                                    font.bold: modelData.is_active
-                                                    elide: Text.ElideRight
-                                                    color: modelData.is_active ? root.colAccent : root.colFg
+                                                RowLayout {
+                                                    anchors.fill: parent
+                                                    spacing: 8
+
+                                                    Rectangle {
+                                                        width: 8
+                                                        height: 8
+                                                        radius: 4
+                                                        color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold : root.colFgMuted)
+                                                    }
+
+                                                    ColumnLayout {
+                                                        Layout.fillWidth: true
+                                                        spacing: 1
+
+                                                        Text {
+                                                            Layout.fillWidth: true
+                                                            text: modelData.title || "Window"
+                                                            font.pixelSize: 11
+                                                            font.bold: modelData.is_active
+                                                            elide: Text.ElideRight
+                                                            color: modelData.is_active ? root.colAccent : root.colFg
+                                                        }
+
+                                                        Text {
+                                                            Layout.fillWidth: true
+                                                            text: modelData.is_minimized ? "🗕 Minimized (Click to Restore)" : (modelData.is_active ? "● Active Window" : "Workspace " + (modelData.workspace_name || modelData.workspace_id))
+                                                            font.pixelSize: 9
+                                                            color: modelData.is_minimized ? root.colGold : root.colFgMuted
+                                                        }
+                                                    }
                                                 }
 
-                                                Text {
-                                                    Layout.fillWidth: true
-                                                    text: modelData.is_minimized ? "🗕 Minimized (Click to Restore)" : (modelData.is_active ? "● Active Window" : "Workspace " + (modelData.workspace_name || modelData.workspace_id))
-                                                    font.pixelSize: 9
-                                                    color: modelData.is_minimized ? root.colGold : root.colFgMuted
+                                                MouseArea {
+                                                    id: itemMouse
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    onClicked: {
+                                                        root.dispatchAction("focus", modelData.address);
+                                                        groupMenuPopup.visible = false;
+                                                    }
                                                 }
                                             }
 
+                                            // Right area: Close Specific Window
                                             Rectangle {
-                                                width: 22
-                                                height: 22
+                                                width: 24
+                                                height: 24
                                                 radius: root.buttonRadius
                                                 color: winCloseMouse.containsMouse ? root.colRed : root.colBgAlt
-                                                border.color: root.colBorder
+                                                border.color: winCloseMouse.containsMouse ? root.colRed : root.colBorder
                                                 border.width: 1
 
                                                 Text {
                                                     anchors.centerIn: parent
                                                     text: "✕"
-                                                    font.pixelSize: 9
+                                                    font.pixelSize: 10
+                                                    font.bold: true
                                                     color: winCloseMouse.containsMouse ? "#ffffff" : root.colFgMuted
                                                 }
 
@@ -594,9 +618,8 @@ ShellRoot {
                                                     id: winCloseMouse
                                                     anchors.fill: parent
                                                     hoverEnabled: true
-                                                    acceptedButtons: Qt.LeftButton
-                                                    onClicked: mouse => {
-                                                        mouse.accepted = true;
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    onClicked: {
                                                         root.dispatchAction("close", modelData.address);
                                                         groupMenuPopup.visible = false;
                                                     }
@@ -1683,62 +1706,76 @@ ShellRoot {
                                         border.color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold + "88" : root.colBorder)
                                         border.width: 1
 
-                                        MouseArea {
-                                            id: secItemMouse
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            onClicked: {
-                                                root.dispatchAction("focus", modelData.address);
-                                                secGroupMenuPopup.visible = false;
-                                            }
-                                        }
-
                                         RowLayout {
                                             anchors.fill: parent
                                             anchors.leftMargin: 10
-                                            anchors.rightMargin: 10
+                                            anchors.rightMargin: 8
                                             spacing: 8
 
-                                            Rectangle {
-                                                width: 8
-                                                height: 8
-                                                radius: 4
-                                                color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold : root.colFgMuted)
-                                            }
-
-                                            ColumnLayout {
+                                            // Left area: Focus / Restore Window
+                                            Item {
                                                 Layout.fillWidth: true
-                                                spacing: 1
+                                                Layout.fillHeight: true
 
-                                                Text {
-                                                    Layout.fillWidth: true
-                                                    text: modelData.title || "Window"
-                                                    font.pixelSize: 11
-                                                    font.bold: modelData.is_active
-                                                    elide: Text.ElideRight
-                                                    color: modelData.is_active ? root.colAccent : root.colFg
+                                                RowLayout {
+                                                    anchors.fill: parent
+                                                    spacing: 8
+
+                                                    Rectangle {
+                                                        width: 8
+                                                        height: 8
+                                                        radius: 4
+                                                        color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold : root.colFgMuted)
+                                                    }
+
+                                                    ColumnLayout {
+                                                        Layout.fillWidth: true
+                                                        spacing: 1
+
+                                                        Text {
+                                                            Layout.fillWidth: true
+                                                            text: modelData.title || "Window"
+                                                            font.pixelSize: 11
+                                                            font.bold: modelData.is_active
+                                                            elide: Text.ElideRight
+                                                            color: modelData.is_active ? root.colAccent : root.colFg
+                                                        }
+
+                                                        Text {
+                                                            Layout.fillWidth: true
+                                                            text: modelData.is_minimized ? "🗕 Minimized (Click to Restore)" : (modelData.is_active ? "● Active Window" : "Workspace " + (modelData.workspace_name || modelData.workspace_id))
+                                                            font.pixelSize: 9
+                                                            color: modelData.is_minimized ? root.colGold : root.colFgMuted
+                                                        }
+                                                    }
                                                 }
 
-                                                Text {
-                                                    Layout.fillWidth: true
-                                                    text: modelData.is_minimized ? "🗕 Minimized (Click to Restore)" : (modelData.is_active ? "● Active Window" : "Workspace " + (modelData.workspace_name || modelData.workspace_id))
-                                                    font.pixelSize: 9
-                                                    color: modelData.is_minimized ? root.colGold : root.colFgMuted
+                                                MouseArea {
+                                                    id: secItemMouse
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    onClicked: {
+                                                        root.dispatchAction("focus", modelData.address);
+                                                        secGroupMenuPopup.visible = false;
+                                                    }
                                                 }
                                             }
 
+                                            // Right area: Close Specific Window
                                             Rectangle {
-                                                width: 22
-                                                height: 22
+                                                width: 24
+                                                height: 24
                                                 radius: root.buttonRadius
                                                 color: secWinCloseMouse.containsMouse ? root.colRed : root.colBgAlt
-                                                border.color: root.colBorder
+                                                border.color: secWinCloseMouse.containsMouse ? root.colRed : root.colBorder
                                                 border.width: 1
 
                                                 Text {
                                                     anchors.centerIn: parent
                                                     text: "✕"
-                                                    font.pixelSize: 9
+                                                    font.pixelSize: 10
+                                                    font.bold: true
                                                     color: secWinCloseMouse.containsMouse ? "#ffffff" : root.colFgMuted
                                                 }
 
@@ -1746,9 +1783,8 @@ ShellRoot {
                                                     id: secWinCloseMouse
                                                     anchors.fill: parent
                                                     hoverEnabled: true
-                                                    acceptedButtons: Qt.LeftButton
-                                                    onClicked: mouse => {
-                                                        mouse.accepted = true;
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    onClicked: {
                                                         root.dispatchAction("close", modelData.address);
                                                         secGroupMenuPopup.visible = false;
                                                     }
