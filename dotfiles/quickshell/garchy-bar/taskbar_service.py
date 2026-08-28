@@ -16,8 +16,10 @@ STATE_FILE = os.path.expanduser("~/.cache/garchy_minimized_history.json")
 MINIMIZED_WS = 99
 
 ICON_MAP = {
-    "brave-browser": "brave-browser",
-    "Brave-browser": "brave-browser",
+    "brave-browser": "brave-desktop",
+    "Brave-browser": "brave-desktop",
+    "brave": "brave-desktop",
+    "Brave": "brave-desktop",
     "firefox": "firefox",
     "falkon": "falkon",
     "kitty": "kitty",
@@ -48,7 +50,7 @@ TRAY_TARGETS = [
     {"name": "Steam", "class_names": ["steam", "Steam"], "icon": "steam", "cmd": "steam"},
     {"name": "Spotify", "class_names": ["spotify", "Spotify"], "icon": "spotify", "cmd": "spotify"},
     {"name": "Heroic Games", "class_names": ["heroic", "Heroic"], "icon": "heroic", "cmd": "heroic"},
-    {"name": "Brave Browser", "class_names": ["brave-browser", "Brave-browser"], "icon": "brave-browser", "cmd": "brave"},
+    {"name": "Brave Browser", "class_names": ["brave-browser", "Brave-browser", "brave", "Brave"], "icon": "brave-desktop", "cmd": "brave"},
     {"name": "Audio Mixer", "class_names": ["pavucontrol", "org.pulseaudio.pavucontrol"], "icon": "org.pulseaudio.pavucontrol", "cmd": "pavucontrol"}
 ]
 

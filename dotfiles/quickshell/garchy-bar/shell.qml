@@ -700,7 +700,7 @@ ShellRoot {
                             color: root.colBorder
                         }
 
-                        // 2. BACKGROUND & TRAY SERVICES SECTION
+                        // 2. BACKGROUND & TRAY SERVICES SECTION (SCROLLABLE)
                         Text {
                             text: "BACKGROUND & TRAY SERVICES"
                             font.pixelSize: 9
@@ -709,70 +709,117 @@ ShellRoot {
                             Layout.topMargin: 2
                         }
 
-                        Repeater {
-                            model: root.taskbarState.tray_services || []
+                        ScrollView {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Math.min(230, svcCol.implicitHeight)
+                            clip: true
+                            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                            ScrollBar.vertical.policy: svcCol.implicitHeight > 230 ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
 
-                            Rectangle {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 38
-                                radius: 8
-                                color: svcMouse.containsMouse ? root.colBgAlt : "#131c3188"
-                                border.color: modelData.is_running ? root.colBorder : "transparent"
-                                border.width: 1
+                            ColumnLayout {
+                                id: svcCol
+                                width: 312
+                                spacing: 6
 
-                                RowLayout {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: 10
-                                    anchors.rightMargin: 10
-                                    spacing: 10
+                                Repeater {
+                                    model: root.taskbarState.tray_services || []
 
-                                    // App Desktop Vector Icon
-                                    Image {
-                                        width: 20
-                                        height: 20
-                                        source: Quickshell.iconPath(modelData.icon)
-                                        fillMode: Image.PreserveAspectFit
-                                        opacity: modelData.is_running ? 1.0 : 0.4
-                                        visible: status === Image.Ready
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 1
-
-                                        Text {
-                                            text: modelData.name
-                                            font.pixelSize: 12
-                                            font.bold: true
-                                            color: modelData.is_running ? root.colFg : root.colFgMuted
-                                        }
-
-                                        Text {
-                                            text: modelData.status_text
-                                            font.pixelSize: 10
-                                            color: modelData.is_running ? (modelData.is_minimized ? root.colGold : root.colAccent) : root.colFgMuted
-                                        }
-                                    }
-
-                                    // Action Button (Restore / Open / Launch)
                                     Rectangle {
-                                        width: modelData.is_running ? 64 : 54
-                                        height: 24
-                                        radius: 6
-                                        color: actArea.containsMouse ? root.colAccent : root.colBgAlt
-                                        border.color: root.colAccent
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: 38
+                                        radius: 8
+                                        color: svcMouse.containsMouse ? root.colBgAlt : "#131c3188"
+                                        border.color: modelData.is_running ? root.colBorder : "transparent"
                                         border.width: 1
 
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: modelData.has_window ? (modelData.is_minimized ? "Restore" : "Focus") : (modelData.is_running ? "Open" : "Launch")
-                                            font.pixelSize: 10
-                                            font.bold: true
-                                            color: actArea.containsMouse ? "#0a0f1d" : root.colAccent
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 10
+                                            anchors.rightMargin: 10
+                                            spacing: 10
+
+                                            // Fixed Icon Container (prevents overlap)
+                                            Item {
+                                                Layout.preferredWidth: 22
+                                                Layout.preferredHeight: 22
+                                                Layout.alignment: Qt.AlignVCenter
+
+                                                Image {
+                                                    anchors.fill: parent
+                                                    source: Quickshell.iconPath(modelData.icon)
+                                                    fillMode: Image.PreserveAspectFit
+                                                    opacity: modelData.is_running ? 1.0 : 0.4
+                                                    visible: status === Image.Ready
+                                                }
+
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    visible: !parent.children[0].visible
+                                                    text: "󰖯"
+                                                    font.pixelSize: 16
+                                                    color: modelData.is_running ? root.colAccent : root.colFgMuted
+                                                }
+                                            }
+
+                                            ColumnLayout {
+                                                Layout.fillWidth: true
+                                                Layout.alignment: Qt.AlignVCenter
+                                                spacing: 1
+
+                                                Text {
+                                                    Layout.fillWidth: true
+                                                    text: modelData.name
+                                                    font.pixelSize: 11
+                                                    font.bold: true
+                                                    elide: Text.ElideRight
+                                                    color: modelData.is_running ? root.colFg : root.colFgMuted
+                                                }
+
+                                                Text {
+                                                    Layout.fillWidth: true
+                                                    text: modelData.status_text
+                                                    font.pixelSize: 10
+                                                    elide: Text.ElideRight
+                                                    color: modelData.is_running ? (modelData.is_minimized ? root.colGold : root.colAccent) : root.colFgMuted
+                                                }
+                                            }
+
+                                            // Action Button (Restore / Open / Launch)
+                                            Rectangle {
+                                                Layout.preferredWidth: 62
+                                                Layout.preferredHeight: 24
+                                                Layout.alignment: Qt.AlignVCenter
+                                                radius: 6
+                                                color: actArea.containsMouse ? root.colAccent : root.colBgAlt
+                                                border.color: root.colAccent
+                                                border.width: 1
+
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: modelData.has_window ? (modelData.is_minimized ? "Restore" : "Focus") : (modelData.is_running ? "Open" : "Launch")
+                                                    font.pixelSize: 10
+                                                    font.bold: true
+                                                    color: actArea.containsMouse ? "#0a0f1d" : root.colAccent
+                                                }
+
+                                                MouseArea {
+                                                    id: actArea
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    onClicked: {
+                                                        if (modelData.has_window) {
+                                                            root.dispatchAction("toggle", modelData.address);
+                                                        } else {
+                                                            root.runCmd(["bash", "-c", modelData.cmd]);
+                                                        }
+                                                        trayMenuPopup.visible = false;
+                                                    }
+                                                }
+                                            }
                                         }
 
                                         MouseArea {
-                                            id: actArea
+                                            id: svcMouse
                                             anchors.fill: parent
                                             hoverEnabled: true
                                             onClicked: {
@@ -784,20 +831,6 @@ ShellRoot {
                                                 trayMenuPopup.visible = false;
                                             }
                                         }
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: svcMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: {
-                                        if (modelData.has_window) {
-                                            root.dispatchAction("toggle", modelData.address);
-                                        } else {
-                                            root.runCmd(["bash", "-c", modelData.cmd]);
-                                        }
-                                        trayMenuPopup.visible = false;
                                     }
                                 }
                             }
