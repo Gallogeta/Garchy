@@ -133,7 +133,7 @@ ShellRoot {
     }
 
     // ========================================================
-    // PRIMARY SCREEN (DP-2) - 3 FLOATING ISLANDS
+    // PRIMARY SCREEN (DP-2) - 3 EXPANDED FLOATING ISLANDS
     // ========================================================
     PanelWindow {
         id: winMain
@@ -149,7 +149,7 @@ ShellRoot {
             left: true
             right: true
         }
-        implicitHeight: 44
+        implicitHeight: 46
         color: "transparent"
 
         WlrLayershell.layer: WlrLayer.Top
@@ -160,9 +160,9 @@ ShellRoot {
         Item {
             anchors.fill: parent
             anchors.topMargin: 4
-            anchors.leftMargin: 8
-            anchors.rightMargin: 8
-            anchors.bottomMargin: 2
+            anchors.bottomMargin: 4
+            anchors.leftMargin: 10
+            anchors.rightMargin: 10
 
             // 1. LEFT ISLAND: Launcher, Workspaces 1-4, Windows 11 Taskbar
             Rectangle {
@@ -170,22 +170,22 @@ ShellRoot {
                 anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: leftLayout.implicitWidth + 16
+                width: leftLayout.implicitWidth + 20
                 color: root.colBg
                 border.color: root.colBorder
                 border.width: 1
-                radius: 10
+                radius: 12
 
                 RowLayout {
                     id: leftLayout
                     anchors.centerIn: parent
-                    spacing: 8
+                    spacing: 10
 
                     // 🌌 Launcher Button
                     Rectangle {
-                        width: 30
-                        height: 30
-                        radius: 8
+                        width: 32
+                        height: 32
+                        radius: 9
                         color: launchArea.containsMouse ? root.colBgAlt : "transparent"
                         border.color: launchArea.containsMouse ? root.colAccent : "transparent"
                         border.width: 1
@@ -193,7 +193,7 @@ ShellRoot {
                         Text {
                             anchors.centerIn: parent
                             text: "󰣇"
-                            font.pixelSize: 18
+                            font.pixelSize: 20
                             color: launchArea.containsMouse ? root.colAccent : root.colFg
                         }
 
@@ -214,9 +214,9 @@ ShellRoot {
 
                     // 🔢 Workspaces (1 2 3 4)
                     Rectangle {
-                        height: 28
-                        width: wsRow.implicitWidth + 8
-                        radius: 6
+                        height: 30
+                        width: wsRow.implicitWidth + 10
+                        radius: 8
                         color: root.colBgAlt
                         border.color: root.colBorder
                         border.width: 1
@@ -224,7 +224,7 @@ ShellRoot {
                         Row {
                             id: wsRow
                             anchors.centerIn: parent
-                            spacing: 2
+                            spacing: 3
 
                             Repeater {
                                 model: [1, 2, 3, 4]
@@ -241,15 +241,15 @@ ShellRoot {
                                         return wsNum === 1;
                                     }
 
-                                    width: 22
-                                    height: 22
-                                    radius: 5
+                                    width: 24
+                                    height: 24
+                                    radius: 6
                                     color: isWsActive ? root.colAccent : (wsArea.containsMouse ? root.colBorder : "transparent")
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: modelData
-                                        font.pixelSize: 11
+                                        font.pixelSize: 12
                                         font.bold: true
                                         color: isWsActive ? "#0a0f1d" : root.colFgMuted
                                     }
@@ -268,20 +268,20 @@ ShellRoot {
                     // 🗔 WINDOWS 11 / KDE INTERACTIVE TASKBAR
                     Row {
                         id: taskbarRow
-                        spacing: 6
+                        spacing: 8
 
                         Repeater {
                             model: root.taskbarState.groups || []
 
                             Item {
                                 property var groupData: modelData
-                                width: 36
-                                height: 30
+                                width: 38
+                                height: 32
 
                                 Rectangle {
                                     id: appPill
                                     anchors.fill: parent
-                                    radius: 8
+                                    radius: 9
                                     color: groupData.is_active ? root.colAccent + "33" : (appMouse.containsMouse ? root.colBgAlt : "transparent")
                                     border.color: groupData.is_active ? root.colAccent : (appMouse.containsMouse ? root.colBorder : "transparent")
                                     border.width: groupData.is_active ? 1.5 : 1
@@ -290,8 +290,8 @@ ShellRoot {
                                     Image {
                                         id: appIcon
                                         anchors.centerIn: parent
-                                        width: 20
-                                        height: 20
+                                        width: 22
+                                        height: 22
                                         source: Quickshell.iconPath(groupData.icon)
                                         fillMode: Image.PreserveAspectFit
                                         opacity: groupData.is_minimized ? 0.5 : 1.0
@@ -302,7 +302,7 @@ ShellRoot {
                                         anchors.centerIn: parent
                                         visible: appIcon.status !== Image.Ready
                                         text: "󰖯"
-                                        font.pixelSize: 16
+                                        font.pixelSize: 18
                                         color: groupData.is_active ? root.colAccent : root.colFg
                                     }
 
@@ -311,9 +311,9 @@ ShellRoot {
                                         anchors.bottom: parent.bottom
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         anchors.bottomMargin: 2
-                                        width: groupData.is_active ? 16 : 4
-                                        height: 2
-                                        radius: 1
+                                        width: groupData.is_active ? 18 : 4
+                                        height: 2.5
+                                        radius: 1.5
                                         color: groupData.is_active ? root.colAccent : (groupData.is_minimized ? root.colGold : root.colFgMuted)
                                         Behavior on width { NumberAnimation { duration: 150 } }
                                     }
@@ -325,15 +325,15 @@ ShellRoot {
                                         anchors.right: parent.right
                                         anchors.topMargin: 2
                                         anchors.rightMargin: 2
-                                        width: 13
-                                        height: 13
-                                        radius: 6.5
+                                        width: 14
+                                        height: 14
+                                        radius: 7
                                         color: root.colAccentAlt
 
                                         Text {
                                             anchors.centerIn: parent
                                             text: groupData.count
-                                            font.pixelSize: 8
+                                            font.pixelSize: 9
                                             font.bold: true
                                             color: "#ffffff"
                                         }
@@ -354,7 +354,6 @@ ShellRoot {
                                                     root.dispatchAction("close", addr);
                                                 }
                                             } else {
-                                                // If multiple instances, toggle focus of latest or minimize all
                                                 if (mouse.button === Qt.LeftButton) {
                                                     var act = groupData.windows.find(w => w.is_active);
                                                     if (act) {
@@ -373,39 +372,40 @@ ShellRoot {
                 }
             }
 
-            // 2. CENTER ISLAND: Clock & Calendar
+            // 2. CENTER ISLAND: Expanded Clock & Date Capsule
             Rectangle {
                 id: centerIsland
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: centerLayout.implicitWidth + 24
+                width: centerLayout.implicitWidth + 36
                 color: root.colBg
                 border.color: root.colBorder
                 border.width: 1
-                radius: 10
+                radius: 12
 
                 RowLayout {
                     id: centerLayout
                     anchors.centerIn: parent
-                    spacing: 8
+                    spacing: 12
 
                     Text {
                         text: " " + root.timeStr
-                        font.pixelSize: 12
+                        font.pixelSize: 14
                         font.bold: true
                         color: root.colFg
                     }
 
                     Rectangle {
-                        width: 1
-                        height: 14
+                        width: 1.5
+                        height: 16
+                        radius: 1
                         color: root.colBorder
                     }
 
                     Text {
                         text: " " + root.dateStr
-                        font.pixelSize: 11
+                        font.pixelSize: 12
                         color: root.colFgMuted
                     }
                 }
@@ -417,17 +417,17 @@ ShellRoot {
                 }
             }
 
-            // 3. RIGHT ISLAND: Gally AI, Theme, Volume, Telemetry, Power
+            // 3. RIGHT ISLAND: Expanded AI, Theme, Volume, Telemetry, Power
             Rectangle {
                 id: rightIsland
                 anchors.right: parent.right
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: rightLayout.implicitWidth + 20
+                width: rightLayout.implicitWidth + 28
                 color: root.colBg
                 border.color: root.colBorder
                 border.width: 1
-                radius: 10
+                radius: 12
 
                 RowLayout {
                     id: rightLayout
@@ -436,15 +436,15 @@ ShellRoot {
 
                     // 🧠 Gally AI Hub
                     Rectangle {
-                        width: 26
-                        height: 26
-                        radius: 6
+                        width: 30
+                        height: 30
+                        radius: 8
                         color: aiMouse.containsMouse ? root.colAccent + "33" : "transparent"
 
                         Text {
                             anchors.centerIn: parent
                             text: "󰚩"
-                            font.pixelSize: 14
+                            font.pixelSize: 16
                             color: root.colAccent
                         }
 
@@ -458,15 +458,15 @@ ShellRoot {
 
                     // 🎨 Wallust Theme Switcher
                     Rectangle {
-                        width: 26
-                        height: 26
-                        radius: 6
+                        width: 30
+                        height: 30
+                        radius: 8
                         color: thmMouse.containsMouse ? root.colAccentAlt + "33" : "transparent"
 
                         Text {
                             anchors.centerIn: parent
                             text: "󰏘"
-                            font.pixelSize: 14
+                            font.pixelSize: 16
                             color: root.colAccentAlt
                         }
 
@@ -480,25 +480,25 @@ ShellRoot {
 
                     // 🔊 Volume Pill
                     Rectangle {
-                        height: 24
-                        width: volRow.implicitWidth + 12
-                        radius: 6
+                        height: 28
+                        width: volRow.implicitWidth + 18
+                        radius: 7
                         color: root.colBgAlt
 
                         RowLayout {
                             id: volRow
                             anchors.centerIn: parent
-                            spacing: 4
+                            spacing: 6
 
                             Text {
                                 text: root.isMuted ? "󰝟" : (root.volPercent > 50 ? "󰕾" : "󰖀")
-                                font.pixelSize: 12
+                                font.pixelSize: 14
                                 color: root.isMuted ? root.colRed : root.colAccent
                             }
 
                             Text {
                                 text: root.volPercent + "%"
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                                 font.bold: true
                                 color: root.colFg
                             }
@@ -511,27 +511,27 @@ ShellRoot {
                         }
                     }
 
-                    // ⚡ CPU / RAM Telemetry
+                    // ⚡ CPU / RAM Telemetry Pill
                     Rectangle {
-                        height: 24
-                        width: statRow.implicitWidth + 12
-                        radius: 6
+                        height: 28
+                        width: statRow.implicitWidth + 18
+                        radius: 7
                         color: root.colBgAlt
 
                         RowLayout {
                             id: statRow
                             anchors.centerIn: parent
-                            spacing: 6
+                            spacing: 8
 
                             Text {
                                 text: " " + root.cpuPercent + "%"
-                                font.pixelSize: 10
+                                font.pixelSize: 12
                                 color: root.cpuPercent > 80 ? root.colRed : root.colFgMuted
                             }
 
                             Text {
                                 text: " " + root.ramPercent + "%"
-                                font.pixelSize: 10
+                                font.pixelSize: 12
                                 color: root.ramPercent > 85 ? root.colGold : root.colFgMuted
                             }
                         }
@@ -539,15 +539,15 @@ ShellRoot {
 
                     // ⏻ Power Menu Button
                     Rectangle {
-                        width: 26
-                        height: 26
-                        radius: 6
+                        width: 30
+                        height: 30
+                        radius: 8
                         color: pwrMouse.containsMouse ? root.colRed + "33" : "transparent"
 
                         Text {
                             anchors.centerIn: parent
                             text: ""
-                            font.pixelSize: 13
+                            font.pixelSize: 14
                             color: pwrMouse.containsMouse ? root.colRed : root.colFgMuted
                         }
 
@@ -564,7 +564,7 @@ ShellRoot {
     }
 
     // ========================================================
-    // SECONDARY SCREEN (DP-1) - COMPANION STATUS BAR
+    // SECONDARY SCREEN (DP-1) - EXPANDED COMPANION BAR
     // ========================================================
     PanelWindow {
         id: winSec
@@ -580,7 +580,7 @@ ShellRoot {
             left: true
             right: true
         }
-        implicitHeight: 44
+        implicitHeight: 46
         color: "transparent"
 
         WlrLayershell.layer: WlrLayer.Top
@@ -591,20 +591,20 @@ ShellRoot {
         Item {
             anchors.fill: parent
             anchors.topMargin: 4
-            anchors.leftMargin: 8
-            anchors.rightMargin: 8
-            anchors.bottomMargin: 2
+            anchors.bottomMargin: 4
+            anchors.leftMargin: 10
+            anchors.rightMargin: 10
 
             // Left: Workspaces for Right Screen
             Rectangle {
                 anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: secWsRow.implicitWidth + 16
+                width: secWsRow.implicitWidth + 20
                 color: root.colBg
                 border.color: root.colBorder
                 border.width: 1
-                radius: 10
+                radius: 12
 
                 Row {
                     id: secWsRow
@@ -626,15 +626,15 @@ ShellRoot {
                                 return wsNum === 1;
                             }
 
-                            width: 24
-                            height: 24
-                            radius: 5
+                            width: 26
+                            height: 26
+                            radius: 6
                             color: isWsActive ? root.colAccentAlt : "transparent"
 
                             Text {
                                 anchors.centerIn: parent
                                 text: modelData
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                                 font.bold: true
                                 color: isWsActive ? "#ffffff" : root.colFgMuted
                             }
@@ -648,21 +648,21 @@ ShellRoot {
                 }
             }
 
-            // Center: Time
+            // Center: Time & Date Capsule
             Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: 120
+                width: 140
                 color: root.colBg
                 border.color: root.colBorder
                 border.width: 1
-                radius: 10
+                radius: 12
 
                 Text {
                     anchors.centerIn: parent
                     text: " " + root.timeStr
-                    font.pixelSize: 12
+                    font.pixelSize: 14
                     font.bold: true
                     color: root.colFg
                 }
