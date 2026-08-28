@@ -61,6 +61,17 @@ window#waybar {
     border: 1px solid @accent;
 }
 
+#workspaces button image {
+    margin: 0 5px;
+    padding: 0 3px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+#workspaces button image:hover {
+    background: rgba(56, 189, 248, 0.3);
+}
+
 #workspaces button.urgent {
     color: #ffffff;
     background: @red;
