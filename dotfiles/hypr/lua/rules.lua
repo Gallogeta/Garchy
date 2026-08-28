@@ -50,11 +50,12 @@ hl.window_rule({
 hl.window_rule({
     name = "gally-ai-hud",
     match = {
-        class = "^(gally_cephalon_hud|Gally_cephalon_hud)$",
+        title = "^(Gally AI Assistant)$",
+        class = "^(gally_cephalon_hud|Gally_cephalon_hud|gally-ai-hud|tk|Tk)$",
     },
     float = true,
     center = true,
-    size = { 1040, 740 },
+    size = { 980, 720 },
     rounding = 16,
     opacity = "1.0 1.0",
 })
