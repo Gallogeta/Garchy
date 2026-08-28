@@ -15,7 +15,7 @@
 
 [![Arch Linux](https://img.shields.io/badge/Arch_Linux-1793D1?style=for-the-badge&logo=arch-linux&logoColor=white)](https://archlinux.org)
 [![Hyprland](https://img.shields.io/badge/Hyprland-00AAFF?style=for-the-badge&logo=wayland&logoColor=white)](https://hyprland.org)
-[![AI Powered](https://img.shields.io/badge/AI_Copilot-7AA2F7?style=for-the-badge&logo=openai&logoColor=white)](#-built-in-ai-copilot-garchy-ai)
+[![AI Powered](https://img.shields.io/badge/AI_Copilot-7AA2F7?style=for-the-badge&logo=openai&logoColor=white)](#-built-in-ai-garchy-ai)
 [![Gaming Ready](https://img.shields.io/badge/Gaming-Ready-FF5555?style=for-the-badge&logo=steam&logoColor=white)](#-gaming--development-ready)
 
 </div>
