@@ -134,11 +134,12 @@ window#waybar {
 #custom-btn-maximize,
 #custom-btn-close {
     font-size: 11px;
-    padding: 0 6px;
+    padding: 0 7px;
     margin: 0 1px;
     color: @fg-muted;
     background: @bg-alt;
     border: 1px solid @border-col;
+    border-radius: 6px;
 }
 
 #custom-btn-minimize:hover {

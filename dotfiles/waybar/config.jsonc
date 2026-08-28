@@ -13,6 +13,9 @@
         "hyprland/workspaces",
         "wlr/taskbar",
         "custom/active-app",
+        "custom/btn-minimize",
+        "custom/btn-maximize",
+        "custom/btn-close",
         "custom/minimized"
     ],
     "modules-center": [
@@ -62,7 +65,7 @@
         "format": "{icon}",
         "icon-size": 18,
         "icon-theme": "Papirus-Dark",
-        "tooltip-format": "🗔 {title}\n───────────────────────\n• Left Click: Bring to Front\n• Right Click: Close Window",
+        "tooltip-format": "🗔 {title}\n───────────────────────\n• Left Click: Focus Window\n• Right Click: Close Window",
         "on-click": "activate",
         "on-click-middle": "close",
         "on-click-right": "close",
@@ -81,6 +84,24 @@
         "on-click-right": "bash -c '~/.config/hypr/scripts/taskbar-click.sh close-active'",
         "on-click-middle": "bash -c '~/.config/hypr/scripts/taskbar-click.sh maximize-active'",
         "tooltip": true
+    },
+
+    "custom/btn-minimize": {
+        "format": "🗕",
+        "tooltip-format": "🗕 Minimize Active Window\n───────────────────────\n• Left Click: Minimize window to background\n• Shortcut: Super + N",
+        "on-click": "bash -c '~/.config/hypr/scripts/taskbar-click.sh minimize-active'"
+    },
+
+    "custom/btn-maximize": {
+        "format": "🗖",
+        "tooltip-format": "🗖 Maximize / Restore Window\n───────────────────────\n• Left Click: Toggle Fullscreen / Maximize\n• Shortcut: Super + M",
+        "on-click": "bash -c '~/.config/hypr/scripts/taskbar-click.sh maximize-active'"
+    },
+
+    "custom/btn-close": {
+        "format": "✕",
+        "tooltip-format": "✕ Close Active Window\n───────────────────────\n• Left Click: Close window\n• Shortcut: Super + Q",
+        "on-click": "bash -c '~/.config/hypr/scripts/taskbar-click.sh close-active'"
     },
 
     "custom/minimized": {
