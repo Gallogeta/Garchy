@@ -12,24 +12,24 @@ ShellRoot {
     // ========================================================
     // DYNAMIC WALLUST / THEME GALLERY PALETTE & GEOMETRY
     // ========================================================
-    property color colBg: "#0a0f1dE6"
-    property color colBgAlt: "#131c31"
-    property color colFg: "#e2e8f0"
+    property color colBg: "#070b12F2"
+    property color colBgAlt: "#0f172a"
+    property color colFg: "#f8fafc"
     property color colFgMuted: "#94a3b8"
     property color colAccent: "#38bdf8"
-    property color colAccentAlt: "#3b82f6"
+    property color colAccentAlt: "#2563eb"
     property color colBorder: "#1e293b"
     property color colGold: "#fbbf24"
-    property color colRed: "#ef4444"
-    property color colGreen: "#22c55e"
-    property int themeRounding: 12
+    property color colRed: "#f43f5e"
+    property color colGreen: "#10b981"
+    property int themeRounding: 6
     property string layoutStyle: "garchy"
     property int barHeight: 46
 
     property int islandRadius: root.themeRounding
-    property int cardRadius: Math.max(0, root.themeRounding - 3)
-    property int buttonRadius: Math.max(0, root.themeRounding - 6)
-    property int popupRadius: Math.max(0, root.themeRounding + 2)
+    property int cardRadius: Math.max(3, root.themeRounding - 2)
+    property int buttonRadius: Math.max(2, root.themeRounding - 2)
+    property int popupRadius: Math.max(4, root.themeRounding + 2)
 
     function applyThemeJson(json) {
         if (!json) return;
