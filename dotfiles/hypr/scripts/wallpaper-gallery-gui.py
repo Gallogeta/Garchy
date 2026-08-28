@@ -501,6 +501,7 @@ class WallpaperGalleryApp(ctk.CTk):
         def run_apply():
             subprocess.run(["awww", "img", chosen, "--transition-type", "wipe", "--transition-step", "90", "--transition-fps", "144"],
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.Popen(["wallust", "run", chosen], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             with open(CURRENT_FILE, "w") as f:
                 f.write(chosen)
             self.after(50, lambda: self.destroy())

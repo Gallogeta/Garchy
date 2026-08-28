@@ -1,0 +1,9 @@
+# Garchy OS — Wallust Configuration
+backend = "kmeans"
+color_space = "lab"
+check_contrast = true
+
+[templates]
+garchy_colors = { src = "garchy_theme.json", target = "~/.cache/garchy_theme.json" }
+waybar_theme = { src = "theme.css", target = "~/.config/waybar/theme.css" }
+kitty_theme = { src = "theme.conf", target = "~/.config/kitty/theme.conf" }

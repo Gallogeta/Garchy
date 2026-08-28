@@ -1,0 +1,10 @@
+@define-color bg {{background}};
+@define-color bg-alt {{color0}};
+@define-color fg {{foreground}};
+@define-color fg-muted {{color7}};
+@define-color accent {{color4}};
+@define-color accent-alt {{color6}};
+@define-color border-col {{color8}};
+@define-color yellow {{color3}};
+@define-color red {{color1}};
+@define-color green {{color2}};

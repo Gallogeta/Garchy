@@ -1,0 +1,12 @@
+{
+  "bg": "{{background}}",
+  "bg_alt": "{{color0}}",
+  "fg": "{{foreground}}",
+  "fg_muted": "{{color7}}",
+  "accent": "{{color4}}",
+  "accent_alt": "{{color6}}",
+  "border": "{{color8}}",
+  "gold": "{{color3}}",
+  "red": "{{color1}}",
+  "green": "{{color2}}"
+}
