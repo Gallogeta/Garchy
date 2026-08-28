@@ -308,6 +308,7 @@ ShellRoot {
                             model: root.taskbarState.groups || []
 
                             Item {
+                                id: appItem
                                 property var groupData: modelData
                                 width: 38
                                 height: 32
@@ -433,7 +434,7 @@ ShellRoot {
                 Rectangle {
                     anchors.fill: parent
                     radius: root.popupRadius
-                    color: root.colBg
+                    color: "#0a0f1d"
                     border.color: root.colAccent
                     border.width: 1.5
 
@@ -526,7 +527,7 @@ ShellRoot {
                                         Layout.fillWidth: true
                                         Layout.preferredHeight: 38
                                         radius: root.cardRadius
-                                        color: itemMouse.containsMouse ? root.colBgAlt : (modelData.is_active ? root.colAccent + "22" : "#131c3166")
+                                        color: itemMouse.containsMouse ? root.colBgAlt : (modelData.is_active ? root.colAccent + "33" : root.colBgAlt)
                                         border.color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold + "88" : root.colBorder)
                                         border.width: 1
 
@@ -1583,7 +1584,7 @@ ShellRoot {
                 Rectangle {
                     anchors.fill: parent
                     radius: root.popupRadius
-                    color: root.colBg
+                    color: "#0a0f1d"
                     border.color: root.colAccent
                     border.width: 1.5
 
@@ -1676,7 +1677,7 @@ ShellRoot {
                                         Layout.fillWidth: true
                                         Layout.preferredHeight: 38
                                         radius: root.cardRadius
-                                        color: secItemMouse.containsMouse ? root.colBgAlt : (modelData.is_active ? root.colAccent + "22" : "#131c3166")
+                                        color: secItemMouse.containsMouse ? root.colBgAlt : (modelData.is_active ? root.colAccent + "33" : root.colBgAlt)
                                         border.color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold + "88" : root.colBorder)
                                         border.width: 1
 
