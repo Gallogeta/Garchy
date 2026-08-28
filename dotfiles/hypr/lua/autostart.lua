@@ -6,8 +6,9 @@ local home = os.getenv("HOME")
 
 hl.on("hyprland.start", function()
     -- D-Bus and Systemd environment synchronization
-    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=Hyprland")
-    hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
+    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=Hyprland DISABLE_GAMESCOPE_WSI=1")
+    hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP DISABLE_GAMESCOPE_WSI")
+    hl.exec_cmd("systemctl --user unset-environment ENABLE_GAMESCOPE_WSI")
 
     -- Core System Authentication & Bar
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")

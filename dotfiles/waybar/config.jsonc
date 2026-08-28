@@ -31,8 +31,8 @@
 
     "custom/launcher": {
         "format": "󰣇",
-        "on-click": "/home/gallo/.config/hypr/scripts/launchpad.sh",
-        "on-click-right": "/home/gallo/.config/hypr/scripts/wallpaper-select.sh",
+        "on-click": "bash -c '~/.config/hypr/scripts/launchpad.sh'",
+        "on-click-right": "bash -c '~/.config/hypr/scripts/wallpaper-select.sh'",
         "tooltip-format": "🌌 Gally Launchpad\n───────────────────────\n• Left Click: Open Fullscreen App Grid\n• Right Click: Wallpaper Gallery\n• Shortcut: Super or Super + Space"
     },
 
@@ -45,16 +45,16 @@
         "on-click": "activate",
         "format": "{icon}",
         "format-icons": {
-            "1": "1", "2": "1",
-            "3": "2", "4": "2",
-            "5": "3", "6": "3",
-            "7": "4", "8": "4",
-            "9": "5", "10": "5",
-            "11": "6", "12": "6",
-            "13": "7", "14": "7",
-            "15": "8", "16": "8",
-            "17": "9", "18": "9",
-            "19": "10", "20": "10"
+            "1": "1",
+            "2": "2",
+            "3": "3",
+            "4": "4",
+            "5": "5",
+            "6": "6",
+            "7": "7",
+            "8": "8",
+            "9": "9",
+            "10": "10"
         }
     },
 
@@ -76,10 +76,10 @@
         "format": "{}",
         "return-type": "json",
         "interval": 1,
-        "exec": "python3 /home/gallo/.config/hypr/scripts/active-window-status.py",
-        "on-click": "/home/gallo/.config/hypr/scripts/taskbar-click.sh minimize-active",
-        "on-click-right": "/home/gallo/.config/hypr/scripts/taskbar-click.sh close-active",
-        "on-click-middle": "/home/gallo/.config/hypr/scripts/taskbar-click.sh maximize-active",
+        "exec": "python3 ~/.config/hypr/scripts/active-window-status.py",
+        "on-click": "bash -c '~/.config/hypr/scripts/taskbar-click.sh minimize-active'",
+        "on-click-right": "bash -c '~/.config/hypr/scripts/taskbar-click.sh close-active'",
+        "on-click-middle": "bash -c '~/.config/hypr/scripts/taskbar-click.sh maximize-active'",
         "tooltip": true
     },
 
@@ -87,9 +87,9 @@
         "format": "{}",
         "return-type": "json",
         "interval": 1,
-        "exec": "/home/gallo/.config/hypr/scripts/minimized-status.sh",
-        "on-click": "/home/gallo/.config/hypr/scripts/minimize-window.sh restore-last",
-        "on-click-right": "python3 /home/gallo/.config/hypr/scripts/minimized-manager.py",
+        "exec": "bash -c '~/.config/hypr/scripts/minimized-status.sh'",
+        "on-click": "bash -c '~/.config/hypr/scripts/minimize-window.sh restore-last'",
+        "on-click-right": "bash -c 'python3 ~/.config/hypr/scripts/minimized-manager.py'",
         "tooltip": true
     },
 
@@ -119,7 +119,7 @@
 
     "cpu": {
         "format": " {usage}%",
-        "tooltip-format": "⚡ CPU Performance\n───────────────────────\n• Processor: Ryzen 9 5900X (24 Threads)\n• Current Usage: {usage}%\n• Load Average: {load}",
+        "tooltip-format": "⚡ CPU Performance\n───────────────────────\n• Current Usage: {usage}%\n• Load Average: {load}",
         "interval": 2
     },
 
@@ -151,19 +151,19 @@
     "custom/ai-hub": {
         "format": "🤖 Gally AI",
         "tooltip-format": "🤖 Gally AI Copilot\n───────────────────────\n• 1-Click Audio & Gaming FPS Booster\n• Multi-Model System Diagnostics & Chat\n• Shortcut: Super + Shift + Space or Super + I",
-        "on-click": "/home/gallo/.config/hypr/scripts/gally-ai-hud.sh"
+        "on-click": "bash -c '~/.config/hypr/scripts/gally-ai-hud.sh'"
     },
 
     "custom/theme": {
         "format": "󰏘",
         "tooltip-format": "🎨 Desktop Theme Switcher\n───────────────────────\n• Click to switch desktop color styles\n  (Tokyo Night, Catppuccin, Nord, Cyberpunk...)",
-        "on-click": "/home/gallo/.config/hypr/scripts/theme-switcher.sh"
+        "on-click": "bash -c '~/.config/hypr/scripts/theme-switcher.sh'"
     },
 
     "custom/help": {
         "format": "❓",
         "tooltip-format": "❓ Quick Guide & Shortcuts\n───────────────────────\n• Click to open Cheatsheet HUD\n• Shortcut: F1 or Super + ?",
-        "on-click": "/home/gallo/.config/hypr/scripts/help-hud.sh"
+        "on-click": "bash -c '~/.config/hypr/scripts/help-hud.sh'"
     },
 
     "tray": {

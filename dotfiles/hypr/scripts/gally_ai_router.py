@@ -16,12 +16,13 @@ HISTORY_PATH = os.path.expanduser("~/.config/gally/cephalon_history.json")
 
 DEFAULT_CONFIG = {
     "active_provider": "local_ollama",
-    "active_model": "gally-cephalon-ai",
+    "active_model": "qwen2.5:0.5b",
     "gemini_api_key": "",
     "claude_api_key": "",
     "openai_api_key": "",
     "deepseek_api_key": "",
     "groq_api_key": "",
+    "openrouter_api_key": "",
     "voice_enabled": True,
     "voice_name": "en-US-AriaNeural",
     "mode": "normal",
@@ -30,7 +31,9 @@ DEFAULT_CONFIG = {
 }
 
 AVAILABLE_MODELS = [
-    ("⚡ Local: Cephalon Gally (Offline)", "local_ollama", "gally-cephalon-ai"),
+    ("⚡ Tier 1: Qwen 2.5 (Fast & Lightweight - Default)", "local_ollama", "qwen2.5:0.5b"),
+    ("🌌 Tier 2: Cephalon Gally (Current Matrix)", "local_ollama", "gally-cephalon-ai"),
+    ("🚀 Tier 3: Hermes 3 Llama (High-Performing Free Tier)", "local_ollama", "hermes3:8b"),
     ("✨ Google Gemini 1.5 Flash", "gemini", "gemini-1.5-flash"),
     ("✨ Google Gemini 1.5 Pro", "gemini", "gemini-1.5-pro"),
     ("🚀 Claude 3.5 Sonnet", "claude", "claude-3-5-sonnet-20241022"),
@@ -198,11 +201,23 @@ def handle_terminal_command(raw_input, config):
     # 3. Model Switcher Directive
     if len(parts) >= 2 and parts[0].lower() in ["model", "use", "switch"]:
         target = parts[1].lower()
-        if target in ["local", "ollama", "offline", "gally"]:
+        if target in ["qwen", "qwen2.5", "tier1", "low", "default", "fast"]:
+            config["active_provider"] = "local_ollama"
+            config["active_model"] = "qwen2.5:0.5b"
+            save_ai_config(config)
+            return True, "◈ Switched to: [ ⚡ Tier 1: Qwen 2.5 (Fast & Lightweight - Default) ].", config
+
+        elif target in ["gally", "cephalon", "tier2", "mid", "current", "local", "offline"]:
             config["active_provider"] = "local_ollama"
             config["active_model"] = "gally-cephalon-ai"
             save_ai_config(config)
-            return True, "◈ Switched to: [ ⚡ Local Cephalon Gally (Offline) ].", config
+            return True, "◈ Switched to: [ 🌌 Tier 2: Cephalon Gally (Current Matrix) ].", config
+
+        elif target in ["hermes", "hermes3", "tier3", "high", "nous"]:
+            config["active_provider"] = "local_ollama"
+            config["active_model"] = "hermes3:8b"
+            save_ai_config(config)
+            return True, "◈ Switched to: [ 🚀 Tier 3: Hermes 3 Llama (High-Performing Free Tier) ].", config
 
         elif target in ["gemini", "flash", "gemini-flash"]:
             if not config.get("gemini_api_key"):

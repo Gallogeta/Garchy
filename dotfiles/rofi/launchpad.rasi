@@ -1,22 +1,18 @@
 /**
- * Gally OS - Launchpad (Fullscreen 6x4 App Grid)
+ * =============================================================================
+ * 🌌 Garchy OS — Fullscreen Launchpad Dashboard (Pure Theme File)
+ * =============================================================================
+ * Strict 5-Color Garchy Palette:
+ * - Light Blue: #38bdf8
+ * - Blue:       #3b82f6
+ * - Golden:     #fbbf24
+ * - Light Grey: #e2e8f0
+ * - Dark Grey:  #0a0f1d / #131c31 / #1e293b
  */
-
-configuration {
-    modi: "drun";
-    show-icons: true;
-    icon-theme: "Papirus-Dark";
-    display-drun: "🔍 Search Apps:";
-    drun-display-format: "{name}";
-    hover-select: true;
-    me-select-entry: "MouseSecondary";
-    me-accept-entry: "MousePrimary";
-    font: "JetBrainsMono Nerd Font 12";
-}
 
 * {
     background-color: transparent;
-    text-color: #f1f5f9;
+    text-color: #e2e8f0;
     margin: 0px;
     padding: 0px;
 }
@@ -24,7 +20,7 @@ configuration {
 window {
     transparency: "real";
     fullscreen: true;
-    background-color: rgba(7, 11, 20, 0.94);
+    background-color: rgba(10, 15, 29, 0.90);
     padding: 60px 120px;
     cursor: "default";
 }
@@ -37,25 +33,25 @@ mainbox {
 inputbar {
     enabled: true;
     spacing: 12px;
-    margin: 0px 200px;
+    margin: 0px 240px;
     padding: 12px 24px;
     border: 2px;
-    border-color: #fbbf24;
+    border-color: #38bdf8;
     border-radius: 20px;
-    background-color: rgba(15, 23, 42, 0.85);
-    text-color: #ffffff;
+    background-color: rgba(19, 28, 49, 0.85);
+    text-color: #e2e8f0;
     children: [ prompt, entry ];
 }
 
 prompt {
     font: "JetBrainsMono Nerd Font Bold 12";
-    text-color: #38bdf8;
+    text-color: #fbbf24;
     vertical-align: 0.5;
 }
 
 entry {
-    placeholder: "Type to filter or click any application...";
-    placeholder-color: rgba(224, 230, 237, 0.45);
+    placeholder: "Type to filter applications...";
+    placeholder-color: rgba(226, 232, 240, 0.45);
     text-color: #ffffff;
     cursor: text;
     vertical-align: 0.5;
@@ -65,53 +61,75 @@ listview {
     enabled: true;
     columns: 6;
     lines: 4;
-    cycle: true;
+    cycle: false;
     dynamic: true;
     scrollbar: true;
+    scrollbar-width: 14px;
     layout: vertical;
+    flow: horizontal;
+    fixed-height: true;
+    fixed-columns: true;
     spacing: 18px;
-    margin: 15px 0px 0px 0px;
+    margin: 10px 0px 0px 0px;
     background-color: transparent;
     cursor: "default";
 }
 
 scrollbar {
-    width: 6px;
-    border: 0px;
-    handle-width: 6px;
+    enabled: true;
+    width: 14px;
+    handle-width: 14px;
     handle-color: #38bdf8;
-    border-radius: 6px;
-    background-color: rgba(255, 255, 255, 0.08);
-    margin: 0px 0px 0px 10px;
+    border-radius: 8px;
+    background-color: rgba(30, 41, 59, 0.7);
+    border: 1px;
+    border-color: rgba(56, 189, 248, 0.25);
+    margin: 0px 0px 0px 14px;
+    cursor: pointer;
 }
 
 element {
     enabled: true;
     orientation: vertical;
     spacing: 10px;
-    padding: 20px 10px;
+    padding: 18px 10px;
     border-radius: 16px;
-    background-color: rgba(15, 23, 42, 0.55);
+    background-color: rgba(19, 28, 49, 0.65);
     border: 1px;
-    border-color: rgba(255, 255, 255, 0.06);
+    border-color: rgba(56, 189, 248, 0.15);
     cursor: pointer;
 }
 
 element normal.normal {
-    background-color: rgba(15, 23, 42, 0.55);
-    text-color: #f1f5f9;
+    background-color: rgba(19, 28, 49, 0.65);
+    text-color: #e2e8f0;
+}
+
+element alternate.normal {
+    background-color: rgba(19, 28, 49, 0.65);
+    text-color: #e2e8f0;
 }
 
 element selected.normal {
     background-color: rgba(56, 189, 248, 0.25);
-    border: 2px;
+    border: 1px;
     border-color: #38bdf8;
     text-color: #ffffff;
 }
 
+element normal.active {
+    background-color: rgba(19, 28, 49, 0.65);
+    text-color: #e2e8f0;
+}
+
+element alternate.active {
+    background-color: rgba(19, 28, 49, 0.65);
+    text-color: #e2e8f0;
+}
+
 element selected.active {
     background-color: rgba(251, 191, 36, 0.25);
-    border: 2px;
+    border: 1px;
     border-color: #fbbf24;
     text-color: #ffffff;
 }

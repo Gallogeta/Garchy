@@ -2,8 +2,9 @@
 -- 🌌 Garchy OS — Window Rules, Frosted Layer Rules & Gaming Compatibility
 -- ==============================================================================
 
--- Layer Rules (Frosted Blur for Bars and Overlays)
-hl.layer_rule({ match = { namespace = "^(waybar|rofi|wlogout|dunst)$" }, blur = true, ignore_alpha = 0.2 })
+-- Layer Rules (Frosted Blur for Bars, Overlays & Quickshell Launchpad)
+hl.layer_rule({ match = { namespace = "^(waybar|rofi|wlogout|dunst|quickshell|launchpad)$" }, blur = true, ignore_alpha = 0.1, xray = false })
+hl.layer_rule({ match = { namespace = "launchpad" }, blur = true, ignore_alpha = 0.1, xray = false })
 
 -- Global Maximize Suppression
 hl.window_rule({ name = "suppress-maximize", match = { class = "^(.*)$" }, suppress_event = "maximize" })

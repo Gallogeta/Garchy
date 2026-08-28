@@ -17,7 +17,7 @@ hl.env("XDG_SESSION_TYPE", "wayland")
 -- NVIDIA G-Sync / VRR & Low Latency
 hl.env("__GL_VRR_ALLOWED", "1")
 hl.env("__GL_GSYNC_ALLOWED", "1")
-hl.env("ENABLE_GAMESCOPE_WSI", "1")
+hl.env("DISABLE_GAMESCOPE_WSI", "1") -- Prevents Gamescope layer error spam outside of gamescope sessions
 
 -- Proton, DXVK & Wine Game Compatibility Flags
 hl.env("DXVK_ASYNC", "1")

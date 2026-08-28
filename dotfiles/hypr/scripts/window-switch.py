@@ -123,7 +123,7 @@ def main():
 
     # If user pressed Alt+X / Shift+Del (exit code 10) OR clicked the Close entry:
     if exit_code == 10 or target['action'] == 'close':
-        subprocess.run(['hyprctl', 'dispatch', 'closewindow', f"address:{target_addr}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(['hyprctl', 'eval', f'local w = hl.get_window("{target_addr}"); if w then hl.dispatch(hl.dsp.focus({{ window = w }})); hl.dispatch(hl.dsp.window.close()) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         notify("✕ Window Closed", f"Closed '{target_title}' without opening")
         sys.exit(0)
 
@@ -136,9 +136,9 @@ def main():
             active_ws_id = 1
 
         if target_ws.startswith('special'):
-            subprocess.run(['hyprctl', 'dispatch', 'movetoworkspace', f"{active_ws_id},address:{target_addr}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(['hyprctl', 'eval', f'local w = hl.get_window("{target_addr}"); if w then hl.dispatch(hl.dsp.focus({{ window = w }})); hl.dispatch(hl.dsp.window.move({{ workspace = {active_ws_id} }})) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        subprocess.run(['hyprctl', 'dispatch', 'focuswindow', f"address:{target_addr}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(['hyprctl', 'eval', f'local w = hl.get_window("{target_addr}"); if w then hl.dispatch(hl.dsp.focus({{ window = w }})) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 if __name__ == "__main__":
     main()

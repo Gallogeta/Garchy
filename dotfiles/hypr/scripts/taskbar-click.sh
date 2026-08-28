@@ -20,17 +20,33 @@ TARGET_ADDR=$(get_target_addr)
 case "$ACTION" in
     "minimize-active"|"toggle-active")
         if [ -n "$TARGET_ADDR" ] && [ "$TARGET_ADDR" != "null" ]; then
-            hyprctl dispatch movetoworkspacesilent "special:minimized,address:$TARGET_ADDR"
+            hyprctl eval '
+            local wins = hl.get_windows()
+            for _, w in ipairs(wins) do
+                if w.address == "'"$TARGET_ADDR"'" then
+                    hl.dispatch(hl.dsp.focus({ window = w }))
+                    hl.dispatch(hl.dsp.window.move({ workspace = "special:minimized", silent = true }))
+                    break
+                end
+            end
+            ' >/dev/null 2>&1
         fi
         ;;
     "maximize-active")
-        if [ -n "$TARGET_ADDR" ] && [ "$TARGET_ADDR" != "null" ]; then
-            hyprctl dispatch fullscreen 1
-        fi
+        hyprctl dispatch "hl.dsp.window.fullscreen({ mode = 1 })" >/dev/null 2>&1
         ;;
     "close-active")
         if [ -n "$TARGET_ADDR" ] && [ "$TARGET_ADDR" != "null" ]; then
-            hyprctl dispatch closewindow "address:$TARGET_ADDR"
+            hyprctl eval '
+            local wins = hl.get_windows()
+            for _, w in ipairs(wins) do
+                if w.address == "'"$TARGET_ADDR"'" then
+                    hl.dispatch(hl.dsp.focus({ window = w }))
+                    hl.dispatch(hl.dsp.window.close())
+                    break
+                end
+            end
+            ' >/dev/null 2>&1
         fi
         ;;
 esac

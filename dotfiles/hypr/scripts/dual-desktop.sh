@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Synchronized Dual-Monitor Desktop Switcher for Hyprland
+# Synchronized Dual-Monitor Desktop Switcher for Hyprland 0.56.2+
 # Pairs Workspaces:
 # Desktop 1  -> DP-2 (WS 1),  DP-1 (WS 2)
 # Desktop 2  -> DP-2 (WS 3),  DP-1 (WS 4)
@@ -30,7 +30,7 @@ RIGHT_WS=$(( 2 * NUM ))
 case "$ACTION" in
     "switch")
         # Atomically switch both monitors
-        hyprctl --batch "dispatch workspace $LEFT_WS; dispatch workspace $RIGHT_WS"
+        hyprctl --batch "dispatch hl.dsp.focus({ workspace = $LEFT_WS }); dispatch hl.dsp.focus({ workspace = $RIGHT_WS })"
         ;;
 
     "move")
@@ -40,13 +40,12 @@ case "$ACTION" in
         MON_NAME=$(echo "$ACTIVE_WIN" | jq -r '.monitor // empty')
 
         if [ -n "$ADDR" ]; then
-            # If monitor is 0 (DP-1) or contains DP-1, use RIGHT_WS; else LEFT_WS
             if [ "$MON_NAME" = "0" ] || [ "$MON_NAME" = "DP-1" ]; then
                 TARGET_WS=$RIGHT_WS
             else
                 TARGET_WS=$LEFT_WS
             fi
-            hyprctl dispatch movetoworkspace "$TARGET_WS,address:$ADDR"
+            hyprctl dispatch "hl.dsp.window.move({ workspace = $TARGET_WS })"
         fi
         ;;
 
@@ -61,7 +60,7 @@ case "$ACTION" in
             else
                 TARGET_WS=$LEFT_WS
             fi
-            hyprctl dispatch movetoworkspacesilent "$TARGET_WS,address:$ADDR"
+            hyprctl dispatch "hl.dsp.window.move({ workspace = $TARGET_WS })"
         fi
         ;;
 esac

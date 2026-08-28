@@ -1,169 +1,39 @@
 /**
- * Gally OS - Main App Launcher
+ * =============================================================================
+ * 🌌 Garchy OS — Master Rofi Configuration
+ * =============================================================================
  */
 
 configuration {
     modi: "drun,run,window";
+    font: "JetBrainsMono Nerd Font 12";
     show-icons: true;
-    icon-theme: "Papirus";
+    icon-theme: "Papirus-Dark";
     drun-display-format: "{name}";
-    window-format: "{w}  ·  {c}  ·  {t}";
-    font: "JetBrainsMono Nerd Font 11";
-
-    location: 0;
-    fixed-num-lines: true;
-    sidebar-mode: true;
     matching: "fuzzy";
     sort: true;
     sorting-method: "normal";
+    cycle: false;
+    scroll-method: 0; /* 0 = Discrete page mode (prevents auto-scrolling; user must explicitly scroll) */
+
+    /* Seamless Mouse Hover & Instant Single-Click Launch */
+    hover-select: true;
+    me-select-entry: "";
+    me-accept-entry: "MousePrimary";
+    me-accept-custom: "Control+MousePrimary";
+
+    /* Fully Functional Mouse Wheel Scrolling */
+    ml-row-up: "ScrollUp";
+    ml-row-down: "ScrollDown";
+    ml-row-left: "ScrollLeft";
+    ml-row-right: "ScrollRight";
+
     click-to-exit: true;
 
-    hover-select: true;
-    me-select-entry: "MouseSecondary";
-    me-accept-entry: "MousePrimary";
-
-    display-drun: "󰀻  Apps";
-    display-run: "  Commands";
-    display-window: "󰖯  Windows";
+    /* Display Labels */
+    display-drun: "🔍 Search Apps:";
+    display-run: "  Run:";
+    display-window: "󰖯  Windows:";
 }
 
-* {
-    background-color: transparent;
-    text-color: #f1f5f9;
-    margin: 0px;
-    padding: 0px;
-    spacing: 0px;
-}
-
-window {
-    location: center;
-    anchor: center;
-    width: 720px;
-    height: 500px;
-    background-color: #070b14;
-    border: 2px;
-    border-color: #38bdf8;
-    border-radius: 16px;
-    padding: 16px;
-    cursor: "default";
-}
-
-mainbox {
-    orientation: vertical;
-    background-color: transparent;
-    spacing: 12px;
-    children: [ mode-switcher, inputbar, listview, message ];
-}
-
-mode-switcher {
-    spacing: 8px;
-    background-color: transparent;
-}
-
-button {
-    padding: 7px 14px;
-    background-color: #0f172a;
-    text-color: #94a3b8;
-    border-radius: 10px;
-    border: 1px;
-    border-color: #334155;
-    cursor: pointer;
-    font: "JetBrainsMono Nerd Font Bold 11";
-}
-
-button selected {
-    background-color: #38bdf8;
-    text-color: #000000;
-    border: 1px;
-    border-color: #38bdf8;
-}
-
-inputbar {
-    padding: 10px 14px;
-    background-color: #0f172a;
-    border-radius: 10px;
-    border: 1px;
-    border-color: #38bdf8;
-    children: [ prompt, entry ];
-    spacing: 10px;
-}
-
-prompt {
-    text-color: #38bdf8;
-    font: "JetBrainsMono Nerd Font Bold 11";
-    vertical-align: 0.5;
-}
-
-entry {
-    placeholder: "Search applications or commands...";
-    placeholder-color: #94a3b8;
-    text-color: #ffffff;
-    cursor: text;
-    vertical-align: 0.5;
-}
-
-listview {
-    columns: 1;
-    lines: 7;
-    cycle: true;
-    dynamic: true;
-    scrollbar: true;
-    layout: vertical;
-    spacing: 6px;
-    background-color: transparent;
-}
-
-scrollbar {
-    width: 5px;
-    border: 0px;
-    handle-width: 5px;
-    handle-color: #38bdf8;
-    border-radius: 6px;
-    background-color: rgba(255, 255, 255, 0.08);
-    margin: 0px 0px 0px 8px;
-}
-
-element {
-    padding: 9px 12px;
-    border-radius: 8px;
-    background-color: transparent;
-    text-color: #f1f5f9;
-    spacing: 10px;
-    cursor: pointer;
-}
-
-element normal.normal {
-    background-color: transparent;
-    text-color: #f1f5f9;
-}
-
-element selected.normal {
-    background-color: #38bdf8;
-    text-color: #000000;
-    border-radius: 8px;
-}
-
-element-icon {
-    size: 22px;
-    cursor: inherit;
-    vertical-align: 0.5;
-}
-
-element-text {
-    font: "JetBrainsMono Nerd Font Medium 11";
-    cursor: inherit;
-    vertical-align: 0.5;
-    text-color: inherit;
-}
-
-message {
-    padding: 8px;
-    border-radius: 8px;
-    background-color: #0f172a;
-    border: 1px;
-    border-color: #334155;
-}
-
-textbox {
-    text-color: #f1f5f9;
-}
+@theme "~/.config/rofi/launchpad.rasi"

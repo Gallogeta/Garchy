@@ -14,17 +14,19 @@ def get_hypr_data():
         print(f"Error fetching hyprctl data: {e}", file=sys.stderr)
         return {}, [], [], {}
 
-def close_special_workspaces_if_open(monitors):
+def ensure_special_workspace_hidden(monitors):
     for m in monitors:
         sw = m.get('specialWorkspace', {})
         sw_name = sw.get('name', '')
         if sw.get('id', 0) != 0 and sw_name:
             clean_name = sw_name.replace('special:', '')
-            subprocess.run(['hyprctl', 'dispatch', 'togglespecialworkspace', clean_name],
+            subprocess.run(['hyprctl', 'dispatch', f'hl.dsp.workspace.toggle_special("{clean_name}")'],
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def get_target_workspace_and_window():
     cursor, monitors, clients, active_win = get_hypr_data()
+    ensure_special_workspace_hidden(monitors)
+
     if not monitors:
         return 1, None, [], clients, monitors
 
@@ -70,9 +72,9 @@ def get_target_workspace_and_window():
 
     return target_ws_id, target_win, ws_clients, clients, monitors
 
-def dispatch(cmd, arg=""):
+def eval_lua(code):
     try:
-        subprocess.run(['hyprctl', 'dispatch', cmd, arg], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(['hyprctl', 'eval', code], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception:
         pass
 
@@ -84,56 +86,74 @@ def notify(title, msg):
 
 def do_minimize():
     ws_id, target_win, ws_clients, clients, monitors = get_target_workspace_and_window()
-    close_special_workspaces_if_open(monitors)
     if target_win and target_win.get('address'):
         addr = target_win['address']
         title = target_win.get('title', 'Window')
-        if target_win.get('fullscreen', 0) != 0:
-            dispatch('fullscreen', '0')
-        dispatch('movetoworkspacesilent', f"special:minimized,address:{addr}")
-        dispatch('cyclenext')
+        lua = f'''
+        local wins = hl.get_windows()
+        for _, w in ipairs(wins) do
+            if w.address == "{addr}" then
+                hl.dispatch(hl.dsp.focus({{ window = w }}))
+                hl.dispatch(hl.dsp.window.move({{ workspace = "special:minimized", silent = true }}))
+                break
+            end
+        end
+        '''
+        eval_lua(lua)
         notify("Window Minimized", title)
     else:
         notify("No Windows", f"Workspace {ws_id} has no windows to minimize.")
 
 def do_minimize_all():
     ws_id, _, ws_clients, clients, monitors = get_target_workspace_and_window()
-    close_special_workspaces_if_open(monitors)
     if ws_clients:
         count = len(ws_clients)
         for win in ws_clients:
             addr = win.get('address')
             if addr:
-                if win.get('fullscreen', 0) != 0:
-                    dispatch('fullscreen', '0')
-                dispatch('movetoworkspacesilent', f"special:minimized,address:{addr}")
+                lua = f'''
+                local wins = hl.get_windows()
+                for _, w in ipairs(wins) do
+                    if w.address == "{addr}" then
+                        hl.dispatch(hl.dsp.focus({{ window = w }}))
+                        hl.dispatch(hl.dsp.window.move({{ workspace = "special:minimized", silent = true }}))
+                        break
+                    end
+                end
+                '''
+                eval_lua(lua)
         notify("Desktop Minimized", f"Minimized {count} window(s) on Workspace {ws_id}")
     else:
         notify("No Windows", f"Workspace {ws_id} has no windows to minimize.")
 
 def do_restore_last():
     ws_id, _, _, all_clients, monitors = get_target_workspace_and_window()
-    close_special_workspaces_if_open(monitors)
     minimized_clients = [
         c for c in all_clients
         if c.get('workspace', {}).get('name', '') == 'special:minimized'
     ]
 
     if minimized_clients:
-        # Take the last minimized window
         last_win = minimized_clients[-1]
         addr = last_win['address']
         title = last_win.get('title', 'Window')
-        dispatch('movetoworkspace', f"{ws_id},address:{addr}")
-        dispatch('focuswindow', f"address:{addr}")
+        lua = f'''
+        local wins = hl.get_windows()
+        for _, w in ipairs(wins) do
+            if w.address == "{addr}" then
+                hl.dispatch(hl.dsp.focus({{ window = w }}))
+                hl.dispatch(hl.dsp.window.move({{ workspace = {ws_id} }}))
+                break
+            end
+        end
+        '''
+        eval_lua(lua)
         notify("Window Restored", f"Restored '{title}' to Workspace {ws_id}")
     else:
-        # If none minimized, open window switch menu
-        subprocess.Popen(['$HOME/.config/hypr/scripts/window-switch.sh'])
+        subprocess.Popen(['/home/gallo/.config/hypr/scripts/window-switch.sh'])
 
 def do_restore_all():
     ws_id, _, _, all_clients, monitors = get_target_workspace_and_window()
-    close_special_workspaces_if_open(monitors)
     minimized_clients = [
         c for c in all_clients
         if c.get('workspace', {}).get('name', '') == 'special:minimized'
@@ -142,7 +162,17 @@ def do_restore_all():
         for win in minimized_clients:
             addr = win.get('address')
             if addr:
-                dispatch('movetoworkspace', f"{ws_id},address:{addr}")
+                lua = f'''
+                local wins = hl.get_windows()
+                for _, w in ipairs(wins) do
+                    if w.address == "{addr}" then
+                        hl.dispatch(hl.dsp.focus({{ window = w }}))
+                        hl.dispatch(hl.dsp.window.move({{ workspace = {ws_id} }}))
+                        break
+                    end
+                end
+                '''
+                eval_lua(lua)
         notify("Restored All", f"Restored {len(minimized_clients)} window(s) to Workspace {ws_id}")
 
 def do_toggle_all():
@@ -160,16 +190,23 @@ def do_toggle():
         do_restore_last()
 
 def do_maximize_toggle():
-    ws_id, target_win, ws_clients, _, monitors = get_target_workspace_and_window()
-    close_special_workspaces_if_open(monitors)
-    if target_win and target_win.get('address'):
-        dispatch('focuswindow', f"address:{target_win['address']}")
-        dispatch('fullscreen', '1')
+    ensure_special_workspace_hidden(get_hypr_data()[1])
+    eval_lua('hl.dispatch(hl.dsp.window.fullscreen({ mode = 1 }))')
 
 def do_close():
     ws_id, target_win, ws_clients, _, monitors = get_target_workspace_and_window()
     if target_win and target_win.get('address'):
-        dispatch('closewindow', f"address:{target_win['address']}")
+        addr = target_win['address']
+        eval_lua(f'''
+        local wins = hl.get_windows()
+        for _, w in ipairs(wins) do
+            if w.address == "{addr}" then
+                hl.dispatch(hl.dsp.focus({{ window = w }}))
+                hl.dispatch(hl.dsp.window.close())
+                break
+            end
+        end
+        ''')
 
 def main():
     action = sys.argv[1] if len(sys.argv) > 1 else "minimize"
@@ -191,7 +228,7 @@ def main():
     elif action == "close-window":
         do_close()
     elif action == "menu":
-        subprocess.Popen(['$HOME/.config/hypr/scripts/minimized-manager.py'])
+        subprocess.Popen(['/home/gallo/.config/hypr/scripts/minimized-manager.py'])
     else:
         do_minimize()
 

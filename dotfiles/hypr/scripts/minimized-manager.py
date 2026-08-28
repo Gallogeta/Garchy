@@ -109,7 +109,7 @@ def main():
     action = target['action']
 
     if action == "close":
-        subprocess.run(['hyprctl', 'dispatch', 'closewindow', f"address:{target_addr}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(['hyprctl', 'eval', f'local w = hl.get_window("{target_addr}"); if w then hl.dispatch(hl.dsp.focus({{ window = w }})); hl.dispatch(hl.dsp.window.close()) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         notify("✕ Window Closed", f"Closed '{target_title}' without opening.")
     elif action == "restore":
         try:
@@ -119,8 +119,8 @@ def main():
             active_ws_id = 1
 
         # Restore ONLY this specific window to current workspace
-        subprocess.run(['hyprctl', 'dispatch', 'movetoworkspace', f"{active_ws_id},address:{target_addr}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        subprocess.run(['hyprctl', 'dispatch', 'focuswindow', f"address:{target_addr}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(['hyprctl', 'eval', f'local w = hl.get_window("{target_addr}"); if w then hl.dispatch(hl.dsp.focus({{ window = w }})); hl.dispatch(hl.dsp.window.move({{ workspace = {active_ws_id} }})) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(['hyprctl', 'eval', f'local w = hl.get_window("{target_addr}"); if w then hl.dispatch(hl.dsp.focus({{ window = w }})) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         notify("Window Restored", f"Restored '{target_title}' to Workspace {active_ws_id}.")
 
 if __name__ == "__main__":
