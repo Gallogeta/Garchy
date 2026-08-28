@@ -65,8 +65,11 @@ hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("magic"))
 hl.bind(mainMod .. " + CTRL + S", hl.dsp.window.move({ workspace = "special:magic" }))
 
 -- Screenshots (Grim + Slurp)
-hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd(home .. "/.config/hypr/scripts/screenshot.sh region"))
+hl.bind("F11", hl.dsp.exec_cmd(home .. "/.config/hypr/scripts/screenshot.sh region"))
+hl.bind("SHIFT + F11", hl.dsp.exec_cmd(home .. "/.config/hypr/scripts/screenshot.sh full"))
+hl.bind(mainMod .. " + F11", hl.dsp.exec_cmd(home .. "/.config/hypr/scripts/screenshot.sh window"))
 hl.bind("Print", hl.dsp.exec_cmd(home .. "/.config/hypr/scripts/screenshot.sh full"))
+hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd(home .. "/.config/hypr/scripts/screenshot.sh region"))
 hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd(home .. "/.config/hypr/scripts/screenshot.sh window"))
 
 -- Mouse Window Control
