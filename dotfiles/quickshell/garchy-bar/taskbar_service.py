@@ -318,16 +318,10 @@ def handle_action(action, addr, cmd=""):
             ''')
 
     elif action == "close":
-        eval_lua(f'''
-        local wins = hl.get_windows()
-        for _, w in ipairs(wins) do
-            if w.address == "{addr}" then
-                hl.dispatch(hl.dsp.focus({{ window = w }}))
-                hl.dispatch(hl.dsp.window.close())
-                break
-            end
-        end
-        ''')
+        try:
+            subprocess.run(["hyprctl", "dispatch", "closewindow", f"address:{addr}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
 
     elif action == "focus":
         if is_min:

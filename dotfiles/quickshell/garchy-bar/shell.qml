@@ -531,6 +531,16 @@ ShellRoot {
                                         border.color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold + "88" : root.colBorder)
                                         border.width: 1
 
+                                        MouseArea {
+                                            id: itemMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            onClicked: {
+                                                root.dispatchAction("focus", modelData.address);
+                                                groupMenuPopup.visible = false;
+                                            }
+                                        }
+
                                         RowLayout {
                                             anchors.fill: parent
                                             anchors.leftMargin: 10
@@ -584,21 +594,13 @@ ShellRoot {
                                                     id: winCloseMouse
                                                     anchors.fill: parent
                                                     hoverEnabled: true
-                                                    onClicked: {
+                                                    acceptedButtons: Qt.LeftButton
+                                                    onClicked: mouse => {
+                                                        mouse.accepted = true;
                                                         root.dispatchAction("close", modelData.address);
                                                         groupMenuPopup.visible = false;
                                                     }
                                                 }
-                                            }
-                                        }
-
-                                        MouseArea {
-                                            id: itemMouse
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            onClicked: {
-                                                root.dispatchAction("focus", modelData.address);
-                                                groupMenuPopup.visible = false;
                                             }
                                         }
                                     }
@@ -1681,6 +1683,16 @@ ShellRoot {
                                         border.color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold + "88" : root.colBorder)
                                         border.width: 1
 
+                                        MouseArea {
+                                            id: secItemMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            onClicked: {
+                                                root.dispatchAction("focus", modelData.address);
+                                                secGroupMenuPopup.visible = false;
+                                            }
+                                        }
+
                                         RowLayout {
                                             anchors.fill: parent
                                             anchors.leftMargin: 10
@@ -1734,21 +1746,13 @@ ShellRoot {
                                                     id: secWinCloseMouse
                                                     anchors.fill: parent
                                                     hoverEnabled: true
-                                                    onClicked: {
+                                                    acceptedButtons: Qt.LeftButton
+                                                    onClicked: mouse => {
+                                                        mouse.accepted = true;
                                                         root.dispatchAction("close", modelData.address);
                                                         secGroupMenuPopup.visible = false;
                                                     }
                                                 }
-                                            }
-                                        }
-
-                                        MouseArea {
-                                            id: secItemMouse
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            onClicked: {
-                                                root.dispatchAction("focus", modelData.address);
-                                                secGroupMenuPopup.visible = false;
                                             }
                                         }
                                     }
