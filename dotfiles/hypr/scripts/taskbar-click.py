@@ -2,7 +2,7 @@
 """
 Garchy OS — Taskbar & Window Controls Click Dispatcher
 Coordinates 1-click minimize, maximize, and close operations across dual monitors.
-Uses hidden background workspace 99 for 100% invisible minimization.
+Uses hidden background workspace 99 with atomic dual-monitor workspace retention.
 """
 
 import sys
@@ -25,17 +25,19 @@ def notify(title, msg):
     except Exception:
         pass
 
-def get_target_window():
+def get_target_window_and_monitors():
     try:
         cursor = json.loads(subprocess.check_output(['hyprctl', 'cursorpos', '-j'], stderr=subprocess.DEVNULL))
         monitors = json.loads(subprocess.check_output(['hyprctl', 'monitors', '-j'], stderr=subprocess.DEVNULL))
         clients = json.loads(subprocess.check_output(['hyprctl', 'clients', '-j'], stderr=subprocess.DEVNULL))
         active_win = json.loads(subprocess.check_output(['hyprctl', 'activewindow', '-j'], stderr=subprocess.DEVNULL))
     except Exception:
-        return None, 1
+        return None, 1, {}
 
     cx = cursor.get('x', 0)
     cy = cursor.get('y', 0)
+
+    ws_map = { m['name']: m['activeWorkspace']['id'] for m in monitors }
 
     # 1. Determine target monitor by cursor position
     target_mon = None
@@ -87,7 +89,13 @@ def get_target_window():
             target_win = normal_clients[0]
             target_ws_id = target_win.get('workspace', {}).get('id', 1)
 
-    return target_win, target_ws_id
+    return target_win, target_ws_id, ws_map
+
+def restore_monitors_workspaces(ws_map):
+    if not ws_map:
+        return
+    batch_cmds = ' ; '.join([f'dispatch hl.dsp.focus({{ workspace = {ws} }})' for ws in ws_map.values()])
+    subprocess.run(['hyprctl', '--batch', batch_cmds], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def save_minimized_history(win_data):
     try:
@@ -104,7 +112,7 @@ def save_minimized_history(win_data):
         pass
 
 def do_minimize():
-    win, ws_id = get_target_window()
+    win, ws_id, ws_map = get_target_window_and_monitors()
     if not win or not win.get('address'):
         notify("No Windows", "No active window on this workspace to minimize.")
         return
@@ -118,12 +126,13 @@ def do_minimize():
     for _, w in ipairs(wins) do
         if w.address == "{addr}" then
             hl.dispatch(hl.dsp.window.move({{ window = w, workspace = {MINIMIZED_WS}, silent = true }}))
-            hl.dispatch(hl.dsp.focus({{ workspace = {ws_id} }}))
             break
         end
     end
     '''
     eval_lua(lua)
+    restore_monitors_workspaces(ws_map)
+
     save_minimized_history({
         "address": addr,
         "title": title,
@@ -133,7 +142,7 @@ def do_minimize():
     notify("Window Minimized", f"{c_class} — {title[:30]}")
 
 def do_maximize():
-    win, _ = get_target_window()
+    win, _, _ = get_target_window_and_monitors()
     if not win or not win.get('address'):
         return
 
@@ -151,7 +160,7 @@ def do_maximize():
     eval_lua(lua)
 
 def do_close():
-    win, _ = get_target_window()
+    win, _, _ = get_target_window_and_monitors()
     if not win or not win.get('address'):
         return
 
@@ -173,7 +182,7 @@ def do_close():
     notify("Window Closed", f"Closed {c_class} — {title[:25]}")
 
 def main():
-    action = sys.argv[1] if len(sys.argv) > 1 else "minimize"
+    action = sys.argv[1] if len(sys.argv) > 1 else "minimize-active"
 
     if action in ("minimize-active", "toggle-active", "minimize"):
         do_minimize()

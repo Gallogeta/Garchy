@@ -2,7 +2,7 @@
 """
 Garchy OS — Grouped Taskbar Click & Dropdown Handler
 Provides instant single-window minimize/restore toggle, and multi-window dropdown selector.
-Uses hidden background workspace 99 for 100% invisible minimization.
+Uses hidden background workspace 99 with atomic dual-monitor workspace retention.
 """
 
 import sys
@@ -35,6 +35,14 @@ def get_hypr_state():
         return {}, [], [], {}
     return cursor, monitors, clients, active_win
 
+def restore_monitors_workspaces(monitors):
+    if not monitors:
+        return
+    ws_list = [m['activeWorkspace']['id'] for m in monitors if m.get('activeWorkspace', {}).get('id') != MINIMIZED_WS]
+    if ws_list:
+        batch_cmds = ' ; '.join([f'dispatch hl.dsp.focus({{ workspace = {ws} }})' for ws in ws_list])
+        subprocess.run(['hyprctl', '--batch', batch_cmds], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
 def get_active_workspace(monitors, cursor):
     cx = cursor.get('x', 0)
     cy = cursor.get('y', 0)
@@ -53,11 +61,10 @@ def get_active_workspace(monitors, cursor):
         target_mon = monitors[0]
     return target_mon['activeWorkspace']['id'] if target_mon else 1
 
-def open_dropdown_menu(clients, active_addr, active_ws_id):
+def open_dropdown_menu(clients, active_addr, active_ws_id, monitors):
     entries = []
     rofi_lines = []
 
-    # Filter out special workspaces, only keep user apps + minimized (WS 99)
     valid_clients = [c for c in clients if not c.get('workspace', {}).get('name', '').startswith('special')]
 
     # 1. Quick Global Actions if multiple windows exist
@@ -161,7 +168,7 @@ def open_dropdown_menu(clients, active_addr, active_ws_id):
                     end
                 end
                 ''')
-        eval_lua(f'hl.dispatch(hl.dsp.focus({{ workspace = {active_ws_id} }}))')
+        restore_monitors_workspaces(monitors)
         notify("Minimized All", f"Minimized {len(valid_clients)} windows")
 
     elif action == "select_window":
@@ -171,11 +178,11 @@ def open_dropdown_menu(clients, active_addr, active_ws_id):
             for _, w in ipairs(wins) do
                 if w.address == "{target_addr}" then
                     hl.dispatch(hl.dsp.window.move({{ window = w, workspace = {MINIMIZED_WS}, silent = true }}))
-                    hl.dispatch(hl.dsp.focus({{ workspace = {active_ws_id} }}))
                     break
                 end
             end
             ''')
+            restore_monitors_workspaces(monitors)
             notify("Window Minimized", target_title)
         else:
             eval_lua(f'''
@@ -214,11 +221,11 @@ def main():
             for _, w in ipairs(wins) do
                 if w.address == "{addr}" then
                     hl.dispatch(hl.dsp.window.move({{ window = w, workspace = {MINIMIZED_WS}, silent = true }}))
-                    hl.dispatch(hl.dsp.focus({{ workspace = {active_ws_id} }}))
                     break
                 end
             end
             ''')
+            restore_monitors_workspaces(monitors)
             notify("Window Minimized", title[:30])
         else:
             eval_lua(f'''
@@ -235,7 +242,7 @@ def main():
         sys.exit(0)
 
     # Otherwise open dropdown menu
-    open_dropdown_menu(clients, active_addr, active_ws_id)
+    open_dropdown_menu(clients, active_addr, active_ws_id, monitors)
 
 if __name__ == "__main__":
     main()
