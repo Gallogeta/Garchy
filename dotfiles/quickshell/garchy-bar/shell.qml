@@ -43,6 +43,7 @@ ShellRoot {
         if (json.accent) root.colAccent = json.accent;
         if (json.accent_alt) root.colAccentAlt = json.accent_alt;
         if (json.border || json.border_col) root.colBorder = json.border || json.border_col;
+        else if (json.accent) root.colBorder = json.accent;
         if (json.gold) root.colGold = json.gold;
         if (json.rounding !== undefined) root.themeRounding = parseInt(json.rounding);
         else if (json.hypr_rounding !== undefined) root.themeRounding = parseInt(json.hypr_rounding);
@@ -53,6 +54,11 @@ ShellRoot {
     FileView {
         path: "/home/gallo/.config/gally/active_theme.json"
         watchChanges: true
+        onLoaded: {
+            try {
+                root.applyThemeJson(JSON.parse(text()));
+            } catch(e) {}
+        }
         onFileChanged: {
             try {
                 root.applyThemeJson(JSON.parse(text()));
@@ -63,6 +69,11 @@ ShellRoot {
     FileView {
         path: "/home/gallo/.cache/garchy_theme.json"
         watchChanges: true
+        onLoaded: {
+            try {
+                root.applyThemeJson(JSON.parse(text()));
+            } catch(e) {}
+        }
         onFileChanged: {
             try {
                 root.applyThemeJson(JSON.parse(text()));

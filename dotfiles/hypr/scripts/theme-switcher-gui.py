@@ -370,8 +370,9 @@ class ModernThemeSwitcherApp(ctk.CTk):
                     content = f.read()
 
                 rounding = t.get("hypr_rounding", t.get("rounding", 12))
-                colors_list = t.get("colors", [t["accent"], t.get("accent_alt", t["accent"])])
-                active_colors = [f'"rgba({c.lstrip("#")}ee)"' for c in colors_list[:3]]
+                accent_clean = t.get("accent", "#38bdf8").lstrip("#")
+                accent_alt_clean = t.get("accent_alt", t.get("accent", "#3b82f6")).lstrip("#")
+                active_colors = [f'"rgba({accent_clean}ee)"', f'"rgba({accent_alt_clean}ee)"']
                 inactive_col = f'"rgba({t.get("bg", "#0a0f1d").lstrip("#")}88)"'
 
                 content = re.sub(r'rounding\s*=\s*\d+', f'rounding = {rounding}', content)
@@ -416,6 +417,7 @@ class ModernThemeSwitcherApp(ctk.CTk):
             "accent": t["accent"],
             "accent_alt": t.get("accent_alt", t["accent"]),
             "border_col": t.get("border", t.get("accent", "#38bdf8")),
+            "border": t.get("border", t.get("accent", "#38bdf8")),
             "rounding": t.get("hypr_rounding", t.get("rounding", 12)),
             "bar_height": t.get("bar_height", 46),
             "layout_style": t.get("layout_style", "garchy"),
@@ -434,6 +436,7 @@ class ModernThemeSwitcherApp(ctk.CTk):
                 "accent": t["accent"],
                 "accent_alt": t.get("accent_alt", t["accent"]),
                 "border": t.get("border", t.get("accent", "#38bdf8")),
+                "border_col": t.get("border", t.get("accent", "#38bdf8")),
                 "gold": t.get("colors", ["#fbbf24"])[-1] if len(t.get("colors", [])) > 4 else "#fbbf24",
                 "rounding": t.get("hypr_rounding", t.get("rounding", 12)),
                 "bar_height": t.get("bar_height", 46),

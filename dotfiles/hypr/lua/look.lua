@@ -22,7 +22,7 @@ hl.config({
         gaps_out = 8,
         border_size = 2,
         col = {
-            active_border = { colors = { "rgba(0a0f1dee)", "rgba(38bdf8ee)", "rgba(3b82f6ee)" }, angle = 45 },
+            active_border = { colors = { "rgba(38bdf8ee)", "rgba(fbbf24ee)" }, angle = 45 },
             inactive_border = "rgba(0a0f1d88)",
         },
         resize_on_border = true,
