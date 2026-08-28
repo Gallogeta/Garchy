@@ -60,3 +60,22 @@ In this milestone, we performed comprehensive system-wide memory optimizations t
 5. `/home/gallo/.config/xfce4/xfconf/xfce-perchannel-xml/displays.xml` & `/home/gallo/.xprofile` — Dual 144Hz display configurations.
 6. `/home/gallo/.config/hypr/scripts/gally_ai_router.py` & `/home/gallo/.local/bin/ai` — 3-Tier Gally AI routing engine.
 7. `/home/gallo/.config/picom/picom.conf` & `/home/gallo/Garchy/dotfiles/picom/` — Tuned Picom compositor profile.
+
+### 5. 🎮 Native Hyprland Lua (`*.lua`) & 144Hz Gaming Pipeline
+* **Hyprland v0.55+ / v0.56+ Native Modular Lua Architecture**:
+  * Migrated monolithic configuration to modular architecture under `~/.config/hypr/lua/`:
+    * `monitors.lua`: Programmatic loop configuring dual 144Hz displays (`DP-2` left, `DP-1` right) and 20 paired workspaces.
+    * `env.lua`: NVIDIA GA102 / RTX 3080 Ti hardware acceleration, direct DRM devices, G-Sync / VRR, and DXVK async shader flags.
+    * `look.lua`: Garchy cyber glassmorphic aesthetics, borders, dual-kawase blur, `direct_scanout = 1`, `allow_tearing = true`, and raw 1:1 `accel_profile = "flat"`.
+    * `animations.lua`: 144Hz snappy cubic-bezier animation curves for instantaneous window mapping.
+    * `autostart.lua`: Daemons, audio, clipboard, polkit, and Gally storage automounter.
+    * `keybinds.lua`: Comprehensive keyboard navigation matrix (Vim HJKL + arrows + media + dual-desktop scripts).
+    * `rules.lua`: Glassmorphic opacity rules, floating HUDs, PiP media, and gaming compatibility (direct tearing on `DP-2`, Fallout 4 borderless, MO2/LOOT/FO4Edit float, idle inhibition).
+* **GameMode & MangoHud Rice**:
+  * Configured `~/.config/gamemode.ini` with CPU performance governor, renice 10, RTX 3080 Ti maximum performance powerizer, and desktop notifications.
+  * Created `~/.config/MangoHud/MangoHud.conf` styled in Garchy 5-color palette (Obsidian glass `#0a0f1d`, cyan `#38bdf8`, gold `#fbbf24`, silver `#e2e8f0`).
+  * Created `~/.local/bin/garchy-game` launcher and hardware telemetry utility.
+* **Fallout 4 GOTY 144Hz Modding Stack**:
+  * Set `DynamicUpdateBudget = true` & `BudgetMaxFPS = 144` in `Data/F4SE/Plugins/HighFPSPhysicsFix.ini`.
+  * Upgraded `~/launch_fallout4.sh` with F4SE loader, automatic drive mounting, GE-Proton / Proton 9 selection, and GameMode integration.
+  * Upgraded `~/auto_install_fallout_mods.sh` for MO2 mod ingestion.
