@@ -163,10 +163,18 @@ def get_windows_state():
                 w_copy['icon'] = grp['icon']
                 minimized_windows.append(w_copy)
 
-    # Rich Tray Services (Discord, Steam, Spotify, etc.)
+    # Only Running Background & Minimized Services (Offline services excluded)
     tray_services = []
-    for t in TRAY_TARGETS:
-        # Check if window exists
+    added_classes = set()
+
+    # 1. Background / Tray apps (Discord, Steam, etc.)
+    KNOWN_TRAY_BACKGROUNDS = [
+        {"name": "Discord", "class_names": ["discord", "vesktop", "Discord"], "icon": "discord", "cmd": "discord"},
+        {"name": "Steam", "class_names": ["steam", "Steam"], "icon": "steam", "cmd": "steam"},
+        {"name": "Heroic Games", "class_names": ["heroic", "Heroic"], "icon": "heroic", "cmd": "heroic"},
+    ]
+
+    for t in KNOWN_TRAY_BACKGROUNDS:
         matching_win = None
         for c in valid_clients:
             if c.get('class') in t['class_names']:
@@ -186,10 +194,11 @@ def get_windows_state():
                 "address": matching_win.get('address', ''),
                 "title": matching_win.get('title', t["name"]),
                 "is_minimized": is_min,
-                "status_text": "Minimized" if is_min else f"Active on WS {ws_name}"
+                "status_text": "Minimized" if is_min else f"Active (WS {ws_name})"
             })
+            for cn in t['class_names']:
+                added_classes.add(cn)
         else:
-            # Check process
             try:
                 p_check = subprocess.run(["pgrep", "-f", t["cmd"]], capture_output=True, text=True)
                 is_proc = bool(p_check.stdout.strip())
@@ -204,22 +213,29 @@ def get_windows_state():
                     "is_running": True,
                     "has_window": False,
                     "address": "",
-                    "title": "Running in Tray / Background",
+                    "title": "Running in Tray",
                     "is_minimized": True,
                     "status_text": "Background Tray"
                 })
-            else:
-                tray_services.append({
-                    "name": t["name"],
-                    "icon": t["icon"],
-                    "cmd": t["cmd"],
-                    "is_running": False,
-                    "has_window": False,
-                    "address": "",
-                    "title": "Offline",
-                    "is_minimized": False,
-                    "status_text": "Offline"
-                })
+                for cn in t['class_names']:
+                    added_classes.add(cn)
+
+    # 2. Add any other minimized windows (Brave, Kitty, Code, Thunar, etc.)
+    for w in minimized_windows:
+        cls = w.get('class', '')
+        if cls not in added_classes:
+            tray_services.append({
+                "name": cls.capitalize(),
+                "icon": w.get('icon', 'application-x-executable'),
+                "cmd": cls.lower(),
+                "is_running": True,
+                "has_window": True,
+                "address": w.get('address', ''),
+                "title": w.get('title', cls),
+                "is_minimized": True,
+                "status_text": "Minimized"
+            })
+            added_classes.add(cls)
 
     return {
         "groups": groups_list,
