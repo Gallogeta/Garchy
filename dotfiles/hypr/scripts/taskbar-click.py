@@ -2,6 +2,7 @@
 """
 Garchy OS — Taskbar & Window Controls Click Dispatcher
 Coordinates 1-click minimize, maximize, and close operations across dual monitors.
+Uses hidden background workspace 99 for 100% invisible minimization.
 """
 
 import sys
@@ -10,6 +11,7 @@ import subprocess
 import os
 
 STATE_FILE = os.path.expanduser("~/.cache/garchy_minimized_history.json")
+MINIMIZED_WS = 99
 
 def eval_lua(code):
     try:
@@ -58,6 +60,7 @@ def get_target_window():
     ws_clients = [
         c for c in clients
         if c.get('workspace', {}).get('id') == target_ws_id
+        and c.get('workspace', {}).get('id') != MINIMIZED_WS
         and not c.get('workspace', {}).get('name', '').startswith('special')
     ]
 
@@ -72,9 +75,13 @@ def get_target_window():
         ws_clients.sort(key=lambda c: c.get('focusHistoryID', 999))
         target_win = ws_clients[0]
 
-    # Fallback to any active window across all workspaces if empty
+    # Fallback to any active window across all visible workspaces if empty
     if not target_win and clients:
-        normal_clients = [c for c in clients if not c.get('workspace', {}).get('name', '').startswith('special')]
+        normal_clients = [
+            c for c in clients
+            if c.get('workspace', {}).get('id') != MINIMIZED_WS
+            and not c.get('workspace', {}).get('name', '').startswith('special')
+        ]
         if normal_clients:
             normal_clients.sort(key=lambda c: c.get('focusHistoryID', 999))
             target_win = normal_clients[0]
@@ -110,7 +117,8 @@ def do_minimize():
     local wins = hl.get_windows()
     for _, w in ipairs(wins) do
         if w.address == "{addr}" then
-            hl.dispatch(hl.dsp.window.move({{ window = w, workspace = "special:minimized", silent = true }}))
+            hl.dispatch(hl.dsp.window.move({{ window = w, workspace = {MINIMIZED_WS}, silent = true }}))
+            hl.dispatch(hl.dsp.focus({{ workspace = {ws_id} }}))
             break
         end
     end
@@ -165,7 +173,7 @@ def do_close():
     notify("Window Closed", f"Closed {c_class} — {title[:25]}")
 
 def main():
-    action = sys.argv[1] if len(sys.argv) > 1 else "minimize-active"
+    action = sys.argv[1] if len(sys.argv) > 1 else "minimize"
 
     if action in ("minimize-active", "toggle-active", "minimize"):
         do_minimize()

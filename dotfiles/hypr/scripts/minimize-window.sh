@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
 Garchy OS — Window Minimization & Restoration Engine (Hyprland Lua)
-Provides silent, reliable window minimization, single/multi-window tracking,
-and instant selective restoration.
+Provides silent, reliable window minimization to background workspace 99.
 """
 
 import os
@@ -11,6 +10,7 @@ import json
 import subprocess
 
 STATE_FILE = os.path.expanduser("~/.cache/garchy_minimized_history.json")
+MINIMIZED_WS = 99
 
 def eval_lua(code):
     try:
@@ -24,27 +24,14 @@ def notify(title, msg):
     except Exception:
         pass
 
-def get_hypr_data():
+def get_active_context():
     try:
         cursor = json.loads(subprocess.check_output(['hyprctl', 'cursorpos', '-j'], stderr=subprocess.DEVNULL))
         monitors = json.loads(subprocess.check_output(['hyprctl', 'monitors', '-j'], stderr=subprocess.DEVNULL))
         clients = json.loads(subprocess.check_output(['hyprctl', 'clients', '-j'], stderr=subprocess.DEVNULL))
         active_win = json.loads(subprocess.check_output(['hyprctl', 'activewindow', '-j'], stderr=subprocess.DEVNULL))
-        return cursor, monitors, clients, active_win
     except Exception:
-        return {}, [], [], {}
-
-def ensure_special_hidden(monitors):
-    for m in monitors:
-        sw = m.get('specialWorkspace', {})
-        sw_name = sw.get('name', '')
-        if sw.get('id', 0) != 0 and sw_name:
-            clean_name = sw_name.replace('special:', '')
-            eval_lua(f'hl.dispatch(hl.dsp.workspace.toggle_special("{clean_name}"))')
-
-def get_active_context():
-    cursor, monitors, clients, active_win = get_hypr_data()
-    ensure_special_hidden(monitors)
+        return 1, None, [], []
 
     if not monitors:
         return 1, None, [], clients
@@ -68,12 +55,13 @@ def get_active_context():
     if not target_mon and monitors:
         target_mon = monitors[0]
 
-    target_ws_id = target_mon['activeWorkspace']['id']
+    target_ws_id = target_mon['activeWorkspace']['id'] if target_mon else 1
 
-    # All regular windows on this workspace
+    # All regular visible windows on this workspace
     ws_clients = [
         c for c in clients
         if c.get('workspace', {}).get('id') == target_ws_id
+        and c.get('workspace', {}).get('id') != MINIMIZED_WS
         and not c.get('workspace', {}).get('name', '').startswith('special')
     ]
 
@@ -97,7 +85,6 @@ def save_minimized_history(win_data):
         if os.path.exists(STATE_FILE):
             with open(STATE_FILE, "r") as f:
                 history = json.load(f)
-        # Add to front, remove duplicates by address
         history = [h for h in history if h.get("address") != win_data.get("address")]
         history.insert(0, win_data)
         with open(STATE_FILE, "w") as f:
@@ -116,7 +103,8 @@ def do_minimize():
         local wins = hl.get_windows()
         for _, w in ipairs(wins) do
             if w.address == "{addr}" then
-                hl.dispatch(hl.dsp.window.move({{ window = w, workspace = "special:minimized", silent = true }}))
+                hl.dispatch(hl.dsp.window.move({{ window = w, workspace = {MINIMIZED_WS}, silent = true }}))
+                hl.dispatch(hl.dsp.focus({{ workspace = {ws_id} }}))
                 break
             end
         end
@@ -143,7 +131,7 @@ def do_minimize_all():
                 local wins = hl.get_windows()
                 for _, w in ipairs(wins) do
                     if w.address == "{addr}" then
-                        hl.dispatch(hl.dsp.window.move({{ window = w, workspace = "special:minimized", silent = true }}))
+                        hl.dispatch(hl.dsp.window.move({{ window = w, workspace = {MINIMIZED_WS}, silent = true }}))
                         break
                     end
                 end
@@ -155,6 +143,7 @@ def do_minimize_all():
                     "class": win.get("class", "App"),
                     "workspace_id": ws_id
                 })
+        eval_lua(f'hl.dispatch(hl.dsp.focus({{ workspace = {ws_id} }}))')
         notify("Desktop Minimized", f"Minimized {count} window(s) on Workspace {ws_id}")
     else:
         notify("No Windows", f"Workspace {ws_id} has no windows to minimize.")
@@ -163,14 +152,13 @@ def do_restore_last():
     ws_id, _, _, all_clients = get_active_context()
     minimized_clients = [
         c for c in all_clients
-        if c.get('workspace', {}).get('name', '') == 'special:minimized'
+        if c.get('workspace', {}).get('id') == MINIMIZED_WS
     ]
 
     if not minimized_clients:
         notify("No Minimized Windows", "All windows are currently visible.")
         return
 
-    # Check history to restore in LIFO order
     target_addr = None
     target_title = None
     if os.path.exists(STATE_FILE):
@@ -206,7 +194,7 @@ def do_restore_all():
     ws_id, _, _, all_clients = get_active_context()
     minimized_clients = [
         c for c in all_clients
-        if c.get('workspace', {}).get('name', '') == 'special:minimized'
+        if c.get('workspace', {}).get('id') == MINIMIZED_WS
     ]
     if minimized_clients:
         for win in minimized_clients:
@@ -239,7 +227,7 @@ def main():
     elif action in ("restore-all", "restore_all"):
         do_restore_all()
     elif action in ("menu", "selective", "manager"):
-        subprocess.Popen(['python3', '/home/gallo/.config/hypr/scripts/minimized-manager.py'])
+        subprocess.Popen(['python3', '/home/gallo/.config/hypr/scripts/taskbar-group-click.py'])
     else:
         do_minimize()
 

@@ -2,11 +2,14 @@
 """
 Garchy OS — Grouped Taskbar Icons Module for Waybar
 Renders active and minimized app icons with multi-window count badges and hover tooltips.
+Uses hidden background workspace 99 for 100% invisible minimization.
 """
 
 import sys
 import json
 import subprocess
+
+MINIMIZED_WS = 99
 
 ICON_MAP = {
     "brave-browser": "󰖟",
@@ -49,14 +52,15 @@ def get_grouped_icons():
     except Exception:
         return {"text": "", "tooltip": "", "class": "empty"}
 
-    if not clients:
+    valid_clients = [c for c in clients if not c.get('workspace', {}).get('name', '').startswith('special')]
+    if not valid_clients:
         return {"text": "", "tooltip": "No open applications", "class": "empty"}
 
     active_addr = active_win.get('address', '')
 
     # Group by application class
     groups = {}
-    for c in clients:
+    for c in valid_clients:
         cls = c.get('class', 'App')
         if not cls:
             cls = 'App'
@@ -76,7 +80,7 @@ def get_grouped_icons():
         badge = get_superscript(count)
 
         is_active = any(w.get('address') == active_addr for w in wins)
-        is_all_minimized = all(w.get('workspace', {}).get('name', '').startswith('special') for w in wins)
+        is_all_minimized = all(w.get('workspace', {}).get('id') == MINIMIZED_WS for w in wins)
 
         if is_active:
             # Highlight active application in electric cyan with underline
@@ -93,10 +97,12 @@ def get_grouped_icons():
         # Tooltip details
         for w in wins:
             title = w.get('title', 'Untitled')[:40]
+            ws_id = w.get('workspace', {}).get('id', 1)
             ws_name = w.get('workspace', {}).get('name', '1')
+
             if w.get('address') == active_addr:
                 state_str = "<span color='#38bdf8'>[Active]</span>"
-            elif ws_name.startswith('special'):
+            elif ws_id == MINIMIZED_WS:
                 state_str = "<span color='#fbbf24'>[🗕 Minimized]</span>"
             else:
                 state_str = f"<span color='#94a3b8'>[WS {ws_name}]</span>"

@@ -2,6 +2,7 @@
 """
 Garchy OS — Grouped Taskbar Click & Dropdown Handler
 Provides instant single-window minimize/restore toggle, and multi-window dropdown selector.
+Uses hidden background workspace 99 for 100% invisible minimization.
 """
 
 import sys
@@ -10,6 +11,7 @@ import subprocess
 import os
 
 STATE_FILE = os.path.expanduser("~/.cache/garchy_minimized_history.json")
+MINIMIZED_WS = 99
 
 def eval_lua(code):
     try:
@@ -55,25 +57,29 @@ def open_dropdown_menu(clients, active_addr, active_ws_id):
     entries = []
     rofi_lines = []
 
+    # Filter out special workspaces, only keep user apps + minimized (WS 99)
+    valid_clients = [c for c in clients if not c.get('workspace', {}).get('name', '').startswith('special')]
+
     # 1. Quick Global Actions if multiple windows exist
-    if len(clients) > 1:
+    if len(valid_clients) > 1:
         entries.append({'action': 'restore_all', 'address': '', 'title': 'All Windows'})
-        rofi_lines.append(f"⚡ Restore All ({len(clients)} Windows)\0icon\x1fview-restore")
+        rofi_lines.append(f"⚡ Restore All ({len(valid_clients)} Windows)\0icon\x1fview-restore")
 
         entries.append({'action': 'minimize_all', 'address': '', 'title': 'All Windows'})
-        rofi_lines.append(f"🗕 Minimize All ({len(clients)} Windows)\0icon\x1fwindow-minimize")
+        rofi_lines.append(f"🗕 Minimize All ({len(valid_clients)} Windows)\0icon\x1fwindow-minimize")
 
     # 2. Window Items (Grouped)
-    for c in clients:
+    for c in valid_clients:
         addr = c.get('address', '')
         if not addr:
             continue
         cls = c.get('class', 'App')
         title = c.get('title', 'Untitled')
+        ws_id = c.get('workspace', {}).get('id', 1)
         ws_name = c.get('workspace', {}).get('name', '1')
 
         is_focused = (addr == active_addr)
-        is_min = ws_name.startswith('special')
+        is_min = (ws_id == MINIMIZED_WS)
 
         if is_focused:
             badge = "[Active ✓]"
@@ -106,7 +112,7 @@ def open_dropdown_menu(clients, active_addr, active_ws_id):
         "-dmenu",
         "-i",
         "-format", "i",
-        "-p", f"🗔 Open Applications ({len(clients)})",
+        "-p", f"🗔 Open Applications ({len(valid_clients)})",
         "-theme", rofi_theme
     ]
 
@@ -127,7 +133,7 @@ def open_dropdown_menu(clients, active_addr, active_ws_id):
     target_title = chosen['title']
 
     if action == "restore_all":
-        for c in clients:
+        for c in valid_clients:
             addr = c.get('address')
             if addr:
                 eval_lua(f'''
@@ -140,38 +146,38 @@ def open_dropdown_menu(clients, active_addr, active_ws_id):
                     end
                 end
                 ''')
-        notify("Restored All", f"Restored {len(clients)} windows to Workspace {active_ws_id}")
+        notify("Restored All", f"Restored {len(valid_clients)} windows to Workspace {active_ws_id}")
 
     elif action == "minimize_all":
-        for c in clients:
+        for c in valid_clients:
             addr = c.get('address')
             if addr:
                 eval_lua(f'''
                 local wins = hl.get_windows()
                 for _, w in ipairs(wins) do
                     if w.address == "{addr}" then
-                        hl.dispatch(hl.dsp.window.move({{ window = w, workspace = "special:minimized", silent = true }}))
+                        hl.dispatch(hl.dsp.window.move({{ window = w, workspace = {MINIMIZED_WS}, silent = true }}))
                         break
                     end
                 end
                 ''')
-        notify("Minimized All", f"Minimized {len(clients)} windows")
+        eval_lua(f'hl.dispatch(hl.dsp.focus({{ workspace = {active_ws_id} }}))')
+        notify("Minimized All", f"Minimized {len(valid_clients)} windows")
 
     elif action == "select_window":
         if chosen.get('is_focused'):
-            # If already focused, clicking minimizes it (Windows 11 behavior)
             eval_lua(f'''
             local wins = hl.get_windows()
             for _, w in ipairs(wins) do
                 if w.address == "{target_addr}" then
-                    hl.dispatch(hl.dsp.window.move({{ window = w, workspace = "special:minimized", silent = true }}))
+                    hl.dispatch(hl.dsp.window.move({{ window = w, workspace = {MINIMIZED_WS}, silent = true }}))
+                    hl.dispatch(hl.dsp.focus({{ workspace = {active_ws_id} }}))
                     break
                 end
             end
             ''')
             notify("Window Minimized", target_title)
         else:
-            # If not focused or minimized, restore & focus it
             eval_lua(f'''
             local wins = hl.get_windows()
             for _, w in ipairs(wins) do
@@ -186,7 +192,8 @@ def open_dropdown_menu(clients, active_addr, active_ws_id):
 
 def main():
     cursor, monitors, clients, active_win = get_hypr_state()
-    if not clients:
+    valid_clients = [c for c in clients if not c.get('workspace', {}).get('name', '').startswith('special')]
+    if not valid_clients:
         notify("No Applications", "No application windows are currently open.")
         sys.exit(0)
 
@@ -194,11 +201,11 @@ def main():
     active_ws_id = get_active_workspace(monitors, cursor)
 
     # If only 1 single window exists across the OS, toggle minimize/restore directly
-    if len(clients) == 1:
-        only_win = clients[0]
+    if len(valid_clients) == 1:
+        only_win = valid_clients[0]
         addr = only_win.get('address', '')
         title = only_win.get('title', 'Window')
-        is_min = only_win.get('workspace', {}).get('name', '').startswith('special')
+        is_min = (only_win.get('workspace', {}).get('id') == MINIMIZED_WS)
         is_focused = (addr == active_addr)
 
         if is_focused and not is_min:
@@ -206,7 +213,8 @@ def main():
             local wins = hl.get_windows()
             for _, w in ipairs(wins) do
                 if w.address == "{addr}" then
-                    hl.dispatch(hl.dsp.window.move({{ window = w, workspace = "special:minimized", silent = true }}))
+                    hl.dispatch(hl.dsp.window.move({{ window = w, workspace = {MINIMIZED_WS}, silent = true }}))
+                    hl.dispatch(hl.dsp.focus({{ workspace = {active_ws_id} }}))
                     break
                 end
             end
