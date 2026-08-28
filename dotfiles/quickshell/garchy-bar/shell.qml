@@ -411,8 +411,6 @@ ShellRoot {
                 implicitWidth: 280
                 implicitHeight: dateCol.implicitHeight + 28
                 color: "transparent"
-                WlrLayershell.layer: WlrLayer.Overlay
-                WlrLayershell.namespace: "garchy-shell"
                 visible: false
 
                 Rectangle {
@@ -608,8 +606,6 @@ ShellRoot {
                 implicitWidth: 350
                 implicitHeight: hubCol.implicitHeight + 28
                 color: "transparent"
-                WlrLayershell.layer: WlrLayer.Overlay
-                WlrLayershell.namespace: "garchy-shell"
                 visible: false
 
                 Rectangle {
