@@ -1,15 +1,7 @@
 * {
-    bg: rgba(15, 26, 20, 0.94);
-    bg-alt: rgba(20, 38, 28, 0.85);
-    bg-hover: rgba(80, 250, 123, 0.15);
-    bg-selected: rgba(80, 250, 123, 0.32);
-    border-col: rgba(30, 60, 45, 0.9);
-    border-accent: #50fa7b;
-    accent: #50fa7b;
-    accent-alt: #8be9fd;
-    fg: #e0f8e5;
-    fg-muted: #4e7a5e;
-    fg-selected: #ffffff;
-    urgent: #f7768e;
-    radius: 10px;
+    bg-color: #1e1a2eF2;
+    bg-card: #2d2442;
+    fg-color: #fdf4ff;
+    accent-color: #f5bde6;
+    border-radius: 18px;
 }

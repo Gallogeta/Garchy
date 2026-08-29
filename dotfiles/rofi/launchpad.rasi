@@ -1,18 +1,14 @@
 /**
  * =============================================================================
- * 🌌 Garchy OS — Fullscreen Launchpad Dashboard (Pure Theme File)
+ * 🌌 Garchy OS — Fullscreen Launchpad Dashboard (Dynamic Themed)
  * =============================================================================
- * Strict 5-Color Garchy Palette:
- * - Light Blue: #38bdf8
- * - Blue:       #3b82f6
- * - Golden:     #fbbf24
- * - Light Grey: #e2e8f0
- * - Dark Grey:  #0a0f1d / #131c31 / #1e293b
  */
+
+@import "active-theme.rasi"
 
 * {
     background-color: transparent;
-    text-color: #e2e8f0;
+    text-color: @fg-color;
     margin: 0px;
     padding: 0px;
 }
@@ -20,7 +16,7 @@
 window {
     transparency: "real";
     fullscreen: true;
-    background-color: rgba(10, 15, 29, 0.90);
+    background-color: @bg-color;
     padding: 60px 120px;
     cursor: "default";
 }
@@ -36,23 +32,23 @@ inputbar {
     margin: 0px 240px;
     padding: 12px 24px;
     border: 2px;
-    border-color: #38bdf8;
+    border-color: @accent-color;
     border-radius: 20px;
-    background-color: rgba(19, 28, 49, 0.85);
-    text-color: #e2e8f0;
+    background-color: @bg-card;
+    text-color: @fg-color;
     children: [ prompt, entry ];
 }
 
 prompt {
     font: "JetBrainsMono Nerd Font Bold 12";
-    text-color: #fbbf24;
+    text-color: @accent-color;
     vertical-align: 0.5;
 }
 
 entry {
     placeholder: "Type to filter applications...";
-    placeholder-color: rgba(226, 232, 240, 0.45);
-    text-color: #ffffff;
+    placeholder-color: @fg-color;
+    text-color: @fg-color;
     cursor: text;
     vertical-align: 0.5;
 }
@@ -79,11 +75,11 @@ scrollbar {
     enabled: true;
     width: 14px;
     handle-width: 14px;
-    handle-color: #38bdf8;
+    handle-color: @accent-color;
     border-radius: 8px;
-    background-color: rgba(30, 41, 59, 0.7);
+    background-color: @bg-card;
     border: 1px;
-    border-color: rgba(56, 189, 248, 0.25);
+    border-color: @accent-color;
     margin: 0px 0px 0px 14px;
     cursor: pointer;
 }
@@ -94,44 +90,44 @@ element {
     spacing: 10px;
     padding: 18px 10px;
     border-radius: 16px;
-    background-color: rgba(19, 28, 49, 0.65);
+    background-color: @bg-card;
     border: 1px;
-    border-color: rgba(56, 189, 248, 0.15);
+    border-color: transparent;
     cursor: pointer;
 }
 
 element normal.normal {
-    background-color: rgba(19, 28, 49, 0.65);
-    text-color: #e2e8f0;
+    background-color: @bg-card;
+    text-color: @fg-color;
 }
 
 element alternate.normal {
-    background-color: rgba(19, 28, 49, 0.65);
-    text-color: #e2e8f0;
+    background-color: @bg-card;
+    text-color: @fg-color;
 }
 
 element selected.normal {
-    background-color: rgba(56, 189, 248, 0.25);
-    border: 1px;
-    border-color: #38bdf8;
-    text-color: #ffffff;
+    background-color: @accent-color;
+    border: 1.5px;
+    border-color: @accent-color;
+    text-color: @bg-color;
 }
 
 element normal.active {
-    background-color: rgba(19, 28, 49, 0.65);
-    text-color: #e2e8f0;
+    background-color: @bg-card;
+    text-color: @fg-color;
 }
 
 element alternate.active {
-    background-color: rgba(19, 28, 49, 0.65);
-    text-color: #e2e8f0;
+    background-color: @bg-card;
+    text-color: @fg-color;
 }
 
 element selected.active {
-    background-color: rgba(251, 191, 36, 0.25);
-    border: 1px;
-    border-color: #fbbf24;
-    text-color: #ffffff;
+    background-color: @accent-color;
+    border: 1.5px;
+    border-color: @accent-color;
+    text-color: @bg-color;
 }
 
 element-icon {

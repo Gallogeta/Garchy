@@ -946,8 +946,8 @@ ShellRoot {
                 anchors.bottom: parent.bottom
                 width: clockLayout.implicitWidth + (root.isFullSakura ? 28 : 36)
                 color: root.isFullSakura ? (root.colBgAlt + "88") : root.colBg
-                border.color: root.isFullSakura ? root.colBorder : (clockArea.containsMouse ? root.colAccent : root.colBorder)
-                border.width: 1.5
+                border.color: root.isFullSakura ? "transparent" : (clockArea.containsMouse ? root.colAccent : root.colBorder)
+                border.width: root.isFullSakura ? 0 : 1.5
                 radius: root.isFullSakura ? 14 : root.islandRadius
 
                 RowLayout {
@@ -2399,8 +2399,8 @@ ShellRoot {
                 anchors.bottom: parent.bottom
                 width: secClockLayout.implicitWidth + (root.isFullSakura ? 28 : 36)
                 color: root.isFullSakura ? (root.colBgAlt + "88") : root.colBg
-                border.color: root.isFullSakura ? root.colBorder : (secClockArea.containsMouse ? root.colAccent : root.colBorder)
-                border.width: 1.5
+                border.color: root.isFullSakura ? "transparent" : (secClockArea.containsMouse ? root.colAccent : root.colBorder)
+                border.width: root.isFullSakura ? 0 : 1.5
                 radius: root.isFullSakura ? 14 : root.islandRadius
 
                 RowLayout {

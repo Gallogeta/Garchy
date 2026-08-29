@@ -67,6 +67,17 @@ def get_active_theme():
             pass
     return DEFAULT_THEME.copy()
 
+def get_theme_mtime():
+    if os.path.exists(THEME_STATE_FILE):
+        try:
+            return os.path.getmtime(THEME_STATE_FILE)
+        except Exception:
+            pass
+    return 0.0
+
+def save_active_theme(theme_dict):
+    apply_theme(theme_dict)
+
 def update_hyprland_look_lua(theme_dict):
     """Updates active border colors and window rounding in look.lua and reloads Hyprland."""
     look_path = os.path.expanduser("~/.config/hypr/lua/look.lua")
