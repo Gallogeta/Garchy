@@ -27,7 +27,8 @@ ShellRoot {
     property string activeThemeId: "garchy"
     property bool isFullSakura: root.layoutStyle === "full_sakura" || root.activeThemeId === "cyber_sakura"
     property bool isBottomBar: root.isFullSakura
-    property int barHeight: root.isFullSakura ? 52 : 46
+    property int barHeight: root.isFullSakura ? 58 : 48
+    property int pinnedDockCapacity: 5
 
     property int islandRadius: root.themeRounding
     property int cardRadius: Math.max(3, root.themeRounding - 2)
@@ -273,8 +274,8 @@ ShellRoot {
 
                     // 🌌 / 🌸 Launcher Button
                     Rectangle {
-                        width: 32
-                        height: 32
+                        width: 36
+                        height: 36
                         radius: root.buttonRadius
                         color: launchArea.containsMouse ? root.colAccent + "33" : (root.isFullSakura ? "transparent" : root.colBgAlt)
                         border.color: launchArea.containsMouse ? root.colAccent : (root.isFullSakura ? "transparent" : root.colBorder)
@@ -283,7 +284,7 @@ ShellRoot {
                         Text {
                             anchors.centerIn: parent
                             text: root.isFullSakura ? "🌸" : "󰣇"
-                            font.pixelSize: root.isFullSakura ? 17 : 18
+                            font.pixelSize: root.isFullSakura ? 19 : 20
                             color: root.colAccent
                         }
 
@@ -302,49 +303,26 @@ ShellRoot {
                         }
                     }
 
-                    // 🌸 CYBER SAKURA PINNED QUICK-LAUNCH DOCK
+                    // 🌸 CYBER SAKURA PINNED QUICK-LAUNCH DOCK (With Emoticon Placeholders for Unpinned Slots)
                     Row {
                         id: pinnedRow
                         visible: root.isFullSakura
-                        spacing: 4
+                        spacing: 5
                         Layout.alignment: Qt.AlignVCenter
 
-                        // Empty Pinned fallback button
-                        Rectangle {
-                            visible: !root.pinnedApps || root.pinnedApps.length === 0
-                            width: 30
-                            height: 30
-                            radius: 8
-                            color: pinEmptyMouse.containsMouse ? (root.colAccent + "33") : "transparent"
-                            border.color: root.colAccentAlt + "44"
-                            border.width: 1
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "📌"
-                                font.pixelSize: 13
-                            }
-
-                            MouseArea {
-                                id: pinEmptyMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.runCmd(["bash", "-c", "~/.config/hypr/scripts/launchpad.sh"])
-                            }
-                        }
-
                         Repeater {
-                            model: root.pinnedApps || []
+                            model: Math.max(root.pinnedDockCapacity, (root.pinnedApps ? root.pinnedApps.length : 0))
 
                             Rectangle {
-                                width: 30
-                                height: 30
-                                radius: 8
+                                id: pinSlotItem
+                                property int slotIndex: index
+                                property bool isPinned: root.pinnedApps && slotIndex < root.pinnedApps.length
+                                property var appData: isPinned ? root.pinnedApps[slotIndex] : null
+
                                 property bool isRunning: {
-                                    if (!root.taskbarState || !root.taskbarState.groups) return false;
-                                    var pId = (modelData.id || "").toLowerCase();
-                                    var pCmd = (modelData.cmd || "").toLowerCase();
+                                    if (!isPinned || !appData || !root.taskbarState || !root.taskbarState.groups) return false;
+                                    var pId = (appData.id || "").toLowerCase();
+                                    var pCmd = (appData.cmd || "").toLowerCase();
                                     for (var i = 0; i < root.taskbarState.groups.length; i++) {
                                         var g = root.taskbarState.groups[i];
                                         var gId = (g.app_id || "").toLowerCase();
@@ -354,31 +332,48 @@ ShellRoot {
                                     return false;
                                 }
 
-                                color: pinMouse.containsMouse ? (root.colAccent + "33") : (isRunning ? (root.colBgAlt || "#242038") : "transparent")
-                                border.color: isRunning ? (root.colAccent || "#f5bde6") : (pinMouse.containsMouse ? (root.colAccentAlt || "#c6a0f6") : "transparent")
-                                border.width: isRunning ? 1.5 : 1
+                                width: 36
+                                height: 36
+                                radius: 10
+                                color: isPinned 
+                                    ? (pinSlotMouse.containsMouse ? (root.colAccent + "33") : (isRunning ? (root.colBgAlt || "#242038") : "transparent"))
+                                    : (pinSlotMouse.containsMouse ? (root.colAccent + "26") : (root.colBgAlt + "44"))
+                                border.color: isPinned
+                                    ? (isRunning ? (root.colAccent || "#f5bde6") : (pinSlotMouse.containsMouse ? (root.colAccentAlt || "#c6a0f6") : (root.colAccentAlt + "44")))
+                                    : (pinSlotMouse.containsMouse ? (root.colAccent || "#f5bde6") : (root.colBorder + "44"))
+                                border.width: isPinned ? (isRunning ? 1.5 : 1) : 1
 
+                                // 1. If Pinned: Application Desktop Icon
                                 Image {
-                                    id: pinImg
+                                    id: pinSlotIcon
+                                    visible: isPinned
                                     anchors.centerIn: parent
-                                    width: 18
-                                    height: 18
-                                    source: Quickshell.iconPath(modelData.icon || modelData.id)
+                                    width: 22
+                                    height: 22
+                                    source: isPinned ? Quickshell.iconPath(appData.icon || appData.id) : ""
                                     fillMode: Image.PreserveAspectFit
-                                    visible: status === Image.Ready
                                 }
 
-                                // Fallback 📌 pin emoticon if icon is empty / not loaded
+                                // 2. If Pinned but icon failed to load: Pin Emoticon
                                 Text {
+                                    visible: isPinned && pinSlotIcon.status !== Image.Ready
                                     anchors.centerIn: parent
-                                    visible: pinImg.status !== Image.Ready
                                     text: "📌"
-                                    font.pixelSize: 13
+                                    font.pixelSize: 14
+                                }
+
+                                // 3. If Unpinned Placeholder: Emoticon placeholder (e.g. 📌)
+                                Text {
+                                    visible: !isPinned
+                                    anchors.centerIn: parent
+                                    text: "📌"
+                                    font.pixelSize: 14
+                                    opacity: pinSlotMouse.containsMouse ? 1.0 : 0.4
                                 }
 
                                 // Subtle Blossom Glow Dot when Running
                                 Rectangle {
-                                    visible: isRunning
+                                    visible: isPinned && isRunning
                                     width: 4
                                     height: 4
                                     radius: 2
@@ -389,37 +384,42 @@ ShellRoot {
                                 }
 
                                 MouseArea {
-                                    id: pinMouse
+                                    id: pinSlotMouse
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
                                     acceptedButtons: Qt.LeftButton | Qt.RightButton
                                     onClicked: mouse => {
-                                        if (mouse.button === Qt.LeftButton) {
-                                            var foundAddr = "";
-                                            if (root.taskbarState && root.taskbarState.groups) {
-                                                var pId = (modelData.id || "").toLowerCase();
-                                                var pCmd = (modelData.cmd || "").toLowerCase();
-                                                for (var i = 0; i < root.taskbarState.groups.length; i++) {
-                                                    var g = root.taskbarState.groups[i];
-                                                    var gId = (g.app_id || "").toLowerCase();
-                                                    var gClass = (g.wm_class || "").toLowerCase();
-                                                    if (gId.includes(pId) || gId.includes(pCmd) || gClass.includes(pId) || gClass.includes(pCmd)) {
-                                                        if (g.windows && g.windows.length > 0) {
-                                                            foundAddr = g.windows[0].address;
-                                                            break;
+                                        if (isPinned) {
+                                            if (mouse.button === Qt.LeftButton) {
+                                                var foundAddr = "";
+                                                if (root.taskbarState && root.taskbarState.groups) {
+                                                    var pId = (appData.id || "").toLowerCase();
+                                                    var pCmd = (appData.cmd || "").toLowerCase();
+                                                    for (var i = 0; i < root.taskbarState.groups.length; i++) {
+                                                        var g = root.taskbarState.groups[i];
+                                                        var gId = (g.app_id || "").toLowerCase();
+                                                        var gClass = (g.wm_class || "").toLowerCase();
+                                                        if (gId.includes(pId) || gId.includes(pCmd) || gClass.includes(pId) || gClass.includes(pCmd)) {
+                                                            if (g.windows && g.windows.length > 0) {
+                                                                foundAddr = g.windows[0].address;
+                                                                break;
+                                                            }
                                                         }
                                                     }
                                                 }
+                                                if (foundAddr) {
+                                                    root.dispatchAction("focus", foundAddr);
+                                                } else {
+                                                    root.runCmd(["hyprctl", "dispatch", "exec", appData.cmd || appData.id]);
+                                                }
+                                            } else if (mouse.button === Qt.RightButton) {
+                                                pinnedMenuPopup.targetApp = appData;
+                                                pinnedMenuPopup.visible = true;
                                             }
-                                            if (foundAddr) {
-                                                root.dispatchAction("focus", foundAddr);
-                                            } else {
-                                                root.runCmd(["hyprctl", "dispatch", "exec", modelData.cmd || modelData.id]);
-                                            }
-                                        } else if (mouse.button === Qt.RightButton) {
-                                            pinnedMenuPopup.targetApp = modelData;
-                                            pinnedMenuPopup.visible = true;
+                                        } else {
+                                            // Unpinned placeholder slot: Open Launchpad
+                                            root.runCmd(["bash", "-c", "~/.config/hypr/scripts/launchpad.sh"]);
                                         }
                                     }
                                 }
@@ -431,14 +431,14 @@ ShellRoot {
                     Rectangle {
                         visible: root.isFullSakura
                         width: 1
-                        height: 16
+                        height: 20
                         color: root.colAccentAlt + "44"
                         Layout.alignment: Qt.AlignVCenter
                     }
 
                     // 🔢 Workspaces (1 2 3 4)
                     Rectangle {
-                        height: 30
+                        height: 36
                         width: wsRow.implicitWidth + 10
                         radius: root.cardRadius
                         color: root.colBgAlt
@@ -465,17 +465,17 @@ ShellRoot {
                                         return wsNum === 1;
                                     }
 
-                                    width: 24
-                                    height: 24
+                                    width: 26
+                                    height: 26
                                     radius: root.buttonRadius
                                     color: isWsActive ? root.colAccent : (wsArea.containsMouse ? root.colBorder : "transparent")
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: modelData
-                                        font.pixelSize: 12
+                                        font.pixelSize: 13
                                         font.bold: true
-                                        color: isWsActive ? "#0a0f1d" : root.colFgMuted
+                                        color: isWsActive ? "#0a0f1d" : (wsArea.containsMouse ? root.colFg : root.colFgMuted)
                                     }
 
                                     MouseArea {
@@ -1001,8 +1001,8 @@ ShellRoot {
                         Item {
                             id: centerAppItem
                             property var groupData: modelData
-                            width: 38
-                            height: 32
+                            width: 42
+                            height: 36
 
                             Rectangle {
                                 anchors.fill: parent
@@ -1014,8 +1014,8 @@ ShellRoot {
                                 Image {
                                     id: centerAppIcon
                                     anchors.centerIn: parent
-                                    width: 22
-                                    height: 22
+                                    width: 24
+                                    height: 24
                                     source: Quickshell.iconPath(groupData.icon)
                                     fillMode: Image.PreserveAspectFit
                                     opacity: groupData.is_minimized ? 0.5 : 1.0
@@ -1026,7 +1026,7 @@ ShellRoot {
                                     anchors.centerIn: parent
                                     visible: centerAppIcon.status !== Image.Ready
                                     text: "󰖯"
-                                    font.pixelSize: 18
+                                    font.pixelSize: 20
                                     color: groupData.is_active ? root.colAccent : root.colFg
                                 }
 
@@ -1035,9 +1035,9 @@ ShellRoot {
                                     anchors.bottom: parent.bottom
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     anchors.bottomMargin: 2
-                                    width: groupData.is_active ? 18 : 4
-                                    height: 2.5
-                                    radius: Math.max(1, root.buttonRadius / 4)
+                                    width: groupData.is_active ? 20 : 5
+                                    height: 3
+                                    radius: Math.max(1.5, root.buttonRadius / 4)
                                     color: groupData.is_active ? root.colAccent : (groupData.is_minimized ? root.colGold : root.colFgMuted)
                                     Behavior on width { NumberAnimation { duration: 150 } }
                                 }
@@ -1227,7 +1227,7 @@ ShellRoot {
 
                     // 🔊 Volume Pill
                     Rectangle {
-                        height: 28
+                        height: 34
                         width: volRow.implicitWidth + 16
                         radius: root.buttonRadius
                         color: root.colBgAlt
@@ -1239,13 +1239,13 @@ ShellRoot {
 
                             Text {
                                 text: root.isMuted ? "󰝟" : (root.volPercent > 50 ? "󰕾" : "󰖀")
-                                font.pixelSize: 14
+                                font.pixelSize: 15
                                 color: root.isMuted ? root.colRed : root.colAccent
                             }
 
                             Text {
                                 text: root.volPercent + "%"
-                                font.pixelSize: 12
+                                font.pixelSize: 13
                                 font.bold: true
                                 color: root.colFg
                             }
@@ -1260,15 +1260,15 @@ ShellRoot {
 
                     // 🧠 Gally AI Hub
                     Rectangle {
-                        width: 30
-                        height: 30
+                        width: 34
+                        height: 34
                         radius: root.buttonRadius
                         color: aiMouse.containsMouse ? root.colAccent + "33" : "transparent"
 
                         Text {
                             anchors.centerIn: parent
                             text: root.isFullSakura ? "✨" : "󰚩"
-                            font.pixelSize: 16
+                            font.pixelSize: 18
                             color: root.colAccent
                         }
 
@@ -1282,15 +1282,15 @@ ShellRoot {
 
                     // 🎨 Wallust Theme Switcher
                     Rectangle {
-                        width: 30
-                        height: 30
+                        width: 34
+                        height: 34
                         radius: root.buttonRadius
                         color: thmMouse.containsMouse ? root.colAccentAlt + "33" : "transparent"
 
                         Text {
                             anchors.centerIn: parent
                             text: "󰏘"
-                            font.pixelSize: 16
+                            font.pixelSize: 18
                             color: root.colAccentAlt
                         }
 
@@ -1306,8 +1306,8 @@ ShellRoot {
                     Rectangle {
                         id: sakuraClockBtn
                         visible: root.isFullSakura
-                        height: 30
-                        width: sakuraClockRow.implicitWidth + 18
+                        height: 34
+                        width: sakuraClockRow.implicitWidth + 20
                         radius: 14
                         color: sakuraClockMouse.containsMouse ? (root.colAccent + "33") : (root.colBgAlt + "88")
                         border.color: "transparent"
@@ -1320,13 +1320,13 @@ ShellRoot {
 
                             Text {
                                 text: "🌸"
-                                font.pixelSize: 12
+                                font.pixelSize: 13
                                 color: root.colAccent
                             }
 
                             Text {
                                 text: root.timeStr
-                                font.pixelSize: 13
+                                font.pixelSize: 14
                                 font.bold: true
                                 color: root.colFg
                             }
@@ -1344,8 +1344,8 @@ ShellRoot {
                     // 󰅀 Down Arrow / Minimized Tray Menu
                     Rectangle {
                         id: trayBtn
-                        width: 28
-                        height: 28
+                        width: 34
+                        height: 34
                         radius: root.buttonRadius
                         color: trayArea.containsMouse || trayMenuPopup.visible ? root.colBgAlt : "transparent"
                         border.color: trayArea.containsMouse || trayMenuPopup.visible ? root.colAccent : "transparent"
@@ -1354,7 +1354,7 @@ ShellRoot {
                         Text {
                             anchors.centerIn: parent
                             text: "󰅀"
-                            font.pixelSize: 15
+                            font.pixelSize: 16
                             color: root.taskbarState.minimized_windows && root.taskbarState.minimized_windows.length > 0 ? root.colGold : root.colFgMuted
                         }
 
@@ -1911,8 +1911,8 @@ ShellRoot {
 
                     // 🌌 / 🌸 Launcher Button
                     Rectangle {
-                        width: 32
-                        height: 32
+                        width: 36
+                        height: 36
                         radius: root.buttonRadius
                         color: secLaunchArea.containsMouse ? root.colAccent + "33" : (root.isFullSakura ? "transparent" : root.colBgAlt)
                         border.color: secLaunchArea.containsMouse ? root.colAccent : (root.isFullSakura ? "transparent" : root.colBorder)
@@ -1921,7 +1921,7 @@ ShellRoot {
                         Text {
                             anchors.centerIn: parent
                             text: root.isFullSakura ? "🌸" : "󰣇"
-                            font.pixelSize: root.isFullSakura ? 17 : 18
+                            font.pixelSize: root.isFullSakura ? 19 : 20
                             color: root.colAccent
                         }
 
@@ -1940,49 +1940,26 @@ ShellRoot {
                         }
                     }
 
-                    // 🌸 CYBER SAKURA PINNED QUICK-LAUNCH DOCK
+                    // 🌸 CYBER SAKURA PINNED QUICK-LAUNCH DOCK (With Emoticon Placeholders for Unpinned Slots)
                     Row {
                         id: secPinnedRow
                         visible: root.isFullSakura
-                        spacing: 4
+                        spacing: 5
                         Layout.alignment: Qt.AlignVCenter
 
-                        // Empty Pinned fallback button
-                        Rectangle {
-                            visible: !root.pinnedApps || root.pinnedApps.length === 0
-                            width: 30
-                            height: 30
-                            radius: 8
-                            color: secPinEmptyMouse.containsMouse ? (root.colAccent + "33") : "transparent"
-                            border.color: root.colAccentAlt + "44"
-                            border.width: 1
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "📌"
-                                font.pixelSize: 13
-                            }
-
-                            MouseArea {
-                                id: secPinEmptyMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.runCmd(["bash", "-c", "~/.config/hypr/scripts/launchpad.sh"])
-                            }
-                        }
-
                         Repeater {
-                            model: root.pinnedApps || []
+                            model: Math.max(root.pinnedDockCapacity, (root.pinnedApps ? root.pinnedApps.length : 0))
 
                             Rectangle {
-                                width: 30
-                                height: 30
-                                radius: 8
+                                id: secPinSlotItem
+                                property int slotIndex: index
+                                property bool isPinned: root.pinnedApps && slotIndex < root.pinnedApps.length
+                                property var appData: isPinned ? root.pinnedApps[slotIndex] : null
+
                                 property bool isRunning: {
-                                    if (!root.taskbarState || !root.taskbarState.groups) return false;
-                                    var pId = (modelData.id || "").toLowerCase();
-                                    var pCmd = (modelData.cmd || "").toLowerCase();
+                                    if (!isPinned || !appData || !root.taskbarState || !root.taskbarState.groups) return false;
+                                    var pId = (appData.id || "").toLowerCase();
+                                    var pCmd = (appData.cmd || "").toLowerCase();
                                     for (var i = 0; i < root.taskbarState.groups.length; i++) {
                                         var g = root.taskbarState.groups[i];
                                         var gId = (g.app_id || "").toLowerCase();
@@ -1992,31 +1969,48 @@ ShellRoot {
                                     return false;
                                 }
 
-                                color: secPinMouse.containsMouse ? (root.colAccent + "33") : (isRunning ? (root.colBgAlt || "#242038") : "transparent")
-                                border.color: isRunning ? (root.colAccent || "#f5bde6") : (secPinMouse.containsMouse ? (root.colAccentAlt || "#c6a0f6") : "transparent")
-                                border.width: isRunning ? 1.5 : 1
+                                width: 36
+                                height: 36
+                                radius: 10
+                                color: isPinned 
+                                    ? (secPinSlotMouse.containsMouse ? (root.colAccent + "33") : (isRunning ? (root.colBgAlt || "#242038") : "transparent"))
+                                    : (secPinSlotMouse.containsMouse ? (root.colAccent + "26") : (root.colBgAlt + "44"))
+                                border.color: isPinned
+                                    ? (isRunning ? (root.colAccent || "#f5bde6") : (secPinSlotMouse.containsMouse ? (root.colAccentAlt || "#c6a0f6") : (root.colAccentAlt + "44")))
+                                    : (secPinSlotMouse.containsMouse ? (root.colAccent || "#f5bde6") : (root.colBorder + "44"))
+                                border.width: isPinned ? (isRunning ? 1.5 : 1) : 1
 
+                                // 1. If Pinned: Application Desktop Icon
                                 Image {
-                                    id: secPinImg
+                                    id: secPinSlotIcon
+                                    visible: isPinned
                                     anchors.centerIn: parent
-                                    width: 18
-                                    height: 18
-                                    source: Quickshell.iconPath(modelData.icon || modelData.id)
+                                    width: 22
+                                    height: 22
+                                    source: isPinned ? Quickshell.iconPath(appData.icon || appData.id) : ""
                                     fillMode: Image.PreserveAspectFit
-                                    visible: status === Image.Ready
                                 }
 
-                                // Fallback 📌 pin emoticon if icon is empty / not loaded
+                                // 2. If Pinned but icon failed to load: Pin Emoticon
                                 Text {
+                                    visible: isPinned && secPinSlotIcon.status !== Image.Ready
                                     anchors.centerIn: parent
-                                    visible: secPinImg.status !== Image.Ready
                                     text: "📌"
-                                    font.pixelSize: 13
+                                    font.pixelSize: 14
+                                }
+
+                                // 3. If Unpinned Placeholder: Emoticon placeholder (e.g. 📌)
+                                Text {
+                                    visible: !isPinned
+                                    anchors.centerIn: parent
+                                    text: "📌"
+                                    font.pixelSize: 14
+                                    opacity: secPinSlotMouse.containsMouse ? 1.0 : 0.4
                                 }
 
                                 // Subtle Blossom Glow Dot when Running
                                 Rectangle {
-                                    visible: isRunning
+                                    visible: isPinned && isRunning
                                     width: 4
                                     height: 4
                                     radius: 2
@@ -2027,37 +2021,42 @@ ShellRoot {
                                 }
 
                                 MouseArea {
-                                    id: secPinMouse
+                                    id: secPinSlotMouse
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
                                     acceptedButtons: Qt.LeftButton | Qt.RightButton
                                     onClicked: mouse => {
-                                        if (mouse.button === Qt.LeftButton) {
-                                            var foundAddr = "";
-                                            if (root.taskbarState && root.taskbarState.groups) {
-                                                var pId = (modelData.id || "").toLowerCase();
-                                                var pCmd = (modelData.cmd || "").toLowerCase();
-                                                for (var i = 0; i < root.taskbarState.groups.length; i++) {
-                                                    var g = root.taskbarState.groups[i];
-                                                    var gId = (g.app_id || "").toLowerCase();
-                                                    var gClass = (g.wm_class || "").toLowerCase();
-                                                    if (gId.includes(pId) || gId.includes(pCmd) || gClass.includes(pId) || gClass.includes(pCmd)) {
-                                                        if (g.windows && g.windows.length > 0) {
-                                                            foundAddr = g.windows[0].address;
-                                                            break;
+                                        if (isPinned) {
+                                            if (mouse.button === Qt.LeftButton) {
+                                                var foundAddr = "";
+                                                if (root.taskbarState && root.taskbarState.groups) {
+                                                    var pId = (appData.id || "").toLowerCase();
+                                                    var pCmd = (appData.cmd || "").toLowerCase();
+                                                    for (var i = 0; i < root.taskbarState.groups.length; i++) {
+                                                        var g = root.taskbarState.groups[i];
+                                                        var gId = (g.app_id || "").toLowerCase();
+                                                        var gClass = (g.wm_class || "").toLowerCase();
+                                                        if (gId.includes(pId) || gId.includes(pCmd) || gClass.includes(pId) || gClass.includes(pCmd)) {
+                                                            if (g.windows && g.windows.length > 0) {
+                                                                foundAddr = g.windows[0].address;
+                                                                break;
+                                                            }
                                                         }
                                                     }
                                                 }
+                                                if (foundAddr) {
+                                                    root.dispatchAction("focus", foundAddr);
+                                                } else {
+                                                    root.runCmd(["hyprctl", "dispatch", "exec", appData.cmd || appData.id]);
+                                                }
+                                            } else if (mouse.button === Qt.RightButton) {
+                                                secPinnedMenuPopup.targetApp = appData;
+                                                secPinnedMenuPopup.visible = true;
                                             }
-                                            if (foundAddr) {
-                                                root.dispatchAction("focus", foundAddr);
-                                            } else {
-                                                root.runCmd(["hyprctl", "dispatch", "exec", modelData.cmd || modelData.id]);
-                                            }
-                                        } else if (mouse.button === Qt.RightButton) {
-                                            secPinnedMenuPopup.targetApp = modelData;
-                                            secPinnedMenuPopup.visible = true;
+                                        } else {
+                                            // Unpinned placeholder slot: Open Launchpad
+                                            root.runCmd(["bash", "-c", "~/.config/hypr/scripts/launchpad.sh"]);
                                         }
                                     }
                                 }
@@ -2069,14 +2068,14 @@ ShellRoot {
                     Rectangle {
                         visible: root.isFullSakura
                         width: 1
-                        height: 16
+                        height: 20
                         color: root.colAccentAlt + "44"
                         Layout.alignment: Qt.AlignVCenter
                     }
 
                     // 🔢 Workspaces (1 2 3 4) for Secondary Monitor
                     Rectangle {
-                        height: 30
+                        height: 36
                         width: secWsRow.implicitWidth + 10
                         radius: root.cardRadius
                         color: root.colBgAlt
@@ -2103,15 +2102,15 @@ ShellRoot {
                                         return wsNum === 1;
                                     }
 
-                                    width: 24
-                                    height: 24
+                                    width: 26
+                                    height: 26
                                     radius: root.buttonRadius
                                     color: isWsActive ? root.colAccent : (secWsMouse.containsMouse ? root.colBorder : "transparent")
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: modelData
-                                        font.pixelSize: 12
+                                        font.pixelSize: 13
                                         font.bold: true
                                         color: isWsActive ? "#0a0f1d" : (secWsMouse.containsMouse ? root.colFg : root.colFgMuted)
                                     }
@@ -2638,8 +2637,8 @@ ShellRoot {
                         Item {
                             id: secCenterAppItem
                             property var groupData: modelData
-                            width: 38
-                            height: 32
+                            width: 42
+                            height: 36
 
                             Rectangle {
                                 anchors.fill: parent
@@ -2651,8 +2650,8 @@ ShellRoot {
                                 Image {
                                     id: secCenterAppIcon
                                     anchors.centerIn: parent
-                                    width: 22
-                                    height: 22
+                                    width: 24
+                                    height: 24
                                     source: Quickshell.iconPath(groupData.icon)
                                     fillMode: Image.PreserveAspectFit
                                     opacity: groupData.is_minimized ? 0.5 : 1.0
@@ -2663,7 +2662,7 @@ ShellRoot {
                                     anchors.centerIn: parent
                                     visible: secCenterAppIcon.status !== Image.Ready
                                     text: "󰖯"
-                                    font.pixelSize: 18
+                                    font.pixelSize: 20
                                     color: groupData.is_active ? root.colAccent : root.colFg
                                 }
 
@@ -2672,9 +2671,9 @@ ShellRoot {
                                     anchors.bottom: parent.bottom
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     anchors.bottomMargin: 2
-                                    width: groupData.is_active ? 18 : 4
-                                    height: 2.5
-                                    radius: Math.max(1, root.buttonRadius / 4)
+                                    width: groupData.is_active ? 20 : 5
+                                    height: 3
+                                    radius: Math.max(1.5, root.buttonRadius / 4)
                                     color: groupData.is_active ? root.colAccent : (groupData.is_minimized ? root.colGold : root.colFgMuted)
                                     Behavior on width { NumberAnimation { duration: 150 } }
                                 }
@@ -2870,7 +2869,7 @@ ShellRoot {
 
                     // 🔊 Volume Pill
                     Rectangle {
-                        height: 28
+                        height: 34
                         width: secVolRow.implicitWidth + 16
                         radius: root.buttonRadius
                         color: root.colBgAlt
@@ -2882,13 +2881,13 @@ ShellRoot {
 
                             Text {
                                 text: root.isMuted ? "󰝟" : (root.volPercent > 50 ? "󰕾" : "󰖀")
-                                font.pixelSize: 14
+                                font.pixelSize: 15
                                 color: root.isMuted ? root.colRed : root.colAccent
                             }
 
                             Text {
                                 text: root.volPercent + "%"
-                                font.pixelSize: 12
+                                font.pixelSize: 13
                                 font.bold: true
                                 color: root.colFg
                             }
@@ -2903,15 +2902,15 @@ ShellRoot {
 
                     // 🧠 Gally AI Hub
                     Rectangle {
-                        width: 30
-                        height: 30
+                        width: 34
+                        height: 34
                         radius: root.buttonRadius
                         color: secAiMouse.containsMouse ? root.colAccent + "33" : "transparent"
 
                         Text {
                             anchors.centerIn: parent
                             text: root.isFullSakura ? "✨" : "󰚩"
-                            font.pixelSize: 16
+                            font.pixelSize: 18
                             color: root.colAccent
                         }
 
@@ -2925,15 +2924,15 @@ ShellRoot {
 
                     // 🎨 Wallust Theme Switcher
                     Rectangle {
-                        width: 30
-                        height: 30
+                        width: 34
+                        height: 34
                         radius: root.buttonRadius
                         color: secThmMouse.containsMouse ? root.colAccentAlt + "33" : "transparent"
 
                         Text {
                             anchors.centerIn: parent
                             text: "󰏘"
-                            font.pixelSize: 16
+                            font.pixelSize: 18
                             color: root.colAccentAlt
                         }
 
@@ -2949,8 +2948,8 @@ ShellRoot {
                     Rectangle {
                         id: secSakuraClockBtn
                         visible: root.isFullSakura
-                        height: 30
-                        width: secSakuraClockRow.implicitWidth + 18
+                        height: 34
+                        width: secSakuraClockRow.implicitWidth + 20
                         radius: 14
                         color: secSakuraClockMouse.containsMouse ? (root.colAccent + "33") : (root.colBgAlt + "88")
                         border.color: "transparent"
@@ -2963,13 +2962,13 @@ ShellRoot {
 
                             Text {
                                 text: "🌸"
-                                font.pixelSize: 12
+                                font.pixelSize: 13
                                 color: root.colAccent
                             }
 
                             Text {
                                 text: root.timeStr
-                                font.pixelSize: 13
+                                font.pixelSize: 14
                                 font.bold: true
                                 color: root.colFg
                             }
@@ -2987,8 +2986,8 @@ ShellRoot {
                     // 󰅀 Down Arrow / Minimized Tray Menu
                     Rectangle {
                         id: secTrayBtn
-                        width: 28
-                        height: 28
+                        width: 34
+                        height: 34
                         radius: root.buttonRadius
                         color: secTrayArea.containsMouse || secTrayMenuPopup.visible ? root.colBgAlt : "transparent"
                         border.color: secTrayArea.containsMouse || secTrayMenuPopup.visible ? root.colAccent : "transparent"
@@ -2997,7 +2996,7 @@ ShellRoot {
                         Text {
                             anchors.centerIn: parent
                             text: "󰅀"
-                            font.pixelSize: 15
+                            font.pixelSize: 16
                             color: root.taskbarState.minimized_windows && root.taskbarState.minimized_windows.length > 0 ? root.colGold : root.colFgMuted
                         }
 
