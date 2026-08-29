@@ -35,7 +35,7 @@ ShellRoot {
         if (!json) return;
         if (json.bg) {
             var b = String(json.bg).trim();
-            root.colBg = b.length === 7 ? b + "E6" : b;
+            root.colBg = b.length === 7 ? b + "F0" : b;
         }
         if (json.bg_alt || json.bg_card) root.colBgAlt = json.bg_alt || json.bg_card;
         if (json.fg) root.colFg = json.fg;
@@ -45,13 +45,27 @@ ShellRoot {
         if (json.border || json.border_col) root.colBorder = json.border || json.border_col;
         else if (json.accent) root.colBorder = json.accent;
         if (json.gold) root.colGold = json.gold;
-        if (json.rounding !== undefined) root.themeRounding = parseInt(json.rounding);
-        else if (json.hypr_rounding !== undefined) root.themeRounding = parseInt(json.hypr_rounding);
+        if (json.rounding !== undefined) {
+            var r = parseInt(json.rounding);
+            root.themeRounding = r;
+            root.islandRadius = r;
+            root.cardRadius = Math.max(3, r - 2);
+            root.buttonRadius = Math.max(2, r - 2);
+            root.popupRadius = Math.max(4, r + 2);
+        } else if (json.hypr_rounding !== undefined) {
+            var r = parseInt(json.hypr_rounding);
+            root.themeRounding = r;
+            root.islandRadius = r;
+            root.cardRadius = Math.max(3, r - 2);
+            root.buttonRadius = Math.max(2, r - 2);
+            root.popupRadius = Math.max(4, r + 2);
+        }
         if (json.layout_style) root.layoutStyle = json.layout_style;
         if (json.bar_height) root.barHeight = parseInt(json.bar_height);
     }
 
     FileView {
+        id: activeThemeFile
         path: "/home/gallo/.config/gally/active_theme.json"
         watchChanges: true
         onLoaded: {
@@ -60,23 +74,21 @@ ShellRoot {
             } catch(e) {}
         }
         onFileChanged: {
+            reload();
             try {
                 root.applyThemeJson(JSON.parse(text()));
             } catch(e) {}
         }
     }
 
-    FileView {
-        path: "/home/gallo/.cache/garchy_theme.json"
-        watchChanges: true
-        onLoaded: {
+    Timer {
+        interval: 1000
+        running: true
+        repeat: true
+        onTriggered: {
+            activeThemeFile.reload();
             try {
-                root.applyThemeJson(JSON.parse(text()));
-            } catch(e) {}
-        }
-        onFileChanged: {
-            try {
-                root.applyThemeJson(JSON.parse(text()));
+                root.applyThemeJson(JSON.parse(activeThemeFile.text()));
             } catch(e) {}
         }
     }

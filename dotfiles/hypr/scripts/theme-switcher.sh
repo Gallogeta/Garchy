@@ -4,5 +4,5 @@
 if pgrep -f "quickshell.*theme-switcher" >/dev/null; then
     pkill -f "quickshell.*theme-switcher"
 else
-    quickshell -c "$HOME/.config/quickshell/theme-switcher" &
+    setsid quickshell -c "$HOME/.config/quickshell/theme-switcher" >/dev/null 2>&1 &
 fi
