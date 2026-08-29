@@ -128,6 +128,8 @@ def generate_kitty_theme_config(theme_dict):
     fg_muted = theme_dict.get("fg_muted", "#94a3b8")
     accent = theme_dict.get("accent", "#38bdf8")
     accent_alt = theme_dict.get("accent_alt", "#2563eb")
+    gold = theme_dict.get("gold", "#fbbf24")
+    peach = theme_dict.get("peach", "#fca5a5" if "sakura" in theme_dict.get("id", "") else "#fb923c")
 
     return f"""# ==============================================================================
 # Garchy OS Kitty Theme: {name}
@@ -154,18 +156,18 @@ tab_bar_background      {bg}
 # ANSI Colors
 color0                {bg}
 color8                {bg_alt}
-color1                #f43f5e
-color9                #fb7185
-color2                #10b981
-color10               #34d399
-color3                #fbbf24
-color11               #fde047
+color1                #f472b6
+color9                {peach}
+color2                #a7f3d0
+color10               #6ee7b7
+color3                {gold}
+color11               #fef08a
 color4                {accent_alt}
 color12               {accent}
 color5                #c084fc
 color13               #e879f9
 color6                {accent}
-color14               #a5f3fc
+color14               #fbcfe8
 color7                {fg}
 color15               #ffffff
 """
