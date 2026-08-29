@@ -24,15 +24,36 @@ ShellRoot {
     property color colGreen: "#10b981"
     property int themeRounding: 6
     property string layoutStyle: "garchy"
+    property string activeThemeId: "garchy"
+    property bool isFullSakura: root.layoutStyle === "full_sakura" || root.activeThemeId === "cyber_sakura"
     property int barHeight: 46
 
     property int islandRadius: root.themeRounding
     property int cardRadius: Math.max(3, root.themeRounding - 2)
     property int buttonRadius: Math.max(2, root.themeRounding - 2)
     property int popupRadius: Math.max(4, root.themeRounding + 2)
+    property var pinnedApps: []
+
+    FileView {
+        id: pinnedAppsFile
+        path: "/home/gallo/.config/gally/pinned_apps.json"
+        watchChanges: true
+        onLoaded: {
+            try {
+                root.pinnedApps = JSON.parse(text());
+            } catch(e) {}
+        }
+        onFileChanged: {
+            reload();
+            try {
+                root.pinnedApps = JSON.parse(text());
+            } catch(e) {}
+        }
+    }
 
     function applyThemeJson(json) {
         if (!json) return;
+        if (json.id) root.activeThemeId = json.id;
         if (json.bg) {
             var b = String(json.bg).trim();
             root.colBg = b.length === 7 ? b + "F0" : b;
@@ -220,36 +241,47 @@ ShellRoot {
             anchors.leftMargin: 10
             anchors.rightMargin: 10
 
-            // 1. LEFT ISLAND: Launcher, Workspaces 1-4, Windows 11 Taskbar
+            // 🌸 CYBER SAKURA CONTINUOUS FULL BAR CONTAINER
+            Rectangle {
+                id: fullSakuraBar
+                visible: root.isFullSakura
+                anchors.fill: parent
+                radius: 18
+                color: root.colBg
+                border.color: root.colBorder
+                border.width: 1.5
+            }
+
+            // 1. LEFT ISLAND: Launcher, Pinned Apps, Workspaces 1-4, Grouped Taskbar
             Rectangle {
                 id: leftIsland
                 anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: leftLayout.implicitWidth + 20
-                color: root.colBg
-                border.color: root.colBorder
-                border.width: 1.5
+                color: root.isFullSakura ? "transparent" : root.colBg
+                border.color: root.isFullSakura ? "transparent" : root.colBorder
+                border.width: root.isFullSakura ? 0 : 1.5
                 radius: root.islandRadius
 
                 RowLayout {
                     id: leftLayout
                     anchors.centerIn: parent
-                    spacing: 10
+                    spacing: 8
 
-                    // 🌌 Launcher Button
+                    // 🌌 / 🌸 Launcher Button
                     Rectangle {
                         width: 32
                         height: 32
                         radius: root.buttonRadius
-                        color: launchArea.containsMouse ? root.colAccent + "33" : root.colBgAlt
-                        border.color: launchArea.containsMouse ? root.colAccent : root.colBorder
+                        color: launchArea.containsMouse ? root.colAccent + "33" : (root.isFullSakura ? "transparent" : root.colBgAlt)
+                        border.color: launchArea.containsMouse ? root.colAccent : (root.isFullSakura ? "transparent" : root.colBorder)
                         border.width: 1
 
                         Text {
                             anchors.centerIn: parent
-                            text: "󰣇"
-                            font.pixelSize: 18
+                            text: root.isFullSakura ? "🌸" : "󰣇"
+                            font.pixelSize: root.isFullSakura ? 17 : 18
                             color: root.colAccent
                         }
 
@@ -266,6 +298,105 @@ ShellRoot {
                                 }
                             }
                         }
+                    }
+
+                    // 🌸 CYBER SAKURA PINNED QUICK-LAUNCH DOCK
+                    Row {
+                        id: pinnedRow
+                        visible: root.isFullSakura && root.pinnedApps && root.pinnedApps.length > 0
+                        spacing: 4
+                        Layout.alignment: Qt.AlignVCenter
+
+                        Repeater {
+                            model: root.pinnedApps
+
+                            Rectangle {
+                                width: 30
+                                height: 30
+                                radius: 8
+                                property bool isRunning: {
+                                    if (!root.taskbarState || !root.taskbarState.groups) return false;
+                                    var pId = (modelData.id || "").toLowerCase();
+                                    var pCmd = (modelData.cmd || "").toLowerCase();
+                                    for (var i = 0; i < root.taskbarState.groups.length; i++) {
+                                        var g = root.taskbarState.groups[i];
+                                        var gId = (g.app_id || "").toLowerCase();
+                                        var gClass = (g.wm_class || "").toLowerCase();
+                                        if (gId.includes(pId) || gId.includes(pCmd) || gClass.includes(pId) || gClass.includes(pCmd)) return true;
+                                    }
+                                    return false;
+                                }
+
+                                color: pinMouse.containsMouse ? (root.colAccent + "33") : (isRunning ? (root.colBgAlt || "#242038") : "transparent")
+                                border.color: isRunning ? (root.colAccent || "#f5bde6") : (pinMouse.containsMouse ? (root.colAccentAlt || "#c6a0f6") : "transparent")
+                                border.width: isRunning ? 1.5 : 1
+
+                                Image {
+                                    anchors.centerIn: parent
+                                    width: 18
+                                    height: 18
+                                    source: Quickshell.iconPath(modelData.icon || modelData.id)
+                                    fillMode: Image.PreserveAspectFit
+                                }
+
+                                // Subtle Blossom Glow Dot when Running
+                                Rectangle {
+                                    visible: isRunning
+                                    width: 4
+                                    height: 4
+                                    radius: 2
+                                    color: root.colAccent || "#f5bde6"
+                                    anchors.bottom: parent.bottom
+                                    anchors.bottomMargin: 2
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                }
+
+                                MouseArea {
+                                    id: pinMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                    onClicked: mouse => {
+                                        if (mouse.button === Qt.LeftButton) {
+                                            var foundAddr = "";
+                                            if (root.taskbarState && root.taskbarState.groups) {
+                                                var pId = (modelData.id || "").toLowerCase();
+                                                var pCmd = (modelData.cmd || "").toLowerCase();
+                                                for (var i = 0; i < root.taskbarState.groups.length; i++) {
+                                                    var g = root.taskbarState.groups[i];
+                                                    var gId = (g.app_id || "").toLowerCase();
+                                                    var gClass = (g.wm_class || "").toLowerCase();
+                                                    if (gId.includes(pId) || gId.includes(pCmd) || gClass.includes(pId) || gClass.includes(pCmd)) {
+                                                        if (g.windows && g.windows.length > 0) {
+                                                            foundAddr = g.windows[0].address;
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            if (foundAddr) {
+                                                root.dispatchAction("focus", foundAddr);
+                                            } else {
+                                                root.runCmd(["hyprctl", "dispatch", "exec", modelData.cmd || modelData.id]);
+                                            }
+                                        } else if (mouse.button === Qt.RightButton) {
+                                            pinnedMenuPopup.targetApp = modelData;
+                                            pinnedMenuPopup.visible = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Delicate Vertical Divider
+                    Rectangle {
+                        visible: root.isFullSakura && root.pinnedApps && root.pinnedApps.length > 0
+                        width: 1
+                        height: 16
+                        color: root.colAccentAlt + "44"
+                        Layout.alignment: Qt.AlignVCenter
                     }
 
                     // 🔢 Workspaces (1 2 3 4)
@@ -642,6 +773,167 @@ ShellRoot {
                                 }
                             }
                         }
+                        // Pin/Unpin option for Cyber Sakura
+                        Rectangle {
+                            visible: root.isFullSakura && groupMenuPopup.currentGroup
+                            Layout.fillWidth: true
+                            height: 28
+                            radius: root.buttonRadius
+                            color: pinToggleMouse.containsMouse ? (root.colAccent + "33") : root.colBgAlt
+                            border.color: pinToggleMouse.containsMouse ? root.colAccent : root.colBorder
+                            border.width: 1
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.margins: 6
+                                spacing: 8
+
+                                Text {
+                                    text: "📌"
+                                    font.pixelSize: 11
+                                }
+
+                                Text {
+                                    text: "Pin " + (groupMenuPopup.currentGroup ? groupMenuPopup.currentGroup.class : "App") + " to Sakura Dock"
+                                    font.pixelSize: 10
+                                    font.bold: true
+                                    color: root.colFg
+                                }
+                            }
+
+                            MouseArea {
+                                id: pinToggleMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (groupMenuPopup.currentGroup) {
+                                        var g = groupMenuPopup.currentGroup;
+                                        root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "add", g.class.toLowerCase(), g.title || g.class, g.icon || g.class.toLowerCase(), g.class.toLowerCase()]);
+                                    }
+                                    groupMenuPopup.visible = false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 📌 Primary Screen Pinned App Context Menu
+            PopupWindow {
+                id: pinnedMenuPopup
+                property var targetApp: null
+
+                anchor.window: winMain
+                anchor.rect.x: 80
+                anchor.rect.y: 46
+                anchor.rect.width: 220
+                anchor.rect.height: 0
+                anchor.edges: Edges.Bottom
+                anchor.gravity: Edges.Bottom
+                implicitWidth: 220
+                implicitHeight: pinMenuCol.implicitHeight + 20
+                color: "transparent"
+                visible: false
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: root.popupRadius
+                    color: root.colBgAlt
+                    border.color: root.colAccent
+                    border.width: 1.5
+
+                    ColumnLayout {
+                        id: pinMenuCol
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        spacing: 6
+
+                        // Header
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+
+                            Image {
+                                width: 18
+                                height: 18
+                                source: Quickshell.iconPath(pinnedMenuPopup.targetApp ? (pinnedMenuPopup.targetApp.icon || pinnedMenuPopup.targetApp.id) : "application-x-executable")
+                                fillMode: Image.PreserveAspectFit
+                            }
+
+                            Text {
+                                text: pinnedMenuPopup.targetApp ? pinnedMenuPopup.targetApp.name : "Pinned App"
+                                font.pixelSize: 12
+                                font.bold: true
+                                color: root.colFg
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 1
+                            color: root.colBorder
+                        }
+
+                        // Launch
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 28
+                            radius: 6
+                            color: launchPinMouse.containsMouse ? (root.colAccent + "33") : "transparent"
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 8
+                                spacing: 6
+
+                                Text { text: "🚀"; font.pixelSize: 12 }
+                                Text { text: "Launch Application"; font.pixelSize: 11; color: root.colFg }
+                            }
+
+                            MouseArea {
+                                id: launchPinMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (pinnedMenuPopup.targetApp) {
+                                        root.runCmd(["hyprctl", "dispatch", "exec", pinnedMenuPopup.targetApp.cmd || pinnedMenuPopup.targetApp.id]);
+                                    }
+                                    pinnedMenuPopup.visible = false;
+                                }
+                            }
+                        }
+
+                        // Unpin
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 28
+                            radius: 6
+                            color: unpinMouse.containsMouse ? (root.colRed + "33") : "transparent"
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 8
+                                spacing: 6
+
+                                Text { text: "📍"; font.pixelSize: 12 }
+                                Text { text: "Unpin from Dock"; font.pixelSize: 11; color: unpinMouse.containsMouse ? root.colRed : root.colFg }
+                            }
+
+                            MouseArea {
+                                id: unpinMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (pinnedMenuPopup.targetApp) {
+                                        root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "remove", pinnedMenuPopup.targetApp.id]);
+                                    }
+                                    pinnedMenuPopup.visible = false;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -652,15 +944,23 @@ ShellRoot {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: clockLayout.implicitWidth + 36
-                color: root.colBg
-                border.color: clockArea.containsMouse ? root.colAccent : root.colBorder
+                width: clockLayout.implicitWidth + (root.isFullSakura ? 28 : 36)
+                color: root.isFullSakura ? (root.colBgAlt + "88") : root.colBg
+                border.color: root.isFullSakura ? root.colBorder : (clockArea.containsMouse ? root.colAccent : root.colBorder)
                 border.width: 1.5
-                radius: root.islandRadius
+                radius: root.isFullSakura ? 14 : root.islandRadius
 
                 RowLayout {
                     id: clockLayout
                     anchors.centerIn: parent
+                    spacing: 6
+
+                    Text {
+                        visible: root.isFullSakura
+                        text: "🌸"
+                        font.pixelSize: 12
+                        color: root.colAccent
+                    }
 
                     Text {
                         text: root.timeStr
@@ -730,12 +1030,22 @@ ShellRoot {
                             border.color: calBtnArea.containsMouse ? root.colAccent : root.colBorder
                             border.width: 1
 
-                            Text {
+                            RowLayout {
                                 anchors.centerIn: parent
-                                text: "Open Full Calendar"
-                                font.pixelSize: 12
-                                font.bold: true
-                                color: root.colFg
+                                spacing: 8
+
+                                Text {
+                                    text: "󰸗"
+                                    font.pixelSize: 14
+                                    color: root.colAccent
+                                }
+
+                                Text {
+                                    text: "Open Calendar"
+                                    font.pixelSize: 12
+                                    font.bold: true
+                                    color: root.colFg
+                                }
                             }
 
                             MouseArea {
@@ -743,7 +1053,7 @@ ShellRoot {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 onClicked: {
-                                    root.runCmd(["gnome-calendar"]);
+                                    root.runCmd(["bash", "-c", "gnome-calendar || korganizer || xfce4-calendar"]);
                                     datePopup.visible = false;
                                 }
                             }
@@ -759,9 +1069,9 @@ ShellRoot {
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: rightLayout.implicitWidth + 24
-                color: root.colBg
-                border.color: root.colBorder
-                border.width: 1.5
+                color: root.isFullSakura ? "transparent" : root.colBg
+                border.color: root.isFullSakura ? "transparent" : root.colBorder
+                border.width: root.isFullSakura ? 0 : 1.5
                 radius: root.islandRadius
 
                 RowLayout {
@@ -1385,36 +1695,47 @@ ShellRoot {
             anchors.leftMargin: 10
             anchors.rightMargin: 10
 
-            // 1. LEFT ISLAND: Launcher, Workspaces 1-4, Windows 11 Taskbar
+            // 🌸 CYBER SAKURA CONTINUOUS FULL BAR CONTAINER
+            Rectangle {
+                id: fullSecSakuraBar
+                visible: root.isFullSakura
+                anchors.fill: parent
+                radius: 18
+                color: root.colBg
+                border.color: root.colBorder
+                border.width: 1.5
+            }
+
+            // 1. LEFT ISLAND: Launcher, Pinned Apps, Workspaces 1-4, Grouped Taskbar
             Rectangle {
                 id: secLeftIsland
                 anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: secLeftLayout.implicitWidth + 20
-                color: root.colBg
-                border.color: root.colBorder
-                border.width: 1.5
+                color: root.isFullSakura ? "transparent" : root.colBg
+                border.color: root.isFullSakura ? "transparent" : root.colBorder
+                border.width: root.isFullSakura ? 0 : 1.5
                 radius: root.islandRadius
 
                 RowLayout {
                     id: secLeftLayout
                     anchors.centerIn: parent
-                    spacing: 10
+                    spacing: 8
 
-                    // 🌌 Launcher Button
+                    // 🌌 / 🌸 Launcher Button
                     Rectangle {
                         width: 32
                         height: 32
                         radius: root.buttonRadius
-                        color: secLaunchArea.containsMouse ? root.colAccent + "33" : root.colBgAlt
-                        border.color: secLaunchArea.containsMouse ? root.colAccent : root.colBorder
+                        color: secLaunchArea.containsMouse ? root.colAccent + "33" : (root.isFullSakura ? "transparent" : root.colBgAlt)
+                        border.color: secLaunchArea.containsMouse ? root.colAccent : (root.isFullSakura ? "transparent" : root.colBorder)
                         border.width: 1
 
                         Text {
                             anchors.centerIn: parent
-                            text: "󰣇"
-                            font.pixelSize: 18
+                            text: root.isFullSakura ? "🌸" : "󰣇"
+                            font.pixelSize: root.isFullSakura ? 17 : 18
                             color: root.colAccent
                         }
 
@@ -1431,6 +1752,105 @@ ShellRoot {
                                 }
                             }
                         }
+                    }
+
+                    // 🌸 CYBER SAKURA PINNED QUICK-LAUNCH DOCK
+                    Row {
+                        id: secPinnedRow
+                        visible: root.isFullSakura && root.pinnedApps && root.pinnedApps.length > 0
+                        spacing: 4
+                        Layout.alignment: Qt.AlignVCenter
+
+                        Repeater {
+                            model: root.pinnedApps
+
+                            Rectangle {
+                                width: 30
+                                height: 30
+                                radius: 8
+                                property bool isRunning: {
+                                    if (!root.taskbarState || !root.taskbarState.groups) return false;
+                                    var pId = (modelData.id || "").toLowerCase();
+                                    var pCmd = (modelData.cmd || "").toLowerCase();
+                                    for (var i = 0; i < root.taskbarState.groups.length; i++) {
+                                        var g = root.taskbarState.groups[i];
+                                        var gId = (g.app_id || "").toLowerCase();
+                                        var gClass = (g.wm_class || "").toLowerCase();
+                                        if (gId.includes(pId) || gId.includes(pCmd) || gClass.includes(pId) || gClass.includes(pCmd)) return true;
+                                    }
+                                    return false;
+                                }
+
+                                color: secPinMouse.containsMouse ? (root.colAccent + "33") : (isRunning ? (root.colBgAlt || "#242038") : "transparent")
+                                border.color: isRunning ? (root.colAccent || "#f5bde6") : (secPinMouse.containsMouse ? (root.colAccentAlt || "#c6a0f6") : "transparent")
+                                border.width: isRunning ? 1.5 : 1
+
+                                Image {
+                                    anchors.centerIn: parent
+                                    width: 18
+                                    height: 18
+                                    source: Quickshell.iconPath(modelData.icon || modelData.id)
+                                    fillMode: Image.PreserveAspectFit
+                                }
+
+                                // Subtle Blossom Glow Dot when Running
+                                Rectangle {
+                                    visible: isRunning
+                                    width: 4
+                                    height: 4
+                                    radius: 2
+                                    color: root.colAccent || "#f5bde6"
+                                    anchors.bottom: parent.bottom
+                                    anchors.bottomMargin: 2
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                }
+
+                                MouseArea {
+                                    id: secPinMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                    onClicked: mouse => {
+                                        if (mouse.button === Qt.LeftButton) {
+                                            var foundAddr = "";
+                                            if (root.taskbarState && root.taskbarState.groups) {
+                                                var pId = (modelData.id || "").toLowerCase();
+                                                var pCmd = (modelData.cmd || "").toLowerCase();
+                                                for (var i = 0; i < root.taskbarState.groups.length; i++) {
+                                                    var g = root.taskbarState.groups[i];
+                                                    var gId = (g.app_id || "").toLowerCase();
+                                                    var gClass = (g.wm_class || "").toLowerCase();
+                                                    if (gId.includes(pId) || gId.includes(pCmd) || gClass.includes(pId) || gClass.includes(pCmd)) {
+                                                        if (g.windows && g.windows.length > 0) {
+                                                            foundAddr = g.windows[0].address;
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            if (foundAddr) {
+                                                root.dispatchAction("focus", foundAddr);
+                                            } else {
+                                                root.runCmd(["hyprctl", "dispatch", "exec", modelData.cmd || modelData.id]);
+                                            }
+                                        } else if (mouse.button === Qt.RightButton) {
+                                            secPinnedMenuPopup.targetApp = modelData;
+                                            secPinnedMenuPopup.visible = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Delicate Vertical Divider
+                    Rectangle {
+                        visible: root.isFullSakura && root.pinnedApps && root.pinnedApps.length > 0
+                        width: 1
+                        height: 16
+                        color: root.colAccentAlt + "44"
+                        Layout.alignment: Qt.AlignVCenter
                     }
 
                     // 🔢 Workspaces (1 2 3 4) for Secondary Monitor
@@ -1806,6 +2226,166 @@ ShellRoot {
                                     }
                                 }
                             }
+                        // Pin/Unpin option for Cyber Sakura
+                        Rectangle {
+                            visible: root.isFullSakura && secGroupMenuPopup.currentGroup
+                            Layout.fillWidth: true
+                            height: 28
+                            radius: root.buttonRadius
+                            color: secPinToggleMouse.containsMouse ? (root.colAccent + "33") : root.colBgAlt
+                            border.color: secPinToggleMouse.containsMouse ? root.colAccent : root.colBorder
+                            border.width: 1
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.margins: 6
+                                spacing: 8
+
+                                Text {
+                                    text: "📌"
+                                    font.pixelSize: 11
+                                }
+
+                                Text {
+                                    text: "Pin " + (secGroupMenuPopup.currentGroup ? secGroupMenuPopup.currentGroup.class : "App") + " to Sakura Dock"
+                                    font.pixelSize: 10
+                                    font.bold: true
+                                    color: root.colFg
+                                }
+                            }
+
+                            MouseArea {
+                                id: secPinToggleMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (secGroupMenuPopup.currentGroup) {
+                                        var g = secGroupMenuPopup.currentGroup;
+                                        root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "add", g.class.toLowerCase(), g.title || g.class, g.icon || g.class.toLowerCase(), g.class.toLowerCase()]);
+                                    }
+                                    secGroupMenuPopup.visible = false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 📌 Secondary Screen Pinned App Context Menu
+            PopupWindow {
+                id: secPinnedMenuPopup
+                property var targetApp: null
+
+                anchor.window: winSec
+                anchor.rect.x: 80
+                anchor.rect.y: 46
+                anchor.rect.width: 220
+                anchor.rect.height: 0
+                anchor.edges: Edges.Bottom
+                anchor.gravity: Edges.Bottom
+                implicitWidth: 220
+                implicitHeight: secPinMenuCol.implicitHeight + 20
+                color: "transparent"
+                visible: false
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: root.popupRadius
+                    color: root.colBgAlt
+                    border.color: root.colAccent
+                    border.width: 1.5
+
+                    ColumnLayout {
+                        id: secPinMenuCol
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        spacing: 6
+
+                        // Header
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+
+                            Image {
+                                width: 18
+                                height: 18
+                                source: Quickshell.iconPath(secPinnedMenuPopup.targetApp ? (secPinnedMenuPopup.targetApp.icon || secPinnedMenuPopup.targetApp.id) : "application-x-executable")
+                                fillMode: Image.PreserveAspectFit
+                            }
+
+                            Text {
+                                text: secPinnedMenuPopup.targetApp ? secPinnedMenuPopup.targetApp.name : "Pinned App"
+                                font.pixelSize: 12
+                                font.bold: true
+                                color: root.colFg
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 1
+                            color: root.colBorder
+                        }
+
+                        // Launch
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 28
+                            radius: 6
+                            color: secLaunchPinMouse.containsMouse ? (root.colAccent + "33") : "transparent"
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 8
+                                spacing: 6
+
+                                Text { text: "🚀"; font.pixelSize: 12 }
+                                Text { text: "Launch Application"; font.pixelSize: 11; color: root.colFg }
+                            }
+
+                            MouseArea {
+                                id: secLaunchPinMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (secPinnedMenuPopup.targetApp) {
+                                        root.runCmd(["hyprctl", "dispatch", "exec", secPinnedMenuPopup.targetApp.cmd || secPinnedMenuPopup.targetApp.id]);
+                                    }
+                                    secPinnedMenuPopup.visible = false;
+                                }
+                            }
+                        }
+
+                        // Unpin
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 28
+                            radius: 6
+                            color: secUnpinMouse.containsMouse ? (root.colRed + "33") : "transparent"
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 8
+                                spacing: 6
+
+                                Text { text: "📍"; font.pixelSize: 12 }
+                                Text { text: "Unpin from Dock"; font.pixelSize: 11; color: secUnpinMouse.containsMouse ? root.colRed : root.colFg }
+                            }
+
+                            MouseArea {
+                                id: secUnpinMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (secPinnedMenuPopup.targetApp) {
+                                        root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "remove", secPinnedMenuPopup.targetApp.id]);
+                                    }
+                                    secPinnedMenuPopup.visible = false;
+                                }
+                            }
                         }
                     }
                 }
@@ -1817,15 +2397,23 @@ ShellRoot {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: secClockLayout.implicitWidth + 36
-                color: root.colBg
-                border.color: secClockArea.containsMouse ? root.colAccent : root.colBorder
+                width: secClockLayout.implicitWidth + (root.isFullSakura ? 28 : 36)
+                color: root.isFullSakura ? (root.colBgAlt + "88") : root.colBg
+                border.color: root.isFullSakura ? root.colBorder : (secClockArea.containsMouse ? root.colAccent : root.colBorder)
                 border.width: 1.5
-                radius: root.islandRadius
+                radius: root.isFullSakura ? 14 : root.islandRadius
 
                 RowLayout {
                     id: secClockLayout
                     anchors.centerIn: parent
+                    spacing: 6
+
+                    Text {
+                        visible: root.isFullSakura
+                        text: "🌸"
+                        font.pixelSize: 12
+                        color: root.colAccent
+                    }
 
                     Text {
                         text: root.timeStr
@@ -1901,12 +2489,22 @@ ShellRoot {
                             border.color: secCalBtnArea.containsMouse ? root.colAccent : root.colBorder
                             border.width: 1
 
-                            Text {
+                            RowLayout {
                                 anchors.centerIn: parent
-                                text: "Open Full Calendar"
-                                font.pixelSize: 12
-                                font.bold: true
-                                color: root.colFg
+                                spacing: 8
+
+                                Text {
+                                    text: "󰸗"
+                                    font.pixelSize: 14
+                                    color: root.colAccent
+                                }
+
+                                Text {
+                                    text: "Open Calendar"
+                                    font.pixelSize: 12
+                                    font.bold: true
+                                    color: root.colFg
+                                }
                             }
 
                             MouseArea {
@@ -1914,7 +2512,7 @@ ShellRoot {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 onClicked: {
-                                    root.runCmd(["gnome-calendar"]);
+                                    root.runCmd(["bash", "-c", "gnome-calendar || korganizer || xfce4-calendar"]);
                                     secDatePopup.visible = false;
                                 }
                             }
@@ -1930,9 +2528,9 @@ ShellRoot {
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: secRightLayout.implicitWidth + 24
-                color: root.colBg
-                border.color: root.colBorder
-                border.width: 1.5
+                color: root.isFullSakura ? "transparent" : root.colBg
+                border.color: root.isFullSakura ? "transparent" : root.colBorder
+                border.width: root.isFullSakura ? 0 : 1.5
                 radius: root.islandRadius
 
                 RowLayout {
@@ -2512,4 +3110,5 @@ ShellRoot {
             }
         }
     }
+}
 }

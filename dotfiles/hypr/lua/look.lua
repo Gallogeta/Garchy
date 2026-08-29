@@ -22,15 +22,15 @@ hl.config({
         gaps_out = 8,
         border_size = 2,
         col = {
-            active_border = { colors = { "rgba(38bdf8ee)", "rgba(2563ebee)" }, angle = 45 },
-            inactive_border = "rgba(070b1288)",
+            active_border = { colors = { "rgba(f5bde6ee)", "rgba(c6a0f6ee)" }, angle = 45 },
+            inactive_border = "rgba(16162a88)",
         },
         resize_on_border = true,
         allow_tearing = true, -- Enables zero-latency tearing for games
         layout = "dwindle",
     },
     decoration = {
-        rounding = 6,
+        rounding = 18,
         active_opacity = 1.0,
         inactive_opacity = 1.0,
         fullscreen_opacity = 1.0,
