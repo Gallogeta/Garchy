@@ -359,20 +359,22 @@ ShellRoot {
                                     fillMode: Image.PreserveAspectFit
                                 }
 
-                                // 2. If Pinned but icon failed to load: Pin Emoticon
+                                // 2. If Pinned but icon failed to load: Pin Glyph
                                 Text {
                                     visible: isPinned && pinSlotIcon.status !== Image.Ready
                                     anchors.centerIn: parent
-                                    text: "📌"
-                                    font.pixelSize: 14
+                                    text: "󰤱"
+                                    font.pixelSize: 16
+                                    color: root.colAccent
                                 }
 
-                                // 3. If Unpinned Placeholder: Emoticon placeholder (e.g. 📌)
+                                // 3. If Unpinned Placeholder: Pastel Pin Glyph
                                 Text {
                                     visible: !isPinned
                                     anchors.centerIn: parent
-                                    text: "📌"
-                                    font.pixelSize: 14
+                                    text: "󰤱"
+                                    font.pixelSize: 16
+                                    color: root.colAccent
                                     opacity: pinSlotMouse.containsMouse ? 1.0 : 0.4
                                 }
 
@@ -840,8 +842,9 @@ ShellRoot {
                                 spacing: 8
 
                                 Text {
-                                    text: parent.parent.isGroupPinned ? "📍" : "📌"
-                                    font.pixelSize: 11
+                                    text: parent.parent.isGroupPinned ? "󰤲" : "󰤱"
+                                    font.pixelSize: 14
+                                    color: parent.parent.isGroupPinned ? root.colRed : root.colAccent
                                 }
 
                                 Text {
@@ -972,7 +975,7 @@ ShellRoot {
                                 anchors.leftMargin: 8
                                 spacing: 6
 
-                                Text { text: "📍"; font.pixelSize: 12 }
+                                Text { text: "󰤲"; font.pixelSize: 14; color: unpinMouse.containsMouse ? root.colRed : root.colAccent }
                                 Text { text: "Unpin from Dock"; font.pixelSize: 11; color: unpinMouse.containsMouse ? root.colRed : root.colFg }
                             }
 
@@ -2008,20 +2011,22 @@ ShellRoot {
                                     fillMode: Image.PreserveAspectFit
                                 }
 
-                                // 2. If Pinned but icon failed to load: Pin Emoticon
+                                // 2. If Pinned but icon failed to load: Pin Glyph
                                 Text {
                                     visible: isPinned && secPinSlotIcon.status !== Image.Ready
                                     anchors.centerIn: parent
-                                    text: "📌"
-                                    font.pixelSize: 14
+                                    text: "󰤱"
+                                    font.pixelSize: 16
+                                    color: root.colAccent
                                 }
 
-                                // 3. If Unpinned Placeholder: Emoticon placeholder (e.g. 📌)
+                                // 3. If Unpinned Placeholder: Pastel Pin Glyph
                                 Text {
                                     visible: !isPinned
                                     anchors.centerIn: parent
-                                    text: "📌"
-                                    font.pixelSize: 14
+                                    text: "󰤱"
+                                    font.pixelSize: 16
+                                    color: root.colAccent
                                     opacity: secPinSlotMouse.containsMouse ? 1.0 : 0.4
                                 }
 
@@ -2488,8 +2493,9 @@ ShellRoot {
                                 spacing: 8
 
                                 Text {
-                                    text: parent.parent.isGroupPinned ? "📍" : "📌"
-                                    font.pixelSize: 11
+                                    text: parent.parent.isGroupPinned ? "󰤲" : "󰤱"
+                                    font.pixelSize: 14
+                                    color: parent.parent.isGroupPinned ? root.colRed : root.colAccent
                                 }
 
                                 Text {
@@ -2620,7 +2626,7 @@ ShellRoot {
                                 anchors.leftMargin: 8
                                 spacing: 6
 
-                                Text { text: "📍"; font.pixelSize: 12 }
+                                Text { text: "󰤲"; font.pixelSize: 14; color: secUnpinMouse.containsMouse ? root.colRed : root.colAccent }
                                 Text { text: "Unpin from Dock"; font.pixelSize: 11; color: secUnpinMouse.containsMouse ? root.colRed : root.colFg }
                             }
 
