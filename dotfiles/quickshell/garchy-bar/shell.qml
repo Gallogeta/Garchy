@@ -12,16 +12,16 @@ ShellRoot {
     // ========================================================
     // DYNAMIC WALLUST / THEME GALLERY PALETTE & GEOMETRY
     // ========================================================
-    property color colBg: "#070b12F2"
-    property color colBgAlt: "#0f172a"
-    property color colFg: "#f8fafc"
-    property color colFgMuted: "#94a3b8"
-    property color colAccent: "#38bdf8"
-    property color colAccentAlt: "#2563eb"
-    property color colBorder: "#1e293b"
-    property color colGold: "#fbbf24"
-    property color colRed: "#f43f5e"
-    property color colGreen: "#10b981"
+    property color colBg: "#181222F0"
+    property color colBgAlt: "#281b36"
+    property color colFg: "#fdf2f8"
+    property color colFgMuted: "#d4b8e0"
+    property color colAccent: "#f472b6"
+    property color colAccentAlt: "#c084fc"
+    property color colBorder: "#c084fc"
+    property color colGold: "#fed7aa"
+    property color colRed: "#fca5a5"
+    property color colGreen: "#f472b6"
     property int themeRounding: 6
     property string layoutStyle: "garchy"
     property string activeThemeId: "garchy"
@@ -341,11 +341,11 @@ ShellRoot {
                                 height: 36
                                 radius: 10
                                 color: isPinned 
-                                    ? (pinSlotMouse.containsMouse ? (root.colAccent + "33") : (isRunning ? (root.colBgAlt || "#242038") : "transparent"))
+                                    ? (pinSlotMouse.containsMouse ? (root.colAccent + "33") : (isRunning ? (root.colBgAlt || "#281b36") : "transparent"))
                                     : (pinSlotMouse.containsMouse ? (root.colAccent + "26") : (root.colBgAlt + "44"))
                                 border.color: isPinned
-                                    ? (isRunning ? (root.colAccent || "#f5bde6") : (pinSlotMouse.containsMouse ? (root.colAccentAlt || "#c6a0f6") : (root.colAccentAlt + "44")))
-                                    : (pinSlotMouse.containsMouse ? (root.colAccent || "#f5bde6") : (root.colBorder + "44"))
+                                    ? (isRunning ? (root.colAccent || "#f472b6") : (pinSlotMouse.containsMouse ? (root.colAccent || "#f472b6") : (root.colAccentAlt + "44")))
+                                    : (pinSlotMouse.containsMouse ? (root.colAccent || "#f472b6") : (root.colBorder + "44"))
                                 border.width: isPinned ? (isRunning ? 1.5 : 1) : 1
 
                                 // 1. If Pinned: Application Desktop Icon
@@ -473,14 +473,16 @@ ShellRoot {
                                     width: 26
                                     height: 26
                                     radius: root.buttonRadius
-                                    color: isWsActive ? root.colAccent : (wsArea.containsMouse ? root.colBorder : "transparent")
+                                    color: isWsActive ? root.colAccent : (wsArea.containsMouse ? (root.colAccent + "33") : "transparent")
+                                    border.color: isWsActive ? root.colAccent : (wsArea.containsMouse ? root.colAccent : "transparent")
+                                    border.width: 1
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: modelData
                                         font.pixelSize: 13
                                         font.bold: true
-                                        color: isWsActive ? "#0a0f1d" : (wsArea.containsMouse ? root.colFg : root.colFgMuted)
+                                        color: isWsActive ? "#181222" : (wsArea.containsMouse ? root.colAccent : root.colFgMuted)
                                     }
 
                                     MouseArea {
@@ -513,8 +515,8 @@ ShellRoot {
                                     id: appPill
                                     anchors.fill: parent
                                     radius: root.buttonRadius
-                                    color: groupData.is_active ? root.colAccent + "33" : (appMouse.containsMouse ? root.colBgAlt : "transparent")
-                                    border.color: groupData.is_active ? root.colAccent : (appMouse.containsMouse ? root.colBorder : "transparent")
+                                    color: groupData.is_active ? root.colAccent + "33" : (appMouse.containsMouse ? (root.colAccent + "26") : "transparent")
+                                    border.color: groupData.is_active ? root.colAccent : (appMouse.containsMouse ? root.colAccent : "transparent")
                                     border.width: groupData.is_active ? 1.5 : 1
 
                                     // App Desktop Icon
@@ -1022,8 +1024,8 @@ ShellRoot {
                             Rectangle {
                                 anchors.fill: parent
                                 radius: root.buttonRadius
-                                color: groupData.is_active ? root.colAccent + "33" : (centerAppMouse.containsMouse ? root.colBgAlt : "transparent")
-                                border.color: groupData.is_active ? root.colAccent : (centerAppMouse.containsMouse ? root.colBorder : "transparent")
+                                color: groupData.is_active ? root.colAccent + "33" : (centerAppMouse.containsMouse ? (root.colAccent + "26") : "transparent")
+                                border.color: groupData.is_active ? root.colAccent : (centerAppMouse.containsMouse ? root.colAccent : "transparent")
                                 border.width: groupData.is_active ? 1.5 : 1
 
                                 Image {
@@ -1362,7 +1364,7 @@ ShellRoot {
                         width: 34
                         height: 34
                         radius: root.buttonRadius
-                        color: trayArea.containsMouse || trayMenuPopup.visible ? root.colBgAlt : "transparent"
+                        color: trayArea.containsMouse || trayMenuPopup.visible ? (root.colAccent + "33") : "transparent"
                         border.color: trayArea.containsMouse || trayMenuPopup.visible ? root.colAccent : "transparent"
                         border.width: 1
 
@@ -1988,11 +1990,11 @@ ShellRoot {
                                 height: 36
                                 radius: 10
                                 color: isPinned 
-                                    ? (secPinSlotMouse.containsMouse ? (root.colAccent + "33") : (isRunning ? (root.colBgAlt || "#242038") : "transparent"))
+                                    ? (secPinSlotMouse.containsMouse ? (root.colAccent + "33") : (isRunning ? (root.colBgAlt || "#281b36") : "transparent"))
                                     : (secPinSlotMouse.containsMouse ? (root.colAccent + "26") : (root.colBgAlt + "44"))
                                 border.color: isPinned
-                                    ? (isRunning ? (root.colAccent || "#f5bde6") : (secPinSlotMouse.containsMouse ? (root.colAccentAlt || "#c6a0f6") : (root.colAccentAlt + "44")))
-                                    : (secPinSlotMouse.containsMouse ? (root.colAccent || "#f5bde6") : (root.colBorder + "44"))
+                                    ? (isRunning ? (root.colAccent || "#f472b6") : (secPinSlotMouse.containsMouse ? (root.colAccent || "#f472b6") : (root.colAccentAlt + "44")))
+                                    : (secPinSlotMouse.containsMouse ? (root.colAccent || "#f472b6") : (root.colBorder + "44"))
                                 border.width: isPinned ? (isRunning ? 1.5 : 1) : 1
 
                                 // 1. If Pinned: Application Desktop Icon
@@ -2120,14 +2122,16 @@ ShellRoot {
                                     width: 26
                                     height: 26
                                     radius: root.buttonRadius
-                                    color: isWsActive ? root.colAccent : (secWsMouse.containsMouse ? root.colBorder : "transparent")
+                                    color: isWsActive ? root.colAccent : (secWsMouse.containsMouse ? (root.colAccent + "33") : "transparent")
+                                    border.color: isWsActive ? root.colAccent : (secWsMouse.containsMouse ? root.colAccent : "transparent")
+                                    border.width: 1
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: modelData
                                         font.pixelSize: 13
                                         font.bold: true
-                                        color: isWsActive ? "#0a0f1d" : (secWsMouse.containsMouse ? root.colFg : root.colFgMuted)
+                                        color: isWsActive ? "#181222" : (secWsMouse.containsMouse ? root.colAccent : root.colFgMuted)
                                     }
 
                                     MouseArea {
@@ -2164,8 +2168,8 @@ ShellRoot {
                                 Layout.preferredWidth: groupData.is_active ? 40 : 34
                                 Layout.preferredHeight: 32
                                 radius: root.buttonRadius
-                                color: groupData.is_active ? root.colAccent + "26" : (secAppMouse.containsMouse ? root.colBgAlt : "transparent")
-                                border.color: groupData.is_active ? root.colAccent : (secAppMouse.containsMouse ? root.colBorder : "transparent")
+                                color: groupData.is_active ? root.colAccent + "26" : (secAppMouse.containsMouse ? (root.colAccent + "26") : "transparent")
+                                border.color: groupData.is_active ? root.colAccent : (secAppMouse.containsMouse ? root.colAccent : "transparent")
                                 border.width: groupData.is_active ? 1.5 : 1
 
                                 Image {
@@ -2668,8 +2672,8 @@ ShellRoot {
                             Rectangle {
                                 anchors.fill: parent
                                 radius: root.buttonRadius
-                                color: groupData.is_active ? root.colAccent + "33" : (secCenterAppMouse.containsMouse ? root.colBgAlt : "transparent")
-                                border.color: groupData.is_active ? root.colAccent : (secCenterAppMouse.containsMouse ? root.colBorder : "transparent")
+                                color: groupData.is_active ? root.colAccent + "33" : (secCenterAppMouse.containsMouse ? (root.colAccent + "26") : "transparent")
+                                border.color: groupData.is_active ? root.colAccent : (secCenterAppMouse.containsMouse ? root.colAccent : "transparent")
                                 border.width: groupData.is_active ? 1.5 : 1
 
                                 Image {
@@ -3014,7 +3018,7 @@ ShellRoot {
                         width: 34
                         height: 34
                         radius: root.buttonRadius
-                        color: secTrayArea.containsMouse || secTrayMenuPopup.visible ? root.colBgAlt : "transparent"
+                        color: secTrayArea.containsMouse || secTrayMenuPopup.visible ? (root.colAccent + "33") : "transparent"
                         border.color: secTrayArea.containsMouse || secTrayMenuPopup.visible ? root.colAccent : "transparent"
                         border.width: 1
 
