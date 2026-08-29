@@ -1,7 +1,7 @@
 {
   "id": "cyber_sakura",
   "name": "🌸 Cyber Sakura",
-  "desc": "MacBook liquid pastel cherry blossom pink, lavender mauve, and glacier teal glass with a full quickshell taskbar and pinnable quick-launch dock.",
+  "desc": "MacBook liquid pastel cherry blossom pink, lavender mauve, and glacier teal glass with a full quickshell taskbar, centered dock, and pinnable quick-launch dock.",
   "colors": [
     "#1e1a2e",
     "#f5bde6",
@@ -12,7 +12,7 @@
   "hypr_border": "rgba(f5bde6ee) rgba(c6a0f6ee) 45deg",
   "hypr_inactive": "rgba(1e1a2e88)",
   "rounding": 18,
-  "bar_height": 46,
+  "bar_height": 52,
   "layout_style": "full_sakura",
   "accent": "#f5bde6",
   "accent_alt": "#c6a0f6",

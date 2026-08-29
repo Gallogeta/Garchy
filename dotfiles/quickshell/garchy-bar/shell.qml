@@ -26,7 +26,8 @@ ShellRoot {
     property string layoutStyle: "garchy"
     property string activeThemeId: "garchy"
     property bool isFullSakura: root.layoutStyle === "full_sakura" || root.activeThemeId === "cyber_sakura"
-    property int barHeight: 46
+    property bool isBottomBar: root.isFullSakura
+    property int barHeight: root.isFullSakura ? 52 : 46
 
     property int islandRadius: root.themeRounding
     property int cardRadius: Math.max(3, root.themeRounding - 2)
@@ -222,7 +223,8 @@ ShellRoot {
         }
 
         anchors {
-            top: true
+            top: !root.isBottomBar
+            bottom: root.isBottomBar
             left: true
             right: true
         }
@@ -236,8 +238,8 @@ ShellRoot {
 
         Item {
             anchors.fill: parent
-            anchors.topMargin: 4
-            anchors.bottomMargin: 4
+            anchors.topMargin: root.isBottomBar ? 5 : 4
+            anchors.bottomMargin: root.isBottomBar ? 5 : 4
             anchors.leftMargin: 10
             anchors.rightMargin: 10
 
@@ -252,7 +254,7 @@ ShellRoot {
                 border.width: 1.5
             }
 
-            // 1. LEFT ISLAND: Launcher, Pinned Apps, Workspaces 1-4, Grouped Taskbar
+            // 1. LEFT ISLAND: Launcher, Pinned Apps, Workspaces 1-4
             Rectangle {
                 id: leftIsland
                 anchors.left: parent.left
@@ -303,12 +305,37 @@ ShellRoot {
                     // 🌸 CYBER SAKURA PINNED QUICK-LAUNCH DOCK
                     Row {
                         id: pinnedRow
-                        visible: root.isFullSakura && root.pinnedApps && root.pinnedApps.length > 0
+                        visible: root.isFullSakura
                         spacing: 4
                         Layout.alignment: Qt.AlignVCenter
 
+                        // Empty Pinned fallback button
+                        Rectangle {
+                            visible: !root.pinnedApps || root.pinnedApps.length === 0
+                            width: 30
+                            height: 30
+                            radius: 8
+                            color: pinEmptyMouse.containsMouse ? (root.colAccent + "33") : "transparent"
+                            border.color: root.colAccentAlt + "44"
+                            border.width: 1
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "📌"
+                                font.pixelSize: 13
+                            }
+
+                            MouseArea {
+                                id: pinEmptyMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.runCmd(["bash", "-c", "~/.config/hypr/scripts/launchpad.sh"])
+                            }
+                        }
+
                         Repeater {
-                            model: root.pinnedApps
+                            model: root.pinnedApps || []
 
                             Rectangle {
                                 width: 30
@@ -332,11 +359,21 @@ ShellRoot {
                                 border.width: isRunning ? 1.5 : 1
 
                                 Image {
+                                    id: pinImg
                                     anchors.centerIn: parent
                                     width: 18
                                     height: 18
                                     source: Quickshell.iconPath(modelData.icon || modelData.id)
                                     fillMode: Image.PreserveAspectFit
+                                    visible: status === Image.Ready
+                                }
+
+                                // Fallback 📌 pin emoticon if icon is empty / not loaded
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: pinImg.status !== Image.Ready
+                                    text: "📌"
+                                    font.pixelSize: 13
                                 }
 
                                 // Subtle Blossom Glow Dot when Running
@@ -392,7 +429,7 @@ ShellRoot {
 
                     // Delicate Vertical Divider
                     Rectangle {
-                        visible: root.isFullSakura && root.pinnedApps && root.pinnedApps.length > 0
+                        visible: root.isFullSakura
                         width: 1
                         height: 16
                         color: root.colAccentAlt + "44"
@@ -452,9 +489,10 @@ ShellRoot {
                         }
                     }
 
-                    // 🗔 WINDOWS 11 / KDE INTERACTIVE TASKBAR
+                    // 🗔 WINDOWS 11 / KDE INTERACTIVE TASKBAR (When NOT Cyber Sakura)
                     Row {
                         id: taskbarRow
+                        visible: !root.isFullSakura
                         spacing: 8
 
                         Repeater {
@@ -574,11 +612,11 @@ ShellRoot {
 
                 anchor.window: winMain
                 anchor.rect.x: 120
-                anchor.rect.y: 46
+                anchor.rect.y: root.isBottomBar ? 0 : 46
                 anchor.rect.width: 320
                 anchor.rect.height: 0
-                anchor.edges: Edges.Bottom
-                anchor.gravity: Edges.Bottom
+                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
+                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
                 implicitWidth: 320
                 implicitHeight: Math.min(380, menuCol.implicitHeight + 24)
                 color: "transparent"
@@ -826,11 +864,11 @@ ShellRoot {
 
                 anchor.window: winMain
                 anchor.rect.x: 80
-                anchor.rect.y: 46
+                anchor.rect.y: root.isBottomBar ? 0 : 46
                 anchor.rect.width: 220
                 anchor.rect.height: 0
-                anchor.edges: Edges.Bottom
-                anchor.gravity: Edges.Bottom
+                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
+                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
                 implicitWidth: 220
                 implicitHeight: pinMenuCol.implicitHeight + 20
                 color: "transparent"
@@ -938,29 +976,136 @@ ShellRoot {
                 }
             }
 
-            // 2. CENTER ISLAND: Single Digital Clock (Click opens Date & Calendar)
+            // 2. CENTER ISLAND: Centered Taskbar in Cyber Sakura, or Digital Clock in Garchy Signature
             Rectangle {
                 id: centerIsland
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: clockLayout.implicitWidth + (root.isFullSakura ? 28 : 36)
-                color: root.isFullSakura ? (root.colBgAlt + "88") : root.colBg
+                width: root.isFullSakura ? (centerTaskRow.implicitWidth + 24) : (clockLayout.implicitWidth + 36)
+                color: root.isFullSakura ? "transparent" : root.colBg
                 border.color: root.isFullSakura ? "transparent" : (clockArea.containsMouse ? root.colAccent : root.colBorder)
                 border.width: root.isFullSakura ? 0 : 1.5
-                radius: root.isFullSakura ? 14 : root.islandRadius
+                radius: root.islandRadius
 
+                // A. Centered Taskbar (When Cyber Sakura is active)
+                Row {
+                    id: centerTaskRow
+                    visible: root.isFullSakura
+                    anchors.centerIn: parent
+                    spacing: 8
+
+                    Repeater {
+                        model: root.taskbarState.groups || []
+
+                        Item {
+                            id: centerAppItem
+                            property var groupData: modelData
+                            width: 38
+                            height: 32
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: root.buttonRadius
+                                color: groupData.is_active ? root.colAccent + "33" : (centerAppMouse.containsMouse ? root.colBgAlt : "transparent")
+                                border.color: groupData.is_active ? root.colAccent : (centerAppMouse.containsMouse ? root.colBorder : "transparent")
+                                border.width: groupData.is_active ? 1.5 : 1
+
+                                Image {
+                                    id: centerAppIcon
+                                    anchors.centerIn: parent
+                                    width: 22
+                                    height: 22
+                                    source: Quickshell.iconPath(groupData.icon)
+                                    fillMode: Image.PreserveAspectFit
+                                    opacity: groupData.is_minimized ? 0.5 : 1.0
+                                    visible: status === Image.Ready
+                                }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: centerAppIcon.status !== Image.Ready
+                                    text: "󰖯"
+                                    font.pixelSize: 18
+                                    color: groupData.is_active ? root.colAccent : root.colFg
+                                }
+
+                                // Active underline indicator
+                                Rectangle {
+                                    anchors.bottom: parent.bottom
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.bottomMargin: 2
+                                    width: groupData.is_active ? 18 : 4
+                                    height: 2.5
+                                    radius: Math.max(1, root.buttonRadius / 4)
+                                    color: groupData.is_active ? root.colAccent : (groupData.is_minimized ? root.colGold : root.colFgMuted)
+                                    Behavior on width { NumberAnimation { duration: 150 } }
+                                }
+
+                                // Multi-window count badge (e.g. 2, 3)
+                                Rectangle {
+                                    visible: groupData.count > 1
+                                    anchors.top: parent.top
+                                    anchors.right: parent.right
+                                    anchors.topMargin: 2
+                                    anchors.rightMargin: 2
+                                    width: 14
+                                    height: 14
+                                    radius: Math.max(2, root.buttonRadius - 2)
+                                    color: root.colAccentAlt
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: groupData.count
+                                        font.pixelSize: 9
+                                        font.bold: true
+                                        color: "#ffffff"
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: centerAppMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+
+                                    onClicked: mouse => {
+                                        if (mouse.button === Qt.RightButton || (mouse.button === Qt.LeftButton && groupData.windows.length > 1 && groupData.is_minimized)) {
+                                            groupMenuPopup.currentGroup = groupData;
+                                            var p = centerAppItem.mapToItem(null, 0, 0);
+                                            groupMenuPopup.anchor.rect.x = Math.max(10, Math.min(winMain.width - 320, p.x - 20));
+                                            groupMenuPopup.visible = !groupMenuPopup.visible;
+                                        } else if (mouse.button === Qt.LeftButton) {
+                                            if (groupData.windows.length === 1) {
+                                                root.dispatchAction("toggle", groupData.windows[0].address);
+                                            } else {
+                                                var act = groupData.windows.find(w => w.is_active);
+                                                if (act) {
+                                                    root.dispatchAction("toggle", act.address);
+                                                } else {
+                                                    root.dispatchAction("focus", groupData.windows[0].address);
+                                                }
+                                            }
+                                        } else if (mouse.button === Qt.MiddleButton) {
+                                            if (groupData.windows.length === 1) {
+                                                root.dispatchAction("close", groupData.windows[0].address);
+                                            } else {
+                                                groupMenuPopup.currentGroup = groupData;
+                                                groupMenuPopup.visible = true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // B. Digital Clock (When NOT Cyber Sakura / Garchy Signature)
                 RowLayout {
                     id: clockLayout
+                    visible: !root.isFullSakura
                     anchors.centerIn: parent
-                    spacing: 6
-
-                    Text {
-                        visible: root.isFullSakura
-                        text: "🌸"
-                        font.pixelSize: 12
-                        color: root.colAccent
-                    }
 
                     Text {
                         text: root.timeStr
@@ -972,6 +1117,7 @@ ShellRoot {
 
                 MouseArea {
                     id: clockArea
+                    visible: !root.isFullSakura
                     anchors.fill: parent
                     hoverEnabled: true
                     onClicked: datePopup.visible = !datePopup.visible
@@ -982,12 +1128,12 @@ ShellRoot {
             PopupWindow {
                 id: datePopup
                 anchor.window: winMain
-                anchor.rect.x: Math.round((winMain.width - 280) / 2)
-                anchor.rect.y: 46
+                anchor.rect.x: root.isFullSakura ? (winMain.width - 320) : Math.round((winMain.width - 280) / 2)
+                anchor.rect.y: root.isBottomBar ? 0 : 46
                 anchor.rect.width: 280
                 anchor.rect.height: 0
-                anchor.edges: Edges.Bottom
-                anchor.gravity: Edges.Bottom
+                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
+                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
                 implicitWidth: 280
                 implicitHeight: dateCol.implicitHeight + 28
                 color: "transparent"
@@ -1062,7 +1208,7 @@ ShellRoot {
                 }
             }
 
-            // 3. RIGHT ISLAND: Volume, Gally AI, Theme, Down Arrow Menu
+            // 3. RIGHT ISLAND: Volume, Gally AI, Theme, Clock (in Cyber Sakura), Down Arrow Menu
             Rectangle {
                 id: rightIsland
                 anchors.right: parent.right
@@ -1077,7 +1223,7 @@ ShellRoot {
                 RowLayout {
                     id: rightLayout
                     anchors.centerIn: parent
-                    spacing: 10
+                    spacing: 8
 
                     // 🔊 Volume Pill
                     Rectangle {
@@ -1121,7 +1267,7 @@ ShellRoot {
 
                         Text {
                             anchors.centerIn: parent
-                            text: "󰚩"
+                            text: root.isFullSakura ? "✨" : "󰚩"
                             font.pixelSize: 16
                             color: root.colAccent
                         }
@@ -1153,6 +1299,45 @@ ShellRoot {
                             anchors.fill: parent
                             hoverEnabled: true
                             onClicked: root.runCmd(["bash", "-c", "~/.config/hypr/scripts/theme-switcher.sh"])
+                        }
+                    }
+
+                    // 🌸 Cyber Sakura Digital Clock (Placed next to tray menu on right side)
+                    Rectangle {
+                        id: sakuraClockBtn
+                        visible: root.isFullSakura
+                        height: 30
+                        width: sakuraClockRow.implicitWidth + 18
+                        radius: 14
+                        color: sakuraClockMouse.containsMouse ? (root.colAccent + "33") : (root.colBgAlt + "88")
+                        border.color: "transparent"
+                        border.width: 0
+
+                        RowLayout {
+                            id: sakuraClockRow
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            Text {
+                                text: "🌸"
+                                font.pixelSize: 12
+                                color: root.colAccent
+                            }
+
+                            Text {
+                                text: root.timeStr
+                                font.pixelSize: 13
+                                font.bold: true
+                                color: root.colFg
+                            }
+                        }
+
+                        MouseArea {
+                            id: sakuraClockMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: datePopup.visible = !datePopup.visible
                         }
                     }
 
@@ -1188,11 +1373,11 @@ ShellRoot {
                 id: trayMenuPopup
                 anchor.window: winMain
                 anchor.rect.x: winMain.width - 364
-                anchor.rect.y: 46
+                anchor.rect.y: root.isBottomBar ? 0 : 46
                 anchor.rect.width: 350
                 anchor.rect.height: 0
-                anchor.edges: Edges.Bottom
-                anchor.gravity: Edges.Bottom
+                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
+                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
                 implicitWidth: 350
                 implicitHeight: hubCol.implicitHeight + 28
                 color: "transparent"
@@ -1676,7 +1861,8 @@ ShellRoot {
         }
 
         anchors {
-            top: true
+            top: !root.isBottomBar
+            bottom: root.isBottomBar
             left: true
             right: true
         }
@@ -1690,8 +1876,8 @@ ShellRoot {
 
         Item {
             anchors.fill: parent
-            anchors.topMargin: 4
-            anchors.bottomMargin: 4
+            anchors.topMargin: root.isBottomBar ? 5 : 4
+            anchors.bottomMargin: root.isBottomBar ? 5 : 4
             anchors.leftMargin: 10
             anchors.rightMargin: 10
 
@@ -1706,7 +1892,7 @@ ShellRoot {
                 border.width: 1.5
             }
 
-            // 1. LEFT ISLAND: Launcher, Pinned Apps, Workspaces 1-4, Grouped Taskbar
+            // 1. LEFT ISLAND: Launcher, Pinned Apps, Workspaces 1-4
             Rectangle {
                 id: secLeftIsland
                 anchors.left: parent.left
@@ -1757,12 +1943,37 @@ ShellRoot {
                     // 🌸 CYBER SAKURA PINNED QUICK-LAUNCH DOCK
                     Row {
                         id: secPinnedRow
-                        visible: root.isFullSakura && root.pinnedApps && root.pinnedApps.length > 0
+                        visible: root.isFullSakura
                         spacing: 4
                         Layout.alignment: Qt.AlignVCenter
 
+                        // Empty Pinned fallback button
+                        Rectangle {
+                            visible: !root.pinnedApps || root.pinnedApps.length === 0
+                            width: 30
+                            height: 30
+                            radius: 8
+                            color: secPinEmptyMouse.containsMouse ? (root.colAccent + "33") : "transparent"
+                            border.color: root.colAccentAlt + "44"
+                            border.width: 1
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "📌"
+                                font.pixelSize: 13
+                            }
+
+                            MouseArea {
+                                id: secPinEmptyMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.runCmd(["bash", "-c", "~/.config/hypr/scripts/launchpad.sh"])
+                            }
+                        }
+
                         Repeater {
-                            model: root.pinnedApps
+                            model: root.pinnedApps || []
 
                             Rectangle {
                                 width: 30
@@ -1786,11 +1997,21 @@ ShellRoot {
                                 border.width: isRunning ? 1.5 : 1
 
                                 Image {
+                                    id: secPinImg
                                     anchors.centerIn: parent
                                     width: 18
                                     height: 18
                                     source: Quickshell.iconPath(modelData.icon || modelData.id)
                                     fillMode: Image.PreserveAspectFit
+                                    visible: status === Image.Ready
+                                }
+
+                                // Fallback 📌 pin emoticon if icon is empty / not loaded
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: secPinImg.status !== Image.Ready
+                                    text: "📌"
+                                    font.pixelSize: 13
                                 }
 
                                 // Subtle Blossom Glow Dot when Running
@@ -1846,7 +2067,7 @@ ShellRoot {
 
                     // Delicate Vertical Divider
                     Rectangle {
-                        visible: root.isFullSakura && root.pinnedApps && root.pinnedApps.length > 0
+                        visible: root.isFullSakura
                         width: 1
                         height: 16
                         color: root.colAccentAlt + "44"
@@ -1913,8 +2134,9 @@ ShellRoot {
                         color: root.colBorder
                     }
 
-                    // 💻 Icon-Only Grouped Taskbar for Secondary Monitor
+                    // 💻 Icon-Only Grouped Taskbar for Secondary Monitor (When NOT Cyber Sakura)
                     RowLayout {
+                        visible: !root.isFullSakura
                         spacing: 4
 
                         Repeater {
@@ -2028,11 +2250,11 @@ ShellRoot {
 
                 anchor.window: winSec
                 anchor.rect.x: 120
-                anchor.rect.y: 46
+                anchor.rect.y: root.isBottomBar ? 0 : 46
                 anchor.rect.width: 320
                 anchor.rect.height: 0
-                anchor.edges: Edges.Bottom
-                anchor.gravity: Edges.Bottom
+                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
+                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
                 implicitWidth: 320
                 implicitHeight: Math.min(380, secMenuCol.implicitHeight + 24)
                 color: "transparent"
@@ -2279,11 +2501,11 @@ ShellRoot {
 
                 anchor.window: winSec
                 anchor.rect.x: 80
-                anchor.rect.y: 46
+                anchor.rect.y: root.isBottomBar ? 0 : 46
                 anchor.rect.width: 220
                 anchor.rect.height: 0
-                anchor.edges: Edges.Bottom
-                anchor.gravity: Edges.Bottom
+                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
+                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
                 implicitWidth: 220
                 implicitHeight: secPinMenuCol.implicitHeight + 20
                 color: "transparent"
@@ -2391,29 +2613,136 @@ ShellRoot {
                 }
             }
 
-            // 2. CENTER ISLAND: Digital Clock & Date Popup
+            // 2. CENTER ISLAND: Centered Taskbar in Cyber Sakura, or Digital Clock in Garchy Signature
             Rectangle {
                 id: secCenterIsland
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: secClockLayout.implicitWidth + (root.isFullSakura ? 28 : 36)
-                color: root.isFullSakura ? (root.colBgAlt + "88") : root.colBg
+                width: root.isFullSakura ? (secCenterTaskRow.implicitWidth + 24) : (secClockLayout.implicitWidth + 36)
+                color: root.isFullSakura ? "transparent" : root.colBg
                 border.color: root.isFullSakura ? "transparent" : (secClockArea.containsMouse ? root.colAccent : root.colBorder)
                 border.width: root.isFullSakura ? 0 : 1.5
-                radius: root.isFullSakura ? 14 : root.islandRadius
+                radius: root.islandRadius
 
+                // A. Centered Taskbar for Secondary Monitor (When Cyber Sakura is active)
+                Row {
+                    id: secCenterTaskRow
+                    visible: root.isFullSakura
+                    anchors.centerIn: parent
+                    spacing: 8
+
+                    Repeater {
+                        model: root.taskbarState.groups || []
+
+                        Item {
+                            id: secCenterAppItem
+                            property var groupData: modelData
+                            width: 38
+                            height: 32
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: root.buttonRadius
+                                color: groupData.is_active ? root.colAccent + "33" : (secCenterAppMouse.containsMouse ? root.colBgAlt : "transparent")
+                                border.color: groupData.is_active ? root.colAccent : (secCenterAppMouse.containsMouse ? root.colBorder : "transparent")
+                                border.width: groupData.is_active ? 1.5 : 1
+
+                                Image {
+                                    id: secCenterAppIcon
+                                    anchors.centerIn: parent
+                                    width: 22
+                                    height: 22
+                                    source: Quickshell.iconPath(groupData.icon)
+                                    fillMode: Image.PreserveAspectFit
+                                    opacity: groupData.is_minimized ? 0.5 : 1.0
+                                    visible: status === Image.Ready
+                                }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: secCenterAppIcon.status !== Image.Ready
+                                    text: "󰖯"
+                                    font.pixelSize: 18
+                                    color: groupData.is_active ? root.colAccent : root.colFg
+                                }
+
+                                // Active underline indicator
+                                Rectangle {
+                                    anchors.bottom: parent.bottom
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.bottomMargin: 2
+                                    width: groupData.is_active ? 18 : 4
+                                    height: 2.5
+                                    radius: Math.max(1, root.buttonRadius / 4)
+                                    color: groupData.is_active ? root.colAccent : (groupData.is_minimized ? root.colGold : root.colFgMuted)
+                                    Behavior on width { NumberAnimation { duration: 150 } }
+                                }
+
+                                // Multi-window count badge (e.g. 2, 3)
+                                Rectangle {
+                                    visible: groupData.count > 1
+                                    anchors.top: parent.top
+                                    anchors.right: parent.right
+                                    anchors.topMargin: 2
+                                    anchors.rightMargin: 2
+                                    width: 14
+                                    height: 14
+                                    radius: Math.max(2, root.buttonRadius - 2)
+                                    color: root.colAccentAlt
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: groupData.count
+                                        font.pixelSize: 9
+                                        font.bold: true
+                                        color: "#ffffff"
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: secCenterAppMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+
+                                    onClicked: mouse => {
+                                        if (mouse.button === Qt.RightButton || (mouse.button === Qt.LeftButton && groupData.windows.length > 1 && groupData.is_minimized)) {
+                                            secGroupMenuPopup.currentGroup = groupData;
+                                            var p = secCenterAppItem.mapToItem(null, 0, 0);
+                                            secGroupMenuPopup.anchor.rect.x = Math.max(10, Math.min(winSec.width - 320, p.x - 20));
+                                            secGroupMenuPopup.visible = !secGroupMenuPopup.visible;
+                                        } else if (mouse.button === Qt.LeftButton) {
+                                            if (groupData.windows.length === 1) {
+                                                root.dispatchAction("toggle", groupData.windows[0].address);
+                                            } else {
+                                                var act = groupData.windows.find(w => w.is_active);
+                                                if (act) {
+                                                    root.dispatchAction("toggle", act.address);
+                                                } else {
+                                                    root.dispatchAction("focus", groupData.windows[0].address);
+                                                }
+                                            }
+                                        } else if (mouse.button === Qt.MiddleButton) {
+                                            if (groupData.windows.length === 1) {
+                                                root.dispatchAction("close", groupData.windows[0].address);
+                                            } else {
+                                                secGroupMenuPopup.currentGroup = groupData;
+                                                secGroupMenuPopup.visible = true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // B. Digital Clock (When NOT in Cyber Sakura / Garchy Signature)
                 RowLayout {
                     id: secClockLayout
+                    visible: !root.isFullSakura
                     anchors.centerIn: parent
-                    spacing: 6
-
-                    Text {
-                        visible: root.isFullSakura
-                        text: "🌸"
-                        font.pixelSize: 12
-                        color: root.colAccent
-                    }
 
                     Text {
                         text: root.timeStr
@@ -2425,6 +2754,7 @@ ShellRoot {
 
                 MouseArea {
                     id: secClockArea
+                    visible: !root.isFullSakura
                     anchors.fill: parent
                     hoverEnabled: true
                     onClicked: secDatePopup.visible = !secDatePopup.visible
@@ -2435,12 +2765,12 @@ ShellRoot {
             PopupWindow {
                 id: secDatePopup
                 anchor.window: winSec
-                anchor.rect.x: Math.round((winSec.width - 280) / 2)
-                anchor.rect.y: 46
+                anchor.rect.x: root.isFullSakura ? (winSec.width - 320) : Math.round((winSec.width - 280) / 2)
+                anchor.rect.y: root.isBottomBar ? 0 : 46
                 anchor.rect.width: 280
                 anchor.rect.height: 0
-                anchor.edges: Edges.Bottom
-                anchor.gravity: Edges.Bottom
+                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
+                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
                 implicitWidth: 280
                 implicitHeight: secDateCol.implicitHeight + 28
                 color: "transparent"
@@ -2521,7 +2851,7 @@ ShellRoot {
                 }
             }
 
-            // 3. RIGHT ISLAND: Volume, Gally AI, Theme, Down Arrow Menu
+            // 3. RIGHT ISLAND: Volume, Gally AI, Theme, Clock (in Cyber Sakura), Down Arrow Menu
             Rectangle {
                 id: secRightIsland
                 anchors.right: parent.right
@@ -2536,7 +2866,7 @@ ShellRoot {
                 RowLayout {
                     id: secRightLayout
                     anchors.centerIn: parent
-                    spacing: 10
+                    spacing: 8
 
                     // 🔊 Volume Pill
                     Rectangle {
@@ -2580,7 +2910,7 @@ ShellRoot {
 
                         Text {
                             anchors.centerIn: parent
-                            text: "󰚩"
+                            text: root.isFullSakura ? "✨" : "󰚩"
                             font.pixelSize: 16
                             color: root.colAccent
                         }
@@ -2615,8 +2945,48 @@ ShellRoot {
                         }
                     }
 
+                    // 🌸 Cyber Sakura Digital Clock (Placed next to tray menu on right side)
+                    Rectangle {
+                        id: secSakuraClockBtn
+                        visible: root.isFullSakura
+                        height: 30
+                        width: secSakuraClockRow.implicitWidth + 18
+                        radius: 14
+                        color: secSakuraClockMouse.containsMouse ? (root.colAccent + "33") : (root.colBgAlt + "88")
+                        border.color: "transparent"
+                        border.width: 0
+
+                        RowLayout {
+                            id: secSakuraClockRow
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            Text {
+                                text: "🌸"
+                                font.pixelSize: 12
+                                color: root.colAccent
+                            }
+
+                            Text {
+                                text: root.timeStr
+                                font.pixelSize: 13
+                                font.bold: true
+                                color: root.colFg
+                            }
+                        }
+
+                        MouseArea {
+                            id: secSakuraClockMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: secDatePopup.visible = !secDatePopup.visible
+                        }
+                    }
+
                     // 󰅀 Down Arrow / Minimized Tray Menu
                     Rectangle {
+                        id: secTrayBtn
                         width: 28
                         height: 28
                         radius: root.buttonRadius
@@ -2646,11 +3016,11 @@ ShellRoot {
                 id: secTrayMenuPopup
                 anchor.window: winSec
                 anchor.rect.x: winSec.width - 364
-                anchor.rect.y: 46
+                anchor.rect.y: root.isBottomBar ? 0 : 46
                 anchor.rect.width: 350
                 anchor.rect.height: 0
-                anchor.edges: Edges.Bottom
-                anchor.gravity: Edges.Bottom
+                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
+                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
                 implicitWidth: 350
                 implicitHeight: secHubCol.implicitHeight + 28
                 color: "transparent"
