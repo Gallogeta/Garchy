@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-if pgrep -f "theme-switcher-gui.py" >/dev/null; then
-    pkill -f "theme-switcher-gui.py"
+# Garchy OS — Native Quickshell Theme Gallery Toggle
+
+if pgrep -f "quickshell.*theme-switcher" >/dev/null; then
+    pkill -f "quickshell.*theme-switcher"
 else
-    python3 "$HOME/.config/hypr/scripts/theme-switcher-gui.py"
+    quickshell -c "$HOME/.config/quickshell/theme-switcher" &
 fi

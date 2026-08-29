@@ -1,201 +1,59 @@
 #!/usr/bin/env python3
 """
-Gally OS - Shared Desktop Theme State Controller
+Gally OS — Shared Desktop Theme State Controller
 Synchronizes active theme colors, borders, corner rounding, icon sets,
-and full 16-color ANSI terminal palettes across Gally GUI apps, Hyprland, Waybar, and Kitty.
+and terminal palettes across Quickshell, Hyprland, GTK 3/4, Rofi, Cava, and Kitty.
 """
 
 import os
 import sys
+import re
 import json
 import subprocess
 
 THEME_STATE_FILE = os.path.expanduser("~/.config/gally/active_theme.json")
+CACHE_THEME_FILE = os.path.expanduser("~/.cache/garchy_theme.json")
+THEMES_DIR = os.path.expanduser("~/.config/gally/themes")
 
 DEFAULT_THEME = {
-    "name": "🌌 Garchy Theme",
-    "bg": "#0a0f1d",
-    "bg_card": "#131c31",
-    "bg_input": "#1e293b",
-    "bg_alt": "#131c31",
-    "fg": "#f1f5f9",
+    "id": "garchy",
+    "name": "Garchy Signature",
+    "desc": "Official Garchy aesthetic: Obsidian titanium glass, sapphire blue, electric cyan, and Orokin gold.",
+    "bg": "#070b12",
+    "bg_card": "#0f172a",
+    "bg_input": "#0f172a",
+    "bg_alt": "#141e33",
+    "fg": "#f8fafc",
     "fg_muted": "#94a3b8",
     "accent": "#38bdf8",
-    "accent_alt": "#fbbf24",
+    "accent_alt": "#2563eb",
+    "gold": "#fbbf24",
     "border_col": "#38bdf8",
-    "rounding": 14,
-    "border_width": 2,
-    "icon_theme": "Tela-circle-dark"
+    "border": "#1e293b",
+    "rounding": 6,
+    "bar_height": 46,
+    "layout_style": "garchy",
+    "border_width": 1.5,
+    "icon_theme": "Papirus-Dark"
 }
 
-THEME_PALETTES = {
-    "🌌 Garchy Theme": {
-        "c0": "#131c31", "c8": "#334155",
-        "c1": "#f43f5e", "c9": "#fb7185",
-        "c2": "#10b981", "c10": "#34d399",
-        "c3": "#fbbf24", "c11": "#fde047",
-        "c4": "#3b82f6", "c12": "#60a5fa",
-        "c5": "#a855f7", "c13": "#c084fc",
-        "c6": "#38bdf8", "c14": "#7dd3fc",
-        "c7": "#e2e8f0", "c15": "#ffffff"
-    },
-    "🌸 Tokyo Night": {
-        "c0": "#15161e", "c8": "#414868",
-        "c1": "#f7768e", "c9": "#f7768e",
-        "c2": "#9ece6a", "c10": "#9ece6a",
-        "c3": "#e0af68", "c11": "#e0af68",
-        "c4": "#7aa2f7", "c12": "#7aa2f7",
-        "c5": "#bb9af7", "c13": "#bb9af7",
-        "c6": "#7dcfff", "c14": "#7dcfff",
-        "c7": "#a9b1d6", "c15": "#c0caf5"
-    },
-    "☕ Catppuccin Mocha": {
-        "c0": "#45475a", "c8": "#585b70",
-        "c1": "#f38ba8", "c9": "#f38ba8",
-        "c2": "#a6e3a1", "c10": "#a6e3a1",
-        "c3": "#f9e2af", "c11": "#f9e2af",
-        "c4": "#89b4fa", "c12": "#89b4fa",
-        "c5": "#f5c2e7", "c13": "#f5c2e7",
-        "c6": "#94e2d5", "c14": "#94e2d5",
-        "c7": "#bac2de", "c15": "#a6adc8"
-    },
-    "❄️ Nord Arctic": {
-        "c0": "#3b4252", "c8": "#4c566a",
-        "c1": "#bf616a", "c9": "#bf616a",
-        "c2": "#a3be8c", "c10": "#a3be8c",
-        "c3": "#ebcb8b", "c11": "#ebcb8b",
-        "c4": "#81a1c1", "c12": "#81a1c1",
-        "c5": "#b48ead", "c13": "#b48ead",
-        "c6": "#88c0d0", "c14": "#8fbcbb",
-        "c7": "#e5e9f0", "c15": "#eceff4"
-    },
-    "⚡ Cyberpunk 2077": {
-        "c0": "#14141e", "c8": "#28283c",
-        "c1": "#ff003c", "c9": "#ff0055",
-        "c2": "#00ff66", "c10": "#33ff88",
-        "c3": "#fcee0a", "c11": "#ffff33",
-        "c4": "#00f0ff", "c12": "#33f3ff",
-        "c5": "#ff00a0", "c13": "#ff33b3",
-        "c6": "#00f0ff", "c14": "#70f7ff",
-        "c7": "#eaeaf0", "c15": "#ffffff"
-    },
-    "🧛 Dracula": {
-        "c0": "#21222c", "c8": "#6272a4",
-        "c1": "#ff5555", "c9": "#ff6e6e",
-        "c2": "#50fa7b", "c10": "#69ff94",
-        "c3": "#f1fa8c", "c11": "#ffffa5",
-        "c4": "#bd93f9", "c12": "#d6acff",
-        "c5": "#ff79c6", "c13": "#ff92df",
-        "c6": "#8be9fd", "c14": "#a4ffff",
-        "c7": "#f8f8f2", "c15": "#ffffff"
-    },
-    "🌋 Volcanic Lava": {
-        "c0": "#261414", "c8": "#4d2222",
-        "c1": "#ff3333", "c9": "#ff5555",
-        "c2": "#50fa7b", "c10": "#69ff94",
-        "c3": "#ff9900", "c11": "#ffaa22",
-        "c4": "#ff5533", "c12": "#ff7755",
-        "c5": "#e056fd", "c13": "#f077ff",
-        "c6": "#ff9966", "c14": "#ffbb88",
-        "c7": "#ffddcc", "c15": "#ffffff"
-    },
-    "🌲 Emerald Forest": {
-        "c0": "#12291e", "c8": "#234d3a",
-        "c1": "#ff4757", "c9": "#ff6b81",
-        "c2": "#2ed573", "c10": "#7bed9f",
-        "c3": "#ffa502", "c11": "#eccc68",
-        "c4": "#1e90ff", "c12": "#70a1ff",
-        "c5": "#a55eea", "c13": "#d1a8ff",
-        "c6": "#2ed573", "c14": "#7bed9f",
-        "c7": "#e6ffed", "c15": "#ffffff"
-    },
-    "🖤 Deep Obsidian": {
-        "c0": "#121212", "c8": "#2c2c2c",
-        "c1": "#ff5252", "c9": "#ff7b7b",
-        "c2": "#69f0ae", "c10": "#b9f6ca",
-        "c3": "#ffd740", "c11": "#ffe57f",
-        "c4": "#40c4ff", "c12": "#80d8ff",
-        "c5": "#e040fb", "c13": "#ea80fc",
-        "c6": "#00f0ff", "c14": "#84ffff",
-        "c7": "#e0e0e0", "c15": "#ffffff"
-    }
-}
-
-def generate_kitty_theme_config(theme_dict):
-    """Generates the full 16-color ANSI theme configuration for Kitty."""
-    name = theme_dict.get("name", "🌌 Garchy Theme")
-    p = THEME_PALETTES.get(name, THEME_PALETTES["🌌 Garchy Theme"])
-    
-    bg = theme_dict.get("bg", "#0a0f1d")
-    bg_alt = theme_dict.get("bg_alt", "#131c31")
-    fg = theme_dict.get("fg", "#f1f5f9")
-    fg_muted = theme_dict.get("fg_muted", "#94a3b8")
-    accent = theme_dict.get("accent", "#38bdf8")
-    accent_alt = theme_dict.get("accent_alt", "#fbbf24")
-
-    content = f"""# ==============================================================================
-# Garchy OS Kitty Theme: {name}
-# ==============================================================================
-
-# Core Colors
-foreground            {fg}
-background            {bg}
-selection_foreground  {bg}
-selection_background  {accent}
-
-# Cursor
-cursor                {accent}
-cursor_text_color     {bg}
-
-# Window Borders
-active_border_color   {accent}
-inactive_border_color {bg_alt}
-bell_border_color     {accent_alt}
-
-# URL Highlight
-url_color             {accent_alt}
-
-# Tab Bar Colors
-active_tab_foreground   {bg}
-active_tab_background   {accent}
-inactive_tab_foreground {fg_muted}
-inactive_tab_background {bg_alt}
-tab_bar_background      {bg}
-
-# --- Full 16-Color ANSI Spectrum ---
-# Black / Dark Grey
-color0                {p['c0']}
-color8                {p['c8']}
-
-# Red
-color1                {p['c1']}
-color9                {p['c9']}
-
-# Green
-color2                {p['c2']}
-color10               {p['c10']}
-
-# Yellow / Gold
-color3                {p['c3']}
-color11               {p['c11']}
-
-# Blue / Sapphire
-color4                {p['c4']}
-color12               {p['c12']}
-
-# Magenta / Purple
-color5                {p['c5']}
-color13               {p['c13']}
-
-# Cyan / Electric Cyan
-color6                {p['c6']}
-color14               {p['c14']}
-
-# White / Titanium
-color7                {p['c7']}
-color15               {p['c15']}
-"""
-    return content
+def get_all_themes():
+    """Loads all 6 themes from ~/.config/gally/themes/."""
+    themes = []
+    if os.path.exists(THEMES_DIR):
+        for fname in sorted(os.listdir(THEMES_DIR)):
+            if fname.endswith(".json"):
+                fpath = os.path.join(THEMES_DIR, fname)
+                try:
+                    with open(fpath, "r") as f:
+                        data = json.load(f)
+                    if isinstance(data, dict) and "name" in data:
+                        if "id" not in data:
+                            data["id"] = fname.replace(".json", "")
+                        themes.append(data)
+                except Exception as err:
+                    print(f"Error loading theme {fname}: {err}", file=sys.stderr)
+    return themes
 
 def get_active_theme():
     if os.path.exists(THEME_STATE_FILE):
@@ -209,36 +67,153 @@ def get_active_theme():
             pass
     return DEFAULT_THEME.copy()
 
-def get_theme_mtime():
-    if os.path.exists(THEME_STATE_FILE):
-        try:
-            return os.path.getmtime(THEME_STATE_FILE)
-        except Exception:
-            pass
-    return 0.0
+def update_hyprland_look_lua(theme_dict):
+    """Updates active border colors and window rounding in look.lua and reloads Hyprland."""
+    look_path = os.path.expanduser("~/.config/hypr/lua/look.lua")
+    if not os.path.exists(look_path):
+        return
 
-CAVA_GRADIENTS = {
-    "🌌 Garchy Theme": ["#131c31", "#1e3a8a", "#3b82f6", "#38bdf8", "#7dd3fc", "#fbbf24"],
-    "🌸 Tokyo Night": ["#15161e", "#24283b", "#414868", "#7aa2f7", "#bb9af7", "#7dcfff"],
-    "☕ Catppuccin Mocha": ["#1e1e2e", "#313244", "#585b70", "#89b4fa", "#cba6f7", "#f5c2e7"],
-    "❄️ Nord Arctic": ["#2e3440", "#3b4252", "#4c566a", "#81a1c1", "#88c0d0", "#eceff4"],
-    "⚡ Cyberpunk 2077": ["#0a0a0f", "#14141e", "#00f0ff", "#33ff88", "#fcee0a", "#ffff33"],
-    "🧛 Dracula": ["#21222c", "#282a36", "#6272a4", "#bd93f9", "#ff79c6", "#8be9fd"],
-    "🌋 Volcanic Lava": ["#1a0f0f", "#261414", "#ff3333", "#ff5533", "#ff9900", "#ffaa22"],
-    "🌲 Emerald Forest": ["#0b1a13", "#12291e", "#1e90ff", "#2ed573", "#7bed9f", "#e6ffed"],
-    "🖤 Deep Obsidian": ["#050505", "#121212", "#2c2c2c", "#40c4ff", "#00f0ff", "#ffffff"]
-}
+    accent = theme_dict.get("accent", "#38bdf8").lstrip("#")
+    accent_alt = theme_dict.get("accent_alt", "#2563eb").lstrip("#")
+    bg = theme_dict.get("bg", "#070b12").lstrip("#")
+    rounding = theme_dict.get("rounding", 6)
+
+    active_colors_str = f'{{ colors = {{ "rgba({accent}ee)", "rgba({accent_alt}ee)" }}, angle = 45 }}'
+    inactive_color_str = f'"rgba({bg}88)"'
+
+    try:
+        with open(look_path, "r") as f:
+            content = f.read()
+
+        # Update rounding
+        content = re.sub(r'rounding\s*=\s*\d+', f'rounding = {rounding}', content)
+
+        # Update active_border (match whole active_border line)
+        content = re.sub(
+            r'active_border\s*=\s*\{.+?\},?\s*\n',
+            f'active_border = {active_colors_str},\n',
+            content
+        )
+
+        # Update inactive_border
+        content = re.sub(
+            r'inactive_border\s*=\s*["\'][^"\']+["\']',
+            f'inactive_border = {inactive_color_str}',
+            content
+        )
+
+        with open(look_path, "w") as f:
+            f.write(content)
+
+        subprocess.run(["hyprctl", "reload"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception as err:
+        print(f"Error updating look.lua: {err}", file=sys.stderr)
+
+def generate_kitty_theme_config(theme_dict):
+    name = theme_dict.get("name", "Garchy Theme")
+    bg = theme_dict.get("bg", "#070b12")
+    bg_alt = theme_dict.get("bg_alt", "#141e33")
+    fg = theme_dict.get("fg", "#f8fafc")
+    fg_muted = theme_dict.get("fg_muted", "#94a3b8")
+    accent = theme_dict.get("accent", "#38bdf8")
+    accent_alt = theme_dict.get("accent_alt", "#2563eb")
+
+    return f"""# ==============================================================================
+# Garchy OS Kitty Theme: {name}
+# ==============================================================================
+foreground            {fg}
+background            {bg}
+selection_foreground  {bg}
+selection_background  {accent}
+
+cursor                {accent}
+cursor_text_color     {bg}
+
+active_border_color   {accent}
+inactive_border_color {bg_alt}
+bell_border_color     {accent_alt}
+url_color             {accent_alt}
+
+active_tab_foreground   {bg}
+active_tab_background   {accent}
+inactive_tab_foreground {fg_muted}
+inactive_tab_background {bg_alt}
+tab_bar_background      {bg}
+
+# ANSI Colors
+color0                {bg}
+color8                {bg_alt}
+color1                #f43f5e
+color9                #fb7185
+color2                #10b981
+color10               #34d399
+color3                #fbbf24
+color11               #fde047
+color4                {accent_alt}
+color12               {accent}
+color5                #c084fc
+color13               #e879f9
+color6                {accent}
+color14               #a5f3fc
+color7                {fg}
+color15               #ffffff
+"""
+
+def generate_gtk_css(theme_dict):
+    bg = theme_dict.get("bg", "#070b12")
+    bg_card = theme_dict.get("bg_card", "#0f172a")
+    fg = theme_dict.get("fg", "#f8fafc")
+    accent = theme_dict.get("accent", "#38bdf8")
+    border = theme_dict.get("border_col", accent)
+
+    return f"""/* Garchy OS System-wide Dynamic GTK Palette */
+@define-color accent_color {accent};
+@define-color accent_bg_color {accent};
+@define-color accent_fg_color {bg};
+@define-color window_bg_color {bg};
+@define-color window_fg_color {fg};
+@define-color view_bg_color {bg_card};
+@define-color view_fg_color {fg};
+@define-color headerbar_bg_color {bg_card};
+@define-color headerbar_fg_color {fg};
+@define-color card_bg_color {bg_card};
+@define-color card_fg_color {fg};
+@define-color popover_bg_color {bg};
+@define-color popover_fg_color {fg};
+@define-color borders {border};
+"""
+
+def update_rofi_theme(theme_dict):
+    bg = theme_dict.get("bg", "#070b12")
+    bg_card = theme_dict.get("bg_card", "#0f172a")
+    fg = theme_dict.get("fg", "#f8fafc")
+    accent = theme_dict.get("accent", "#38bdf8")
+    rounding = theme_dict.get("rounding", 6)
+
+    rofi_rasi = os.path.expanduser("~/.config/rofi/active-theme.rasi")
+    content = f"""* {{
+    bg-color: {bg}F2;
+    bg-card: {bg_card};
+    fg-color: {fg};
+    accent-color: {accent};
+    border-radius: {rounding}px;
+}}
+"""
+    try:
+        os.makedirs(os.path.dirname(rofi_rasi), exist_ok=True)
+        with open(rofi_rasi, "w") as f:
+            f.write(content)
+    except Exception:
+        pass
 
 def update_cava_config(theme_dict):
     cava_conf_path = os.path.expanduser("~/.config/cava/config")
-    name = theme_dict.get("name", "🌌 Garchy Theme")
-    grad = CAVA_GRADIENTS.get(name, CAVA_GRADIENTS["🌌 Garchy Theme"])
-    
-    content = f"""## ==============================================================================
-## 🌌 Garchy OS CAVA Configuration (PipeWire + 144Hz + Dynamic Gradients)
-## ==============================================================================
+    bg = theme_dict.get("bg", "#070b12")
+    accent = theme_dict.get("accent", "#38bdf8")
+    accent_alt = theme_dict.get("accent_alt", "#2563eb")
+    grad = [bg, accent_alt, accent, "#f8fafc"]
 
-[general]
+    content = f"""[general]
 mode = normal
 framerate = 144
 autosens = 1
@@ -263,19 +238,10 @@ mono_option = average
 [color]
 gradient = 1
 gradient_count = {len(grad)}
-
 """
     for i, col in enumerate(grad, 1):
         content += f"gradient_color_{i} = '{col}'\n"
-        
-    content += """
-[smoothing]
-integral = 70
-monstercat = 1
-waves = 0
-gravity = 100
-noise_reduction = 0.77
-"""
+
     try:
         os.makedirs(os.path.dirname(cava_conf_path), exist_ok=True)
         with open(cava_conf_path, "w") as f:
@@ -285,37 +251,21 @@ noise_reduction = 0.77
     except Exception:
         pass
 
-def generate_gtk_css(theme_dict):
-    bg = theme_dict.get("bg", "#0a0f1d")
-    bg_card = theme_dict.get("bg_card", "#131c31")
-    fg = theme_dict.get("fg", "#f1f5f9")
-    accent = theme_dict.get("accent", "#38bdf8")
-    accent_alt = theme_dict.get("accent_alt", "#3b82f6")
-    border = theme_dict.get("border_col", accent)
-
-    return f"""/* Garchy OS System-wide Dynamic GTK Palette */
-@define-color accent_color {accent};
-@define-color accent_bg_color {accent};
-@define-color accent_fg_color #0a0f1d;
-@define-color window_bg_color {bg};
-@define-color window_fg_color {fg};
-@define-color view_bg_color {bg_card};
-@define-color view_fg_color {fg};
-@define-color headerbar_bg_color {bg_card};
-@define-color headerbar_fg_color {fg};
-@define-color card_bg_color {bg_card};
-@define-color card_fg_color {fg};
-@define-color popover_bg_color {bg};
-@define-color popover_fg_color {fg};
-@define-color borders {border};
-"""
-
-def save_active_theme(theme_dict):
+def apply_theme(theme_dict):
+    """Applies a theme dictionary system-wide in real time."""
+    # 1. Write active theme state files
     os.makedirs(os.path.dirname(THEME_STATE_FILE), exist_ok=True)
     with open(THEME_STATE_FILE, "w") as f:
         json.dump(theme_dict, f, indent=2)
-    
-    # 1. Update Kitty theme.conf
+
+    os.makedirs(os.path.dirname(CACHE_THEME_FILE), exist_ok=True)
+    with open(CACHE_THEME_FILE, "w") as f:
+        json.dump(theme_dict, f, indent=2)
+
+    # 2. Update Hyprland window borders and rounding
+    update_hyprland_look_lua(theme_dict)
+
+    # 3. Update Kitty terminal
     kitty_theme_path = os.path.expanduser("~/.config/kitty/theme.conf")
     try:
         os.makedirs(os.path.dirname(kitty_theme_path), exist_ok=True)
@@ -325,7 +275,7 @@ def save_active_theme(theme_dict):
     except Exception:
         pass
 
-    # 2. Update GTK 3 & GTK 4 CSS themes
+    # 4. Update GTK 3 & GTK 4 CSS
     try:
         gtk_css = generate_gtk_css(theme_dict)
         for gtk_dir in ["~/.config/gtk-3.0", "~/.config/gtk-4.0"]:
@@ -336,10 +286,13 @@ def save_active_theme(theme_dict):
     except Exception:
         pass
 
-    # 3. Update CAVA audio visualizer gradient colors
+    # 5. Update Rofi
+    update_rofi_theme(theme_dict)
+
+    # 6. Update Cava
     update_cava_config(theme_dict)
 
-    # 4. Sync GTK icon theme if specified
+    # 7. Update Icon Theme
     icon_th = theme_dict.get("icon_theme", "Papirus-Dark")
     if icon_th:
         try:
@@ -349,3 +302,44 @@ def save_active_theme(theme_dict):
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception:
             pass
+
+def main():
+    if len(sys.argv) < 2:
+        print(json.dumps(get_all_themes(), indent=2))
+        return
+
+    cmd = sys.argv[1]
+    if cmd == "list":
+        print(json.dumps(get_all_themes()))
+    elif cmd == "active":
+        print(json.dumps(get_active_theme()))
+    elif cmd == "apply":
+        target = sys.argv[2] if len(sys.argv) > 2 else ""
+        if not target:
+            print("Error: Target theme ID, name, or JSON file required.", file=sys.stderr)
+            sys.exit(1)
+
+        # Find theme
+        themes = get_all_themes()
+        matched = None
+        for t in themes:
+            if t.get("id") == target or t.get("name") == target or os.path.basename(target).replace(".json", "") == t.get("id"):
+                matched = t
+                break
+
+        if not matched and os.path.exists(target):
+            try:
+                with open(target, "r") as f:
+                    matched = json.load(f)
+            except Exception as e:
+                print(f"Error reading file {target}: {e}", file=sys.stderr)
+
+        if matched:
+            apply_theme(matched)
+            print(f"Theme '{matched.get('name')}' applied successfully.")
+        else:
+            print(f"Error: Theme '{target}' not found.", file=sys.stderr)
+            sys.exit(1)
+
+if __name__ == "__main__":
+    main()

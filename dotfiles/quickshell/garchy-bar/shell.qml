@@ -830,7 +830,7 @@ ShellRoot {
                             id: thmMouse
                             anchors.fill: parent
                             hoverEnabled: true
-                            onClicked: root.runCmd(["bash", "-c", "python3 ~/.config/hypr/scripts/theme-switcher-gui.py"])
+                            onClicked: root.runCmd(["bash", "-c", "~/.config/hypr/scripts/theme-switcher.sh"])
                         }
                     }
 
@@ -1223,7 +1223,7 @@ ShellRoot {
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     onClicked: {
-                                        root.runCmd(["bash", "-c", "python3 ~/.config/hypr/scripts/theme-switcher-gui.py"]);
+                                        root.runCmd(["bash", "-c", "~/.config/hypr/scripts/theme-switcher.sh"]);
                                         trayMenuPopup.visible = false;
                                     }
                                 }
@@ -2001,7 +2001,7 @@ ShellRoot {
                             id: secThmMouse
                             anchors.fill: parent
                             hoverEnabled: true
-                            onClicked: root.runCmd(["bash", "-c", "python3 ~/.config/hypr/scripts/theme-switcher-gui.py"])
+                            onClicked: root.runCmd(["bash", "-c", "~/.config/hypr/scripts/theme-switcher.sh"])
                         }
                     }
 
@@ -2386,7 +2386,7 @@ ShellRoot {
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     onClicked: {
-                                        root.runCmd(["bash", "-c", "python3 ~/.config/hypr/scripts/theme-switcher-gui.py"]);
+                                        root.runCmd(["bash", "-c", "~/.config/hypr/scripts/theme-switcher.sh"]);
                                         secTrayMenuPopup.visible = false;
                                     }
                                 }
