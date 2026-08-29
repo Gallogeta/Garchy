@@ -416,7 +416,7 @@ ShellRoot {
                                                 if (foundAddr) {
                                                     root.dispatchAction("focus", foundAddr);
                                                 } else {
-                                                    root.runCmd(["hyprctl", "dispatch", "exec", appData.cmd || appData.id]);
+                                                    root.runCmd(["bash", "-c", (appData.cmd || appData.id) + " & disown"]);
                                                 }
                                             } else if (mouse.button === Qt.RightButton) {
                                                 pinnedMenuPopup.targetApp = appData;
@@ -951,7 +951,7 @@ ShellRoot {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
                                     if (pinnedMenuPopup.targetApp) {
-                                        root.runCmd(["hyprctl", "dispatch", "exec", pinnedMenuPopup.targetApp.cmd || pinnedMenuPopup.targetApp.id]);
+                                        root.runCmd(["bash", "-c", (pinnedMenuPopup.targetApp.cmd || pinnedMenuPopup.targetApp.id) + " & disown"]);
                                     }
                                     pinnedMenuPopup.visible = false;
                                 }
@@ -2063,7 +2063,7 @@ ShellRoot {
                                                 if (foundAddr) {
                                                     root.dispatchAction("focus", foundAddr);
                                                 } else {
-                                                    root.runCmd(["hyprctl", "dispatch", "exec", appData.cmd || appData.id]);
+                                                    root.runCmd(["bash", "-c", (appData.cmd || appData.id) + " & disown"]);
                                                 }
                                             } else if (mouse.button === Qt.RightButton) {
                                                 secPinnedMenuPopup.targetApp = appData;
@@ -2597,7 +2597,7 @@ ShellRoot {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
                                     if (secPinnedMenuPopup.targetApp) {
-                                        root.runCmd(["hyprctl", "dispatch", "exec", secPinnedMenuPopup.targetApp.cmd || secPinnedMenuPopup.targetApp.id]);
+                                        root.runCmd(["bash", "-c", (secPinnedMenuPopup.targetApp.cmd || secPinnedMenuPopup.targetApp.id) + " & disown"]);
                                     }
                                     secPinnedMenuPopup.visible = false;
                                 }
