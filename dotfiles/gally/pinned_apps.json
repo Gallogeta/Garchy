@@ -1,26 +1,14 @@
 [
   {
     "id": "brave",
-    "name": "Brave Browser",
-    "icon": "brave-browser",
+    "name": "Brave",
+    "icon": "brave-desktop",
     "cmd": "brave"
   },
   {
     "id": "kitty",
-    "name": "Garchy Terminal",
-    "icon": "utilities-terminal",
+    "name": "Terminal",
+    "icon": "kitty",
     "cmd": "kitty"
-  },
-  {
-    "id": "thunar",
-    "name": "Files",
-    "icon": "system-file-manager",
-    "cmd": "thunar"
-  },
-  {
-    "id": "code",
-    "name": "VS Code",
-    "icon": "code",
-    "cmd": "code"
   }
 ]

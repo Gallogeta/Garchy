@@ -105,13 +105,18 @@ ShellRoot {
     }
 
     Timer {
-        interval: 1000
+        interval: 800
         running: true
         repeat: true
         onTriggered: {
             activeThemeFile.reload();
             try {
                 root.applyThemeJson(JSON.parse(activeThemeFile.text()));
+            } catch(e) {}
+            pinnedAppsFile.reload();
+            try {
+                var p = JSON.parse(pinnedAppsFile.text());
+                if (Array.isArray(p)) root.pinnedApps = p;
             } catch(e) {}
         }
     }
@@ -813,12 +818,18 @@ ShellRoot {
                         }
                         // Pin/Unpin option for Cyber Sakura
                         Rectangle {
+                            property bool isGroupPinned: {
+                                if (!groupMenuPopup.currentGroup || !root.pinnedApps) return false;
+                                var cls = (groupMenuPopup.currentGroup.class || "").toLowerCase();
+                                return root.pinnedApps.some(p => p.id === cls || p.cmd === cls || (p.name && p.name.toLowerCase() === cls));
+                            }
+
                             visible: root.isFullSakura && groupMenuPopup.currentGroup
                             Layout.fillWidth: true
                             height: 28
                             radius: root.buttonRadius
-                            color: pinToggleMouse.containsMouse ? (root.colAccent + "33") : root.colBgAlt
-                            border.color: pinToggleMouse.containsMouse ? root.colAccent : root.colBorder
+                            color: pinToggleMouse.containsMouse ? (isGroupPinned ? (root.colRed + "33") : (root.colAccent + "33")) : root.colBgAlt
+                            border.color: pinToggleMouse.containsMouse ? (isGroupPinned ? root.colRed : root.colAccent) : root.colBorder
                             border.width: 1
 
                             RowLayout {
@@ -827,15 +838,15 @@ ShellRoot {
                                 spacing: 8
 
                                 Text {
-                                    text: "📌"
+                                    text: parent.parent.isGroupPinned ? "📍" : "📌"
                                     font.pixelSize: 11
                                 }
 
                                 Text {
-                                    text: "Pin " + (groupMenuPopup.currentGroup ? groupMenuPopup.currentGroup.class : "App") + " to Sakura Dock"
+                                    text: (parent.parent.isGroupPinned ? "Unpin " : "Pin ") + (groupMenuPopup.currentGroup ? groupMenuPopup.currentGroup.class : "App") + (parent.parent.isGroupPinned ? " from Sakura Dock" : " to Sakura Dock")
                                     font.pixelSize: 10
                                     font.bold: true
-                                    color: root.colFg
+                                    color: parent.parent.isGroupPinned && pinToggleMouse.containsMouse ? root.colRed : root.colFg
                                 }
                             }
 
@@ -847,7 +858,11 @@ ShellRoot {
                                 onClicked: {
                                     if (groupMenuPopup.currentGroup) {
                                         var g = groupMenuPopup.currentGroup;
-                                        root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "add", g.class.toLowerCase(), g.title || g.class, g.icon || g.class.toLowerCase(), g.class.toLowerCase()]);
+                                        if (parent.isGroupPinned) {
+                                            root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "remove", g.class.toLowerCase()]);
+                                        } else {
+                                            root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "add", g.class.toLowerCase(), g.class, g.icon || g.class.toLowerCase(), g.class.toLowerCase()]);
+                                        }
                                     }
                                     groupMenuPopup.visible = false;
                                 }
@@ -2449,12 +2464,18 @@ ShellRoot {
                             }
                         // Pin/Unpin option for Cyber Sakura
                         Rectangle {
+                            property bool isGroupPinned: {
+                                if (!secGroupMenuPopup.currentGroup || !root.pinnedApps) return false;
+                                var cls = (secGroupMenuPopup.currentGroup.class || "").toLowerCase();
+                                return root.pinnedApps.some(p => p.id === cls || p.cmd === cls || (p.name && p.name.toLowerCase() === cls));
+                            }
+
                             visible: root.isFullSakura && secGroupMenuPopup.currentGroup
                             Layout.fillWidth: true
                             height: 28
                             radius: root.buttonRadius
-                            color: secPinToggleMouse.containsMouse ? (root.colAccent + "33") : root.colBgAlt
-                            border.color: secPinToggleMouse.containsMouse ? root.colAccent : root.colBorder
+                            color: secPinToggleMouse.containsMouse ? (isGroupPinned ? (root.colRed + "33") : (root.colAccent + "33")) : root.colBgAlt
+                            border.color: secPinToggleMouse.containsMouse ? (isGroupPinned ? root.colRed : root.colAccent) : root.colBorder
                             border.width: 1
 
                             RowLayout {
@@ -2463,15 +2484,15 @@ ShellRoot {
                                 spacing: 8
 
                                 Text {
-                                    text: "📌"
+                                    text: parent.parent.isGroupPinned ? "📍" : "📌"
                                     font.pixelSize: 11
                                 }
 
                                 Text {
-                                    text: "Pin " + (secGroupMenuPopup.currentGroup ? secGroupMenuPopup.currentGroup.class : "App") + " to Sakura Dock"
+                                    text: (parent.parent.isGroupPinned ? "Unpin " : "Pin ") + (secGroupMenuPopup.currentGroup ? secGroupMenuPopup.currentGroup.class : "App") + (parent.parent.isGroupPinned ? " from Sakura Dock" : " to Sakura Dock")
                                     font.pixelSize: 10
                                     font.bold: true
-                                    color: root.colFg
+                                    color: parent.parent.isGroupPinned && secPinToggleMouse.containsMouse ? root.colRed : root.colFg
                                 }
                             }
 
@@ -2483,7 +2504,11 @@ ShellRoot {
                                 onClicked: {
                                     if (secGroupMenuPopup.currentGroup) {
                                         var g = secGroupMenuPopup.currentGroup;
-                                        root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "add", g.class.toLowerCase(), g.title || g.class, g.icon || g.class.toLowerCase(), g.class.toLowerCase()]);
+                                        if (parent.isGroupPinned) {
+                                            root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "remove", g.class.toLowerCase()]);
+                                        } else {
+                                            root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "add", g.class.toLowerCase(), g.class, g.icon || g.class.toLowerCase(), g.class.toLowerCase()]);
+                                        }
                                     }
                                     secGroupMenuPopup.visible = false;
                                 }
