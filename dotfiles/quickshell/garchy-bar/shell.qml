@@ -26,8 +26,10 @@ ShellRoot {
     property string layoutStyle: "garchy"
     property string activeThemeId: "garchy"
     property bool isFullSakura: root.layoutStyle === "full_sakura" || root.activeThemeId === "cyber_sakura"
-    property bool isBottomBar: root.isFullSakura
-    property int barHeight: root.isFullSakura ? 58 : 48
+    property bool isWindows11: root.layoutStyle === "windows11" || root.activeThemeId === "fluent_mica"
+    property bool isDockCentered: root.isFullSakura || root.isWindows11
+    property bool isBottomBar: root.isFullSakura || root.isWindows11 || root.layoutStyle === "bottom"
+    property int barHeight: root.isWindows11 ? 65 : (root.isFullSakura ? 58 : 48)
     property int pinnedDockCapacity: 5
 
     property int islandRadius: root.themeRounding
@@ -196,6 +198,7 @@ ShellRoot {
     // TIME & AUDIO TELEMETRY
     // ========================================================
     property string timeStr: "00:00"
+    property string dateStr: "01/01/2026"
     property string fullDateStr: "Monday, 1 January 2026"
     property int volPercent: 50
     property bool isMuted: false
@@ -210,6 +213,11 @@ ShellRoot {
             var hours = String(now.getHours()).padStart(2, '0');
             var mins = String(now.getMinutes()).padStart(2, '0');
             root.timeStr = hours + ":" + mins;
+
+            var day = String(now.getDate()).padStart(2, '0');
+            var month = String(now.getMonth() + 1).padStart(2, '0');
+            var year = now.getFullYear();
+            root.dateStr = day + "/" + month + "/" + year;
 
             var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
             var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -276,7 +284,7 @@ ShellRoot {
             // 🌸 CYBER SAKURA CONTINUOUS FULL BAR CONTAINER
             Rectangle {
                 id: fullSakuraBar
-                visible: root.isFullSakura
+                visible: root.isDockCentered
                 anchors.fill: parent
                 radius: 18
                 color: root.colBg
@@ -291,9 +299,9 @@ ShellRoot {
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: leftLayout.implicitWidth + 20
-                color: root.isFullSakura ? "transparent" : root.colBg
-                border.color: root.isFullSakura ? "transparent" : root.colBorder
-                border.width: root.isFullSakura ? 0 : 1.5
+                color: root.isDockCentered ? "transparent" : root.colBg
+                border.color: root.isDockCentered ? "transparent" : root.colBorder
+                border.width: root.isDockCentered ? 0 : 1.5
                 radius: root.islandRadius
 
                 RowLayout {
@@ -306,14 +314,14 @@ ShellRoot {
                         width: 36
                         height: 36
                         radius: root.buttonRadius
-                        color: launchArea.containsMouse ? root.withAlpha(root.colAccent, 0.20) : (root.isFullSakura ? "transparent" : root.colBgAlt)
-                        border.color: launchArea.containsMouse ? root.colAccent : (root.isFullSakura ? "transparent" : root.colBorder)
+                        color: launchArea.containsMouse ? root.withAlpha(root.colAccent, 0.20) : (root.isDockCentered ? "transparent" : root.colBgAlt)
+                        border.color: launchArea.containsMouse ? root.colAccent : (root.isDockCentered ? "transparent" : root.colBorder)
                         border.width: 1
 
                         Text {
                             anchors.centerIn: parent
-                            text: root.isFullSakura ? "🌸" : "󰣇"
-                            font.pixelSize: root.isFullSakura ? 19 : 20
+                            text: root.isFullSakura ? "🌸" : (root.isWindows11 ? "󰍲" : "󰣇")
+                            font.pixelSize: root.isWindows11 ? 22 : (root.isFullSakura ? 19 : 20)
                             color: root.colAccent
                         }
 
@@ -335,7 +343,7 @@ ShellRoot {
                     // 🌸 CYBER SAKURA PINNED QUICK-LAUNCH DOCK (With Emoticon Placeholders for Unpinned Slots)
                     Row {
                         id: pinnedRow
-                        visible: root.isFullSakura
+                        visible: root.isDockCentered
                         spacing: 5
                         Layout.alignment: Qt.AlignVCenter
 
@@ -525,7 +533,7 @@ ShellRoot {
                     // 🗔 WINDOWS 11 / KDE INTERACTIVE TASKBAR (When NOT Cyber Sakura)
                     Row {
                         id: taskbarRow
-                        visible: !root.isFullSakura
+                        visible: !root.isDockCentered
                         spacing: 8
 
                         Repeater {
@@ -1086,7 +1094,7 @@ ShellRoot {
                                     spacing: 8
 
                                     Text {
-                                        text: root.isFullSakura ? "🌸 Cyber Sakura Hub" : "󰣇 Life at a glance"
+                                        text: root.isFullSakura ? "🌸 Cyber Sakura Hub" : (root.isWindows11 ? "🪟 Windows 11 Fluent Hub" : "󰣇 Life at a glance")
                                         font.pixelSize: 14
                                         font.bold: true
                                         color: root.colFg
@@ -1413,7 +1421,7 @@ ShellRoot {
                                 return root.pinnedApps.some(p => p.id === cls || p.cmd === cls || (p.name && p.name.toLowerCase() === cls));
                             }
 
-                            visible: root.isFullSakura && groupMenuPopup.currentGroup
+                            visible: root.isDockCentered && groupMenuPopup.currentGroup
                             Layout.fillWidth: true
                             height: 28
                             radius: root.buttonRadius
@@ -1587,16 +1595,16 @@ ShellRoot {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: root.isFullSakura ? (centerTaskRow.implicitWidth + 24) : (clockLayout.implicitWidth + 36)
-                color: root.isFullSakura ? "transparent" : root.colBg
+                width: root.isDockCentered ? (centerTaskRow.implicitWidth + 24) : (clockLayout.implicitWidth + 36)
+                color: root.isDockCentered ? "transparent" : root.colBg
                 border.color: root.isFullSakura ? "transparent" : (clockArea.containsMouse ? root.colAccent : root.colBorder)
-                border.width: root.isFullSakura ? 0 : 1.5
+                border.width: root.isDockCentered ? 0 : 1.5
                 radius: root.islandRadius
 
                 // A. Centered Taskbar (When Cyber Sakura is active)
                 Row {
                     id: centerTaskRow
-                    visible: root.isFullSakura
+                    visible: root.isDockCentered
                     anchors.centerIn: parent
                     spacing: 8
 
@@ -1709,7 +1717,7 @@ ShellRoot {
                 // B. Digital Clock (When NOT Cyber Sakura / Garchy Signature)
                 RowLayout {
                     id: clockLayout
-                    visible: !root.isFullSakura
+                    visible: !root.isDockCentered
                     anchors.centerIn: parent
 
                     Text {
@@ -1722,7 +1730,7 @@ ShellRoot {
 
                 MouseArea {
                     id: clockArea
-                    visible: !root.isFullSakura
+                    visible: !root.isDockCentered
                     anchors.fill: parent
                     hoverEnabled: true
                     onClicked: datePopup.visible = !datePopup.visible
@@ -1733,7 +1741,7 @@ ShellRoot {
             PopupWindow {
                 id: datePopup
                 anchor.window: winMain
-                anchor.rect.x: root.isFullSakura ? (winMain.width - 320) : Math.round((winMain.width - 280) / 2)
+                anchor.rect.x: root.isDockCentered ? (winMain.width - 320) : Math.round((winMain.width - 280) / 2)
                 anchor.rect.y: root.isBottomBar ? 0 : 46
                 anchor.rect.width: 280
                 anchor.rect.height: 0
@@ -1820,9 +1828,9 @@ ShellRoot {
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: rightLayout.implicitWidth + 24
-                color: root.isFullSakura ? "transparent" : root.colBg
-                border.color: root.isFullSakura ? "transparent" : root.colBorder
-                border.width: root.isFullSakura ? 0 : 1.5
+                color: root.isDockCentered ? "transparent" : root.colBg
+                border.color: root.isDockCentered ? "transparent" : root.colBorder
+                border.width: root.isDockCentered ? 0 : 1.5
                 radius: root.islandRadius
 
                 RowLayout {
@@ -1907,33 +1915,41 @@ ShellRoot {
                         }
                     }
 
-                    // 🌸 Cyber Sakura Digital Clock (Placed next to tray menu on right side)
+                    // 🪟 Windows 11 / 🌸 Sakura Digital Clock & Calendar (Right Side Next to Tray)
                     Rectangle {
                         id: sakuraClockBtn
-                        visible: root.isFullSakura
-                        height: 34
-                        width: sakuraClockRow.implicitWidth + 20
-                        radius: 14
-                        color: sakuraClockMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : (root.withAlpha(root.colBgAlt, 0.55))
-                        border.color: "transparent"
-                        border.width: 0
+                        visible: root.isDockCentered
+                        height: 40
+                        width: sakuraClockRow.implicitWidth + 18
+                        radius: root.buttonRadius
+                        color: sakuraClockMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : root.colBgAlt
+                        border.color: sakuraClockMouse.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.3)
+                        border.width: 1
 
                         RowLayout {
                             id: sakuraClockRow
                             anchors.centerIn: parent
-                            spacing: 6
+                            spacing: 7
 
                             Text {
-                                text: "🌸"
-                                font.pixelSize: 13
+                                text: root.isFullSakura ? "🌸" : "󰃭"
+                                font.pixelSize: 14
                                 color: root.colAccent
                             }
 
-                            Text {
-                                text: root.timeStr
-                                font.pixelSize: 14
-                                font.bold: true
-                                color: root.colFg
+                            ColumnLayout {
+                                spacing: 0
+                                Text {
+                                    text: root.timeStr
+                                    font.pixelSize: 13
+                                    font.bold: true
+                                    color: root.colFg
+                                }
+                                Text {
+                                    text: root.dateStr
+                                    font.pixelSize: 9
+                                    color: root.colFgMuted
+                                }
                             }
                         }
 
@@ -2489,7 +2505,7 @@ ShellRoot {
             // 🌸 CYBER SAKURA CONTINUOUS FULL BAR CONTAINER
             Rectangle {
                 id: fullSecSakuraBar
-                visible: root.isFullSakura
+                visible: root.isDockCentered
                 anchors.fill: parent
                 radius: 18
                 color: root.colBg
@@ -2504,9 +2520,9 @@ ShellRoot {
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: secLeftLayout.implicitWidth + 20
-                color: root.isFullSakura ? "transparent" : root.colBg
-                border.color: root.isFullSakura ? "transparent" : root.colBorder
-                border.width: root.isFullSakura ? 0 : 1.5
+                color: root.isDockCentered ? "transparent" : root.colBg
+                border.color: root.isDockCentered ? "transparent" : root.colBorder
+                border.width: root.isDockCentered ? 0 : 1.5
                 radius: root.islandRadius
 
                 RowLayout {
@@ -2519,14 +2535,14 @@ ShellRoot {
                         width: 36
                         height: 36
                         radius: root.buttonRadius
-                        color: secLaunchArea.containsMouse ? root.withAlpha(root.colAccent, 0.20) : (root.isFullSakura ? "transparent" : root.colBgAlt)
-                        border.color: secLaunchArea.containsMouse ? root.colAccent : (root.isFullSakura ? "transparent" : root.colBorder)
+                        color: secLaunchArea.containsMouse ? root.withAlpha(root.colAccent, 0.20) : (root.isDockCentered ? "transparent" : root.colBgAlt)
+                        border.color: secLaunchArea.containsMouse ? root.colAccent : (root.isDockCentered ? "transparent" : root.colBorder)
                         border.width: 1
 
                         Text {
                             anchors.centerIn: parent
-                            text: root.isFullSakura ? "🌸" : "󰣇"
-                            font.pixelSize: root.isFullSakura ? 19 : 20
+                            text: root.isFullSakura ? "🌸" : (root.isWindows11 ? "󰍲" : "󰣇")
+                            font.pixelSize: root.isWindows11 ? 22 : (root.isFullSakura ? 19 : 20)
                             color: root.colAccent
                         }
 
@@ -2548,7 +2564,7 @@ ShellRoot {
                     // 🌸 CYBER SAKURA PINNED QUICK-LAUNCH DOCK (With Emoticon Placeholders for Unpinned Slots)
                     Row {
                         id: secPinnedRow
-                        visible: root.isFullSakura
+                        visible: root.isDockCentered
                         spacing: 5
                         Layout.alignment: Qt.AlignVCenter
 
@@ -2744,7 +2760,7 @@ ShellRoot {
 
                     // 💻 Icon-Only Grouped Taskbar for Secondary Monitor (When NOT Cyber Sakura)
                     RowLayout {
-                        visible: !root.isFullSakura
+                        visible: !root.isDockCentered
                         spacing: 4
 
                         Repeater {
@@ -3299,7 +3315,7 @@ ShellRoot {
                                     spacing: 8
 
                                     Text {
-                                        text: root.isFullSakura ? "🌸 Cyber Sakura Hub" : "󰣇 Life at a glance"
+                                        text: root.isFullSakura ? "🌸 Cyber Sakura Hub" : (root.isWindows11 ? "🪟 Windows 11 Fluent Hub" : "󰣇 Life at a glance")
                                         font.pixelSize: 14
                                         font.bold: true
                                         color: root.colFg
@@ -3625,7 +3641,7 @@ ShellRoot {
                                 return root.pinnedApps.some(p => p.id === cls || p.cmd === cls || (p.name && p.name.toLowerCase() === cls));
                             }
 
-                            visible: root.isFullSakura && secGroupMenuPopup.currentGroup
+                            visible: root.isDockCentered && secGroupMenuPopup.currentGroup
                             Layout.fillWidth: true
                             height: 28
                             radius: root.buttonRadius
@@ -3799,16 +3815,16 @@ ShellRoot {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: root.isFullSakura ? (secCenterTaskRow.implicitWidth + 24) : (secClockLayout.implicitWidth + 36)
-                color: root.isFullSakura ? "transparent" : root.colBg
+                width: root.isDockCentered ? (secCenterTaskRow.implicitWidth + 24) : (secClockLayout.implicitWidth + 36)
+                color: root.isDockCentered ? "transparent" : root.colBg
                 border.color: root.isFullSakura ? "transparent" : (secClockArea.containsMouse ? root.colAccent : root.colBorder)
-                border.width: root.isFullSakura ? 0 : 1.5
+                border.width: root.isDockCentered ? 0 : 1.5
                 radius: root.islandRadius
 
                 // A. Centered Taskbar for Secondary Monitor (When Cyber Sakura is active)
                 Row {
                     id: secCenterTaskRow
-                    visible: root.isFullSakura
+                    visible: root.isDockCentered
                     anchors.centerIn: parent
                     spacing: 8
 
@@ -3921,7 +3937,7 @@ ShellRoot {
                 // B. Digital Clock (When NOT in Cyber Sakura / Garchy Signature)
                 RowLayout {
                     id: secClockLayout
-                    visible: !root.isFullSakura
+                    visible: !root.isDockCentered
                     anchors.centerIn: parent
 
                     Text {
@@ -3934,7 +3950,7 @@ ShellRoot {
 
                 MouseArea {
                     id: secClockArea
-                    visible: !root.isFullSakura
+                    visible: !root.isDockCentered
                     anchors.fill: parent
                     hoverEnabled: true
                     onClicked: secDatePopup.visible = !secDatePopup.visible
@@ -3945,7 +3961,7 @@ ShellRoot {
             PopupWindow {
                 id: secDatePopup
                 anchor.window: winSec
-                anchor.rect.x: root.isFullSakura ? (winSec.width - 320) : Math.round((winSec.width - 280) / 2)
+                anchor.rect.x: root.isDockCentered ? (winSec.width - 320) : Math.round((winSec.width - 280) / 2)
                 anchor.rect.y: root.isBottomBar ? 0 : 46
                 anchor.rect.width: 280
                 anchor.rect.height: 0
@@ -4038,9 +4054,9 @@ ShellRoot {
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: secRightLayout.implicitWidth + 24
-                color: root.isFullSakura ? "transparent" : root.colBg
-                border.color: root.isFullSakura ? "transparent" : root.colBorder
-                border.width: root.isFullSakura ? 0 : 1.5
+                color: root.isDockCentered ? "transparent" : root.colBg
+                border.color: root.isDockCentered ? "transparent" : root.colBorder
+                border.width: root.isDockCentered ? 0 : 1.5
                 radius: root.islandRadius
 
                 RowLayout {
@@ -4125,33 +4141,41 @@ ShellRoot {
                         }
                     }
 
-                    // 🌸 Cyber Sakura Digital Clock (Placed next to tray menu on right side)
+                    // 🪟 Windows 11 / 🌸 Sakura Digital Clock & Calendar (Right Side Next to Tray)
                     Rectangle {
                         id: secSakuraClockBtn
-                        visible: root.isFullSakura
-                        height: 34
-                        width: secSakuraClockRow.implicitWidth + 20
-                        radius: 14
-                        color: secSakuraClockMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : (root.withAlpha(root.colBgAlt, 0.55))
-                        border.color: "transparent"
-                        border.width: 0
+                        visible: root.isDockCentered
+                        height: 40
+                        width: secSakuraClockRow.implicitWidth + 18
+                        radius: root.buttonRadius
+                        color: secSakuraClockMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : root.colBgAlt
+                        border.color: secSakuraClockMouse.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.3)
+                        border.width: 1
 
                         RowLayout {
                             id: secSakuraClockRow
                             anchors.centerIn: parent
-                            spacing: 6
+                            spacing: 7
 
                             Text {
-                                text: "🌸"
-                                font.pixelSize: 13
+                                text: root.isFullSakura ? "🌸" : "󰃭"
+                                font.pixelSize: 14
                                 color: root.colAccent
                             }
 
-                            Text {
-                                text: root.timeStr
-                                font.pixelSize: 14
-                                font.bold: true
-                                color: root.colFg
+                            ColumnLayout {
+                                spacing: 0
+                                Text {
+                                    text: root.timeStr
+                                    font.pixelSize: 13
+                                    font.bold: true
+                                    color: root.colFg
+                                }
+                                Text {
+                                    text: root.dateStr
+                                    font.pixelSize: 9
+                                    color: root.colFgMuted
+                                }
                             }
                         }
 

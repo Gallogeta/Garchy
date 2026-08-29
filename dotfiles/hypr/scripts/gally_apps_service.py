@@ -14,7 +14,20 @@ CACHE_FILE = os.path.expanduser("~/.cache/garchy_desktop_apps.json")
 def build_system_icon_index():
     """Builds a fast stem-to-filepath index for all available icon themes."""
     icon_index = {}
+    
+    active_icon_theme = "Tela-circle-pink-dark"
+    try:
+        with open(os.path.expanduser("~/.config/gally/active_theme.json"), "r") as f:
+            t = json.load(f)
+            active_icon_theme = t.get("icon_theme", "Tela-circle-pink-dark")
+    except Exception:
+        pass
+
     search_dirs = [
+        f"/home/gallo/.local/share/icons/{active_icon_theme}",
+        "/home/gallo/.local/share/icons/Tela-circle-pink-dark",
+        "/home/gallo/.local/share/icons/Fluent-pink-dark",
+        "/home/gallo/.local/share/icons/Candy",
         "/home/gallo/.local/share/icons/Papirus-Dark",
         "/home/gallo/.local/share/icons/Papirus",
         "/home/gallo/.local/share/icons",
