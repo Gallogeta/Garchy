@@ -27,9 +27,62 @@ ShellRoot {
     property string activeThemeId: "garchy"
     property bool isFullSakura: root.layoutStyle === "full_sakura" || root.activeThemeId === "cyber_sakura"
     property bool isWindows11: root.layoutStyle === "windows11" || root.activeThemeId === "fluent_mica"
-    property bool isDockCentered: root.isFullSakura || root.isWindows11
-    property bool isBottomBar: root.isFullSakura || root.isWindows11 || root.layoutStyle === "bottom"
-    property int barHeight: root.isWindows11 ? 65 : (root.isFullSakura ? 58 : 48)
+    property bool isMacBook: root.layoutStyle === "macbook" || root.layoutStyle === "macbook_dock" || root.activeThemeId === "neo_matcha"
+    property bool isRetroGaming: root.layoutStyle === "retro_gaming" || root.activeThemeId === "sunset_vapour"
+    property bool isDockCentered: (root.isFullSakura || root.isWindows11 || root.isMacBook) && !root.isRetroGaming
+    property bool isBottomBar: (root.isFullSakura || root.isWindows11 || root.isMacBook || root.layoutStyle === "bottom") && !root.isRetroGaming
+    property int barHeight: root.isWindows11 ? 65 : (root.isMacBook ? 62 : (root.isFullSakura ? 58 : 48))
+
+    // Live Hardware Telemetry for Retro Gaming / Performance Mode
+    property string cpuUsage: "0%"
+    property string gpuUsage: "0%"
+    property string ramUsage: "0%"
+    property string vramUsage: "0%"
+    property string gpuTemp: "45°C"
+
+    FileView {
+        id: telemetryFile
+        path: "/tmp/garchy_telemetry.json"
+        watchChanges: true
+        onLoaded: {
+            try {
+                var d = JSON.parse(text());
+                if (d.cpu) root.cpuUsage = d.cpu;
+                if (d.gpu) root.gpuUsage = d.gpu;
+                if (d.ram) root.ramUsage = d.ram;
+                if (d.vram) root.vramUsage = d.vram;
+                if (d.gpu_temp) root.gpuTemp = d.gpu_temp;
+            } catch(e) {}
+        }
+        onFileChanged: {
+            reload();
+            try {
+                var d = JSON.parse(text());
+                if (d.cpu) root.cpuUsage = d.cpu;
+                if (d.gpu) root.gpuUsage = d.gpu;
+                if (d.ram) root.ramUsage = d.ram;
+                if (d.vram) root.vramUsage = d.vram;
+                if (d.gpu_temp) root.gpuTemp = d.gpu_temp;
+            } catch(e) {}
+        }
+    }
+
+    Timer {
+        interval: 1200
+        running: true
+        repeat: true
+        onTriggered: {
+            telemetryFile.reload();
+            try {
+                var d = JSON.parse(telemetryFile.text());
+                if (d.cpu) root.cpuUsage = d.cpu;
+                if (d.gpu) root.gpuUsage = d.gpu;
+                if (d.ram) root.ramUsage = d.ram;
+                if (d.vram) root.vramUsage = d.vram;
+                if (d.gpu_temp) root.gpuTemp = d.gpu_temp;
+            } catch(e) {}
+        }
+    }
     property int pinnedDockCapacity: 5
 
     property int islandRadius: root.themeRounding
@@ -54,6 +107,42 @@ ShellRoot {
             try {
                 root.allAppsList = JSON.parse(text());
             } catch(e) {}
+        }
+    }
+
+    property var diskStatus: ({ warning: false, avail_gb: "85.8", use_pct: "82%" })
+
+    FileView {
+        id: diskStatusFile
+        path: "/tmp/garchy_disk_status.json"
+        watchChanges: true
+        onLoaded: {
+            try { root.diskStatus = JSON.parse(text()); } catch(e) {}
+        }
+        onFileChanged: {
+            reload();
+            try { root.diskStatus = JSON.parse(text()); } catch(e) {}
+        }
+    }
+
+    property var cavaBars: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+
+    Process {
+        id: cavaProcess
+        command: ["cava", "-p", "/home/gallo/.config/cava/garchy_bar.conf"]
+        running: true
+        stdout: SplitParser {
+            onRead: data => {
+                var p = data.trim().split(";");
+                if (p.length >= 8) {
+                    var arr = [];
+                    for (var i = 0; i < Math.min(12, p.length); i++) {
+                        var n = parseInt(p[i]);
+                        arr.push(isNaN(n) ? 3 : Math.max(3, Math.min(22, n)));
+                    }
+                    root.cavaBars = arr;
+                }
+            }
         }
     }
 
@@ -284,7 +373,7 @@ ShellRoot {
             // 🌸 CYBER SAKURA CONTINUOUS FULL BAR CONTAINER
             Rectangle {
                 id: fullSakuraBar
-                visible: root.isDockCentered
+                visible: root.isDockCentered || root.isRetroGaming
                 anchors.fill: parent
                 radius: 18
                 color: root.colBg
@@ -299,9 +388,9 @@ ShellRoot {
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: leftLayout.implicitWidth + 20
-                color: root.isDockCentered ? "transparent" : root.colBg
-                border.color: root.isDockCentered ? "transparent" : root.colBorder
-                border.width: root.isDockCentered ? 0 : 1.5
+                color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBg
+                border.color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBorder
+                border.width: (root.isDockCentered || root.isRetroGaming) ? 0 : 1.5
                 radius: root.islandRadius
 
                 RowLayout {
@@ -309,18 +398,29 @@ ShellRoot {
                     anchors.centerIn: parent
                     spacing: 8
 
+                    // 🍵 macOS Active App Name
+                    Text {
+                        visible: root.isMacBook
+                        text: root.activeTitle ? root.activeTitle : "Finder"
+                        font.pixelSize: 13
+                        font.bold: true
+                        color: root.colFg
+                        elide: Text.ElideRight
+                        Layout.maximumWidth: 150
+                    }
+
                     // 🌌 / 🌸 Launcher Button
                     Rectangle {
                         width: 36
                         height: 36
                         radius: root.buttonRadius
-                        color: launchArea.containsMouse ? root.withAlpha(root.colAccent, 0.20) : (root.isDockCentered ? "transparent" : root.colBgAlt)
-                        border.color: launchArea.containsMouse ? root.colAccent : (root.isDockCentered ? "transparent" : root.colBorder)
+                        color: launchArea.containsMouse ? root.withAlpha(root.colAccent, 0.20) : ((root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBgAlt)
+                        border.color: launchArea.containsMouse ? root.colAccent : ((root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBorder)
                         border.width: 1
 
                         Text {
                             anchors.centerIn: parent
-                            text: root.isFullSakura ? "🌸" : (root.isWindows11 ? "󰍲" : "󰣇")
+                            text: root.isFullSakura ? "🌸" : (root.isWindows11 ? "󰍲" : (root.isMacBook ? "🍵" : (root.isRetroGaming ? "󰊴" : "󰣇")))
                             font.pixelSize: root.isWindows11 ? 22 : (root.isFullSakura ? 19 : 20)
                             color: root.colAccent
                         }
@@ -343,7 +443,7 @@ ShellRoot {
                     // 🌸 CYBER SAKURA PINNED QUICK-LAUNCH DOCK (With Emoticon Placeholders for Unpinned Slots)
                     Row {
                         id: pinnedRow
-                        visible: root.isDockCentered
+                        visible: root.isDockCentered || root.isRetroGaming
                         spacing: 5
                         Layout.alignment: Qt.AlignVCenter
 
@@ -683,7 +783,12 @@ ShellRoot {
 
                 Rectangle {
                     focus: true
-                    Keys.onEscapePressed: startMenuPopup.visible = false
+                    Keys.onEscapePressed: { startMenuPopup.visible = false; event.accepted = true; }
+                    Keys.onPressed: event => { if (event.key === Qt.Key_Escape) { startMenuPopup.visible = false; event.accepted = true; } }
+                    scale: startMenuPopup.visible ? 1.0 : 0.94
+                    opacity: startMenuPopup.visible ? 1.0 : 0.0
+                    Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                    Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                     anchors.fill: parent
                     radius: root.popupRadius
                     color: root.colBg
@@ -913,7 +1018,13 @@ ShellRoot {
                                             focus: true
                                             property string placeholder: "Type here to search apps..."
 
-                                            Keys.onEscapePressed: startMenuPopup.visible = false
+                                            Keys.onEscapePressed: { startMenuPopup.visible = false; event.accepted = true; }
+                                            Keys.onPressed: event => {
+                                                if (event.key === Qt.Key_Escape) {
+                                                    startMenuPopup.visible = false;
+                                                    event.accepted = true;
+                                                }
+                                            }
                                             onAccepted: {
                                                 if (appListView.count > 0 && appListView.model.length > 0) {
                                                     var topApp = appListView.model[0];
@@ -1088,13 +1199,13 @@ ShellRoot {
                                 anchors.margins: 14
                                 spacing: 12
 
-                                // Header
+                                // Header with Live CAVA Audio Spectrum
                                 RowLayout {
                                     Layout.fillWidth: true
                                     spacing: 8
 
                                     Text {
-                                        text: root.isFullSakura ? "🌸 Cyber Sakura Hub" : (root.isWindows11 ? "🪟 Windows 11 Fluent Hub" : "󰣇 Life at a glance")
+                                        text: root.isFullSakura ? "🌸 Cyber Sakura Hub" : (root.isWindows11 ? "🪟 Windows 11 Fluent Hub" : (root.isMacBook ? "🍵 Neo-Tokyo Matcha Hub" : (root.isRetroGaming ? "🕹️ Sunset Arcade Hub" : "󰣇 Life at a glance")))
                                         font.pixelSize: 14
                                         font.bold: true
                                         color: root.colFg
@@ -1102,8 +1213,40 @@ ShellRoot {
 
                                     Item { Layout.fillWidth: true }
 
+                                    // Live CAVA Visualizer in Start Menu (Bottom-Anchored Spectrum)
+                                    Row {
+                                        spacing: 2.5
+                                        Layout.alignment: Qt.AlignVCenter
+                                        Repeater {
+                                            model: 12
+                                            Item {
+                                                width: 3.5
+                                                height: 18
+
+                                                Rectangle {
+                                                    anchors.fill: parent
+                                                    radius: 1.75
+                                                    color: root.withAlpha(root.colBorder, 0.18)
+                                                }
+
+                                                Rectangle {
+                                                    anchors.bottom: parent.bottom
+                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                    width: parent.width
+                                                    height: (root.cavaBars && root.cavaBars[index] !== undefined) ? Math.max(3, Math.min(18, root.cavaBars[index])) : 3
+                                                    radius: 1.75
+                                                    color: height > 13 ? root.colGold : (height > 7 ? root.colAccent : root.colAccentAlt)
+                                                    opacity: Math.max(0.7, Math.min(1.0, height / 14.0))
+
+                                                    Behavior on height { NumberAnimation { duration: 45; easing.type: Easing.OutQuad } }
+                                                    Behavior on color { ColorAnimation { duration: 60 } }
+                                                }
+                                            }
+                                        }
+                                    }
+
                                     Text {
-                                        text: "Pinned Tiles"
+                                        text: "Pinned"
                                         font.pixelSize: 11
                                         font.bold: true
                                         color: root.colAccent
@@ -1421,7 +1564,7 @@ ShellRoot {
                                 return root.pinnedApps.some(p => p.id === cls || p.cmd === cls || (p.name && p.name.toLowerCase() === cls));
                             }
 
-                            visible: root.isDockCentered && groupMenuPopup.currentGroup
+                            visible: root.isDockCentered || root.isRetroGaming && groupMenuPopup.currentGroup
                             Layout.fillWidth: true
                             height: 28
                             radius: root.buttonRadius
@@ -1596,15 +1739,15 @@ ShellRoot {
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: root.isDockCentered ? (centerTaskRow.implicitWidth + 24) : (clockLayout.implicitWidth + 36)
-                color: root.isDockCentered ? "transparent" : root.colBg
-                border.color: root.isFullSakura ? "transparent" : (clockArea.containsMouse ? root.colAccent : root.colBorder)
-                border.width: root.isDockCentered ? 0 : 1.5
+                color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBg
+                border.color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBorder
+                border.width: (root.isDockCentered || root.isRetroGaming) ? 0 : 1.5
                 radius: root.islandRadius
 
                 // A. Centered Taskbar (When Cyber Sakura is active)
                 Row {
                     id: centerTaskRow
-                    visible: root.isDockCentered
+                    visible: root.isDockCentered && !root.isRetroGaming
                     anchors.centerIn: parent
                     spacing: 8
 
@@ -1714,26 +1857,85 @@ ShellRoot {
                     }
                 }
 
-                // B. Digital Clock (When NOT Cyber Sakura / Garchy Signature)
-                RowLayout {
-                    id: clockLayout
-                    visible: !root.isDockCentered
+                // B. Retro Gaming Pure Center CAVA Equalizer (No Clock)
+                Rectangle {
+                    id: retroCenterLayout
+                    visible: root.isRetroGaming
                     anchors.centerIn: parent
+                    height: 34
+                    width: retroCavaRow.implicitWidth + 24
+                    radius: root.buttonRadius
+                    color: retroCavaMouse.containsMouse ? root.withAlpha(root.colAccentAlt, 0.20) : root.withAlpha(root.colBgAlt, 0.7)
+                    border.color: retroCavaMouse.containsMouse ? root.colAccentAlt : root.withAlpha(root.colBorder, 0.3)
+                    border.width: 1
 
-                    Text {
-                        text: root.timeStr
-                        font.pixelSize: 14
-                        font.bold: true
-                        color: root.colFg
+                    Row {
+                        id: retroCavaRow
+                        anchors.centerIn: parent
+                        spacing: 4.0
+
+                        Repeater {
+                            model: 16
+                            Item {
+                                width: 5.0
+                                height: 22
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: 2.5
+                                    color: root.withAlpha(root.colBorder, 0.18)
+                                }
+
+                                Rectangle {
+                                    id: retroBarItem
+                                    anchors.bottom: parent.bottom
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    width: parent.width
+                                    height: (root.cavaBars && root.cavaBars[index] !== undefined) ? Math.max(3, Math.min(22, root.cavaBars[index])) : 3
+                                    radius: 2.5
+                                    color: height > 15 ? root.colGold : (height > 9 ? root.colAccent : root.colAccentAlt)
+                                    opacity: Math.max(0.7, Math.min(1.0, height / 18.0))
+
+                                    Behavior on height { NumberAnimation { duration: 40; easing.type: Easing.OutQuad } }
+                                    Behavior on color { ColorAnimation { duration: 60 } }
+                                }
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        id: retroCavaMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.runCmd(["pavucontrol"])
                     }
                 }
 
-                MouseArea {
-                    id: clockArea
-                    visible: !root.isDockCentered
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: datePopup.visible = !datePopup.visible
+                // C. Digital Clock (When NOT Cyber Sakura / Garchy Signature / Retro Gaming)
+                Item {
+                    id: clockLayout
+                    visible: !root.isDockCentered && !root.isRetroGaming
+                    anchors.centerIn: parent
+                    width: clockTxt.implicitWidth + 20
+                    height: 34
+
+                    Text {
+                        id: clockTxt
+                        anchors.centerIn: parent
+                        text: root.timeStr
+                        font.family: "Orbitron"
+                        font.pixelSize: 14
+                        font.bold: true
+                        color: root.colAccent
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: datePopup.visible = !datePopup.visible
+                    }
                 }
             }
 
@@ -1828,9 +2030,9 @@ ShellRoot {
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: rightLayout.implicitWidth + 24
-                color: root.isDockCentered ? "transparent" : root.colBg
-                border.color: root.isDockCentered ? "transparent" : root.colBorder
-                border.width: root.isDockCentered ? 0 : 1.5
+                color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBg
+                border.color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBorder
+                border.width: (root.isDockCentered || root.isRetroGaming) ? 0 : 1.5
                 radius: root.islandRadius
 
                 RowLayout {
@@ -1870,6 +2072,144 @@ ShellRoot {
                             onClicked: root.runCmd(["pavucontrol"])
                         }
                     }
+
+                    // 🎮 Live Hardware Telemetry Badges (CPU, RTX 3080 Ti GPU, VRAM, RAM)
+                    Rectangle {
+                        visible: root.isRetroGaming
+                        height: 34
+                        width: hwRow.implicitWidth + 16
+                        radius: root.buttonRadius
+                        color: hwMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : root.withAlpha(root.colBgAlt, 0.75)
+                        border.color: hwMouse.containsMouse ? root.colAccent : root.withAlpha(root.colAccentAlt, 0.4)
+                        border.width: 1
+
+                        Row {
+                            id: hwRow
+                            anchors.centerIn: parent
+                            spacing: 8
+
+                            Text {
+                                text: "󰻠 " + root.cpuUsage
+                                font.family: "Orbitron"
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: root.colAccent
+                            }
+
+                            Text {
+                                text: "󰢮 " + root.gpuUsage + " " + root.gpuTemp
+                                font.family: "Orbitron"
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: root.colGold
+                            }
+
+                            Text {
+                                text: "󰍛 " + root.ramUsage
+                                font.family: "Orbitron"
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: root.colAccentAlt
+                            }
+                        }
+
+                        MouseArea {
+                            id: hwMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.runCmd(["kitty", "-e", "btop"])
+                        }
+                    }
+
+                    // 🎵 Live Taskbar CAVA Visualizer Pill (Bottom-Anchored Chill Audio Equalizer)
+                    Rectangle {
+                        id: cavaTaskbarPill
+                        visible: !root.isRetroGaming
+                        height: 34
+                        width: cavaTaskbarRow.implicitWidth + 18
+                        radius: root.buttonRadius
+                        color: cavaPillMouse.containsMouse ? root.withAlpha(root.colAccent, 0.18) : root.withAlpha(root.colBgAlt, 0.75)
+                        border.color: cavaPillMouse.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.35)
+                        border.width: 1
+
+                        Row {
+                            id: cavaTaskbarRow
+                            anchors.centerIn: parent
+                            spacing: 3
+
+                            Repeater {
+                                model: 10
+                                Item {
+                                    width: 3.5
+                                    height: 20
+
+                                    // Subtle background track
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        radius: 1.75
+                                        color: root.withAlpha(root.colBorder, 0.18)
+                                    }
+
+                                    // Real-Time Audio Bar (Anchored to Bottom)
+                                    Rectangle {
+                                        id: barItem
+                                        anchors.bottom: parent.bottom
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        width: parent.width
+                                        height: (root.cavaBars && root.cavaBars[index] !== undefined) ? Math.max(3, Math.min(20, root.cavaBars[index])) : 3
+                                        radius: 1.75
+                                        color: height > 14 ? root.colGold : (height > 8 ? root.colAccent : root.colAccentAlt)
+                                        opacity: Math.max(0.65, Math.min(1.0, height / 16.0))
+
+                                        Behavior on height { NumberAnimation { duration: 45; easing.type: Easing.OutQuad } }
+                                        Behavior on color { ColorAnimation { duration: 60 } }
+                                    }
+                                }
+                            }
+                        }
+
+                        MouseArea {
+                            id: cavaPillMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.runCmd(["pavucontrol"])
+                        }
+                    }
+
+                    // ⚠️ Critical Low Disk Space Warning Badge (< 5GB)
+                    Rectangle {
+                        visible: root.diskStatus && root.diskStatus.warning
+                        height: 34
+                        width: diskWarnRow.implicitWidth + 16
+                        radius: root.buttonRadius
+                        color: "#ef4444"
+                        border.color: "#fca5a5"
+                        border.width: 1.5
+
+                        Row {
+                            id: diskWarnRow
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            Text {
+                                text: "⚠️ " + (root.diskStatus ? root.diskStatus.avail_gb : "4.9") + " GB LEFT"
+                                font.family: "Orbitron"
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: "#ffffff"
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.runCmd(["kitty", "-e", "bash", "-c", "df -h /; echo ; ncdu ~; exec bash"])
+                        }
+                    }
+
+
 
                     // 🧠 Gally AI Hub
                     Rectangle {
@@ -1915,12 +2255,12 @@ ShellRoot {
                         }
                     }
 
-                    // 🪟 Windows 11 / 🌸 Sakura Digital Clock & Calendar (Right Side Next to Tray)
+                    // 👾 Pixel Digital Clock (Clean Time Only)
                     Rectangle {
                         id: sakuraClockBtn
-                        visible: root.isDockCentered
-                        height: 40
-                        width: sakuraClockRow.implicitWidth + 18
+                        visible: root.isDockCentered || root.isRetroGaming
+                        height: 34
+                        width: sakuraClockRow.implicitWidth + 20
                         radius: root.buttonRadius
                         color: sakuraClockMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : root.colBgAlt
                         border.color: sakuraClockMouse.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.3)
@@ -1929,27 +2269,14 @@ ShellRoot {
                         RowLayout {
                             id: sakuraClockRow
                             anchors.centerIn: parent
-                            spacing: 7
+                            spacing: 6
 
                             Text {
-                                text: root.isFullSakura ? "🌸" : "󰃭"
+                                text: root.timeStr
+                                font.family: "Orbitron"
                                 font.pixelSize: 14
+                                font.bold: true
                                 color: root.colAccent
-                            }
-
-                            ColumnLayout {
-                                spacing: 0
-                                Text {
-                                    text: root.timeStr
-                                    font.pixelSize: 13
-                                    font.bold: true
-                                    color: root.colFg
-                                }
-                                Text {
-                                    text: root.dateStr
-                                    font.pixelSize: 9
-                                    color: root.colFgMuted
-                                }
                             }
                         }
 
@@ -2505,7 +2832,7 @@ ShellRoot {
             // 🌸 CYBER SAKURA CONTINUOUS FULL BAR CONTAINER
             Rectangle {
                 id: fullSecSakuraBar
-                visible: root.isDockCentered
+                visible: root.isDockCentered || root.isRetroGaming
                 anchors.fill: parent
                 radius: 18
                 color: root.colBg
@@ -2520,9 +2847,9 @@ ShellRoot {
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: secLeftLayout.implicitWidth + 20
-                color: root.isDockCentered ? "transparent" : root.colBg
-                border.color: root.isDockCentered ? "transparent" : root.colBorder
-                border.width: root.isDockCentered ? 0 : 1.5
+                color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBg
+                border.color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBorder
+                border.width: (root.isDockCentered || root.isRetroGaming) ? 0 : 1.5
                 radius: root.islandRadius
 
                 RowLayout {
@@ -2530,18 +2857,29 @@ ShellRoot {
                     anchors.centerIn: parent
                     spacing: 8
 
+                    // 🍵 macOS Active App Name
+                    Text {
+                        visible: root.isMacBook
+                        text: root.activeTitle ? root.activeTitle : "Finder"
+                        font.pixelSize: 13
+                        font.bold: true
+                        color: root.colFg
+                        elide: Text.ElideRight
+                        Layout.maximumWidth: 150
+                    }
+
                     // 🌌 / 🌸 Launcher Button
                     Rectangle {
                         width: 36
                         height: 36
                         radius: root.buttonRadius
-                        color: secLaunchArea.containsMouse ? root.withAlpha(root.colAccent, 0.20) : (root.isDockCentered ? "transparent" : root.colBgAlt)
-                        border.color: secLaunchArea.containsMouse ? root.colAccent : (root.isDockCentered ? "transparent" : root.colBorder)
+                        color: secLaunchArea.containsMouse ? root.withAlpha(root.colAccent, 0.20) : ((root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBgAlt)
+                        border.color: secLaunchArea.containsMouse ? root.colAccent : ((root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBorder)
                         border.width: 1
 
                         Text {
                             anchors.centerIn: parent
-                            text: root.isFullSakura ? "🌸" : (root.isWindows11 ? "󰍲" : "󰣇")
+                            text: root.isFullSakura ? "🌸" : (root.isWindows11 ? "󰍲" : (root.isMacBook ? "🍵" : (root.isRetroGaming ? "󰊴" : "󰣇")))
                             font.pixelSize: root.isWindows11 ? 22 : (root.isFullSakura ? 19 : 20)
                             color: root.colAccent
                         }
@@ -2564,7 +2902,7 @@ ShellRoot {
                     // 🌸 CYBER SAKURA PINNED QUICK-LAUNCH DOCK (With Emoticon Placeholders for Unpinned Slots)
                     Row {
                         id: secPinnedRow
-                        visible: root.isDockCentered
+                        visible: root.isDockCentered || root.isRetroGaming
                         spacing: 5
                         Layout.alignment: Qt.AlignVCenter
 
@@ -2608,7 +2946,7 @@ ShellRoot {
                                     anchors.centerIn: parent
                                     width: 22
                                     height: 22
-                                    source: isPinned ? Quickshell.iconPath(appData.icon || appData.id) : ""
+                                    source: isPinned && appData ? Quickshell.iconPath(appData.icon || appData.id) : ""
                                     fillMode: Image.PreserveAspectFit
                                 }
 
@@ -2904,7 +3242,12 @@ ShellRoot {
 
                 Rectangle {
                     focus: true
-                    Keys.onEscapePressed: secStartMenuPopup.visible = false
+                    Keys.onEscapePressed: { secStartMenuPopup.visible = false; event.accepted = true; }
+                    Keys.onPressed: event => { if (event.key === Qt.Key_Escape) { secStartMenuPopup.visible = false; event.accepted = true; } }
+                    scale: secStartMenuPopup.visible ? 1.0 : 0.94
+                    opacity: secStartMenuPopup.visible ? 1.0 : 0.0
+                    Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                    Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                     anchors.fill: parent
                     radius: root.popupRadius
                     color: root.colBg
@@ -3134,7 +3477,13 @@ ShellRoot {
                                             focus: true
                                             property string placeholder: "Type here to search apps..."
 
-                                            Keys.onEscapePressed: secStartMenuPopup.visible = false
+                                            Keys.onEscapePressed: { secStartMenuPopup.visible = false; event.accepted = true; }
+                                            Keys.onPressed: event => {
+                                                if (event.key === Qt.Key_Escape) {
+                                                    secStartMenuPopup.visible = false;
+                                                    event.accepted = true;
+                                                }
+                                            }
                                             onAccepted: {
                                                 if (secAppListView.count > 0 && secAppListView.model.length > 0) {
                                                     var topApp = secAppListView.model[0];
@@ -3309,13 +3658,13 @@ ShellRoot {
                                 anchors.margins: 14
                                 spacing: 12
 
-                                // Header
+                                // Header with Live CAVA Audio Spectrum
                                 RowLayout {
                                     Layout.fillWidth: true
                                     spacing: 8
 
                                     Text {
-                                        text: root.isFullSakura ? "🌸 Cyber Sakura Hub" : (root.isWindows11 ? "🪟 Windows 11 Fluent Hub" : "󰣇 Life at a glance")
+                                        text: root.isFullSakura ? "🌸 Cyber Sakura Hub" : (root.isWindows11 ? "🪟 Windows 11 Fluent Hub" : (root.isMacBook ? "🍵 Neo-Tokyo Matcha Hub" : (root.isRetroGaming ? "🕹️ Sunset Arcade Hub" : "󰣇 Life at a glance")))
                                         font.pixelSize: 14
                                         font.bold: true
                                         color: root.colFg
@@ -3323,8 +3672,40 @@ ShellRoot {
 
                                     Item { Layout.fillWidth: true }
 
+                                    // Live CAVA Visualizer in Start Menu (Bottom-Anchored Spectrum)
+                                    Row {
+                                        spacing: 2.5
+                                        Layout.alignment: Qt.AlignVCenter
+                                        Repeater {
+                                            model: 12
+                                            Item {
+                                                width: 3.5
+                                                height: 18
+
+                                                Rectangle {
+                                                    anchors.fill: parent
+                                                    radius: 1.75
+                                                    color: root.withAlpha(root.colBorder, 0.18)
+                                                }
+
+                                                Rectangle {
+                                                    anchors.bottom: parent.bottom
+                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                    width: parent.width
+                                                    height: (root.cavaBars && root.cavaBars[index] !== undefined) ? Math.max(3, Math.min(18, root.cavaBars[index])) : 3
+                                                    radius: 1.75
+                                                    color: height > 13 ? root.colGold : (height > 7 ? root.colAccent : root.colAccentAlt)
+                                                    opacity: Math.max(0.7, Math.min(1.0, height / 14.0))
+
+                                                    Behavior on height { NumberAnimation { duration: 45; easing.type: Easing.OutQuad } }
+                                                    Behavior on color { ColorAnimation { duration: 60 } }
+                                                }
+                                            }
+                                        }
+                                    }
+
                                     Text {
-                                        text: "Pinned Tiles"
+                                        text: "Pinned"
                                         font.pixelSize: 11
                                         font.bold: true
                                         color: root.colAccent
@@ -3641,7 +4022,7 @@ ShellRoot {
                                 return root.pinnedApps.some(p => p.id === cls || p.cmd === cls || (p.name && p.name.toLowerCase() === cls));
                             }
 
-                            visible: root.isDockCentered && secGroupMenuPopup.currentGroup
+                            visible: root.isDockCentered || root.isRetroGaming && secGroupMenuPopup.currentGroup
                             Layout.fillWidth: true
                             height: 28
                             radius: root.buttonRadius
@@ -3816,15 +4197,15 @@ ShellRoot {
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: root.isDockCentered ? (secCenterTaskRow.implicitWidth + 24) : (secClockLayout.implicitWidth + 36)
-                color: root.isDockCentered ? "transparent" : root.colBg
+                color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBg
                 border.color: root.isFullSakura ? "transparent" : (secClockArea.containsMouse ? root.colAccent : root.colBorder)
-                border.width: root.isDockCentered ? 0 : 1.5
+                border.width: (root.isDockCentered || root.isRetroGaming) ? 0 : 1.5
                 radius: root.islandRadius
 
                 // A. Centered Taskbar for Secondary Monitor (When Cyber Sakura is active)
                 Row {
                     id: secCenterTaskRow
-                    visible: root.isDockCentered
+                    visible: root.isDockCentered || root.isRetroGaming
                     anchors.centerIn: parent
                     spacing: 8
 
@@ -3942,9 +4323,10 @@ ShellRoot {
 
                     Text {
                         text: root.timeStr
+                        font.family: "Orbitron"
                         font.pixelSize: 14
                         font.bold: true
-                        color: root.colFg
+                        color: root.colAccent
                     }
                 }
 
@@ -4054,9 +4436,9 @@ ShellRoot {
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: secRightLayout.implicitWidth + 24
-                color: root.isDockCentered ? "transparent" : root.colBg
-                border.color: root.isDockCentered ? "transparent" : root.colBorder
-                border.width: root.isDockCentered ? 0 : 1.5
+                color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBg
+                border.color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBorder
+                border.width: (root.isDockCentered || root.isRetroGaming) ? 0 : 1.5
                 radius: root.islandRadius
 
                 RowLayout {
@@ -4096,6 +4478,122 @@ ShellRoot {
                             onClicked: root.runCmd(["pavucontrol"])
                         }
                     }
+
+                    // 🎮 Hardware Telemetry Badges (CPU & RAM for Retro Gaming)
+                    Rectangle {
+                        visible: root.isRetroGaming
+                        height: 34
+                        width: secHwRow.implicitWidth + 14
+                        radius: root.buttonRadius
+                        color: root.withAlpha(root.colBgAlt, 0.75)
+                        border.color: root.withAlpha(root.colAccentAlt, 0.4)
+                        border.width: 1
+
+                        Row {
+                            id: secHwRow
+                            anchors.centerIn: parent
+                            spacing: 8
+
+                            Text {
+                                text: "󰻠 " + root.cpuUsage
+                                font.family: "Orbitron"
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: root.colAccent
+                            }
+
+                            Text {
+                                text: "󰍛 " + root.ramUsage
+                                font.family: "Orbitron"
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: root.colAccentAlt
+                            }
+                        }
+                    }
+
+                    // 🎵 Live Taskbar CAVA Visualizer Pill (Bottom-Anchored Chill Audio Equalizer)
+                    Rectangle {
+                        id: secCavaTaskbarPill
+                        visible: !root.isRetroGaming
+                        height: 34
+                        width: secCavaTaskbarRow.implicitWidth + 18
+                        radius: root.buttonRadius
+                        color: secCavaPillMouse.containsMouse ? root.withAlpha(root.colAccent, 0.18) : root.withAlpha(root.colBgAlt, 0.75)
+                        border.color: secCavaPillMouse.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.35)
+                        border.width: 1
+
+                        Row {
+                            id: secCavaTaskbarRow
+                            anchors.centerIn: parent
+                            spacing: 3
+
+                            Repeater {
+                                model: 10
+                                Item {
+                                    width: 3.5
+                                    height: 20
+
+                                    // Subtle background track
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        radius: 1.75
+                                        color: root.withAlpha(root.colBorder, 0.18)
+                                    }
+
+                                    // Real-Time Audio Bar (Anchored to Bottom)
+                                    Rectangle {
+                                        id: barItem
+                                        anchors.bottom: parent.bottom
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        width: parent.width
+                                        height: (root.cavaBars && root.cavaBars[index] !== undefined) ? Math.max(3, Math.min(20, root.cavaBars[index])) : 3
+                                        radius: 1.75
+                                        color: height > 14 ? root.colGold : (height > 8 ? root.colAccent : root.colAccentAlt)
+                                        opacity: Math.max(0.65, Math.min(1.0, height / 16.0))
+
+                                        Behavior on height { NumberAnimation { duration: 45; easing.type: Easing.OutQuad } }
+                                        Behavior on color { ColorAnimation { duration: 60 } }
+                                    }
+                                }
+                            }
+                        }
+
+                        MouseArea {
+                            id: secCavaPillMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.runCmd(["pavucontrol"])
+                        }
+                    }
+
+                    // ⚠️ Critical Low Disk Space Warning Badge (< 5GB)
+                    Rectangle {
+                        visible: root.diskStatus && root.diskStatus.warning
+                        height: 34
+                        width: secDiskWarnRow.implicitWidth + 16
+                        radius: root.buttonRadius
+                        color: "#ef4444"
+                        border.color: "#fca5a5"
+                        border.width: 1.5
+
+                        Row {
+                            id: secDiskWarnRow
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            Text {
+                                text: "⚠️ " + (root.diskStatus ? root.diskStatus.avail_gb : "4.9") + " GB LEFT"
+                                font.family: "Orbitron"
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: "#ffffff"
+                            }
+                        }
+                    }
+
+
 
                     // 🧠 Gally AI Hub
                     Rectangle {
@@ -4141,12 +4639,12 @@ ShellRoot {
                         }
                     }
 
-                    // 🪟 Windows 11 / 🌸 Sakura Digital Clock & Calendar (Right Side Next to Tray)
+                    // 👾 Pixel Digital Clock (Clean Time Only)
                     Rectangle {
                         id: secSakuraClockBtn
-                        visible: root.isDockCentered
-                        height: 40
-                        width: secSakuraClockRow.implicitWidth + 18
+                        visible: root.isDockCentered || root.isRetroGaming
+                        height: 34
+                        width: secSakuraClockRow.implicitWidth + 20
                         radius: root.buttonRadius
                         color: secSakuraClockMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : root.colBgAlt
                         border.color: secSakuraClockMouse.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.3)
@@ -4155,27 +4653,14 @@ ShellRoot {
                         RowLayout {
                             id: secSakuraClockRow
                             anchors.centerIn: parent
-                            spacing: 7
+                            spacing: 6
 
                             Text {
-                                text: root.isFullSakura ? "🌸" : "󰃭"
+                                text: root.timeStr
+                                font.family: "Orbitron"
                                 font.pixelSize: 14
+                                font.bold: true
                                 color: root.colAccent
-                            }
-
-                            ColumnLayout {
-                                spacing: 0
-                                Text {
-                                    text: root.timeStr
-                                    font.pixelSize: 13
-                                    font.bold: true
-                                    color: root.colFg
-                                }
-                                Text {
-                                    text: root.dateStr
-                                    font.pixelSize: 9
-                                    color: root.colFgMuted
-                                }
                             }
                         }
 
@@ -4685,4 +5170,341 @@ ShellRoot {
         }
     }
 }
+
+
+    // ========================================================
+    // 🕹️ RETRO GAMING BOTTOM CENTERED BOUNCY DOCK (DP-2)
+    // ========================================================
+    PanelWindow {
+        id: winMainBottom
+        visible: root.isRetroGaming
+        screen: {
+            for (var i = 0; i < Quickshell.screens.length; i++) {
+                if (Quickshell.screens[i].name === "DP-2") return Quickshell.screens[i];
+            }
+            return Quickshell.screens[0];
+        }
+        anchors {
+            bottom: true
+            left: true
+            right: true
+        }
+        implicitHeight: 68
+        color: "transparent"
+        WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.namespace: "garchy-dock"
+        exclusionMode: ExclusionMode.Auto
+
+        // Floating Centered Obsidian Retro Dock
+        Rectangle {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 8
+            height: 52
+            width: mainDockLayout.implicitWidth + 24
+            radius: 18
+            color: root.colBg
+            border.color: root.colAccent
+            border.width: 1.5
+
+            RowLayout {
+                id: mainDockLayout
+                anchors.centerIn: parent
+                spacing: 8
+
+                // 📌 Pinned Apps with Bouncy Hover Animation
+                Row {
+                    spacing: 6
+                    Repeater {
+                        model: root.pinnedApps || []
+                        Rectangle {
+                            id: pinnedDockItem
+                            width: 38
+                            height: 38
+                            radius: 12
+                            color: dockPinMouse.containsMouse ? root.withAlpha(root.colAccent, 0.28) : root.colBgAlt
+                            border.color: dockPinMouse.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.3)
+                            border.width: 1
+                            scale: dockPinMouse.containsMouse ? 1.25 : 1.0
+                            y: dockPinMouse.containsMouse ? -6 : 0
+
+                            Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutBack } }
+                            Behavior on y { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
+
+                            Image {
+                                anchors.centerIn: parent
+                                width: 24
+                                height: 24
+                                source: modelData.icon_path ? ("file://" + modelData.icon_path) : (Quickshell.iconPath(modelData.icon || modelData.id))
+                                fillMode: Image.PreserveAspectFit
+                            }
+
+                            MouseArea {
+                                id: dockPinMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.runCmd(["bash", "-c", modelData.cmd + " & disown"])
+                            }
+                        }
+                    }
+                }
+
+                // Vertical Divider
+                Rectangle {
+                    visible: (root.pinnedApps && root.pinnedApps.length > 0) && (root.taskbarState && root.taskbarState.groups && root.taskbarState.groups.length > 0)
+                    width: 1.5
+                    height: 26
+                    color: root.withAlpha(root.colBorder, 0.4)
+                }
+
+                // 🪟 Running & Minimized Windows with Bouncy Hover Animation
+                Row {
+                    spacing: 6
+                    Repeater {
+                        model: (root.taskbarState && root.taskbarState.groups) ? root.taskbarState.groups : []
+                        Rectangle {
+                            id: runningDockItem
+                            property var groupData: modelData
+                            property bool isGroupActive: groupData.windows && groupData.windows.some(w => w.address === root.taskbarState.active_addr)
+                            property bool isGroupMinimized: groupData.windows && groupData.windows.every(w => (root.taskbarState.minimized_windows || []).indexOf(w.address) !== -1)
+
+                            width: 38
+                            height: 38
+                            radius: 12
+                            color: dockTaskMouse.containsMouse ? root.withAlpha(root.colAccentAlt, 0.28) : (isGroupActive ? root.withAlpha(root.colAccent, 0.22) : root.colBgAlt)
+                            border.color: isGroupActive ? root.colAccent : (dockTaskMouse.containsMouse ? root.colAccentAlt : root.withAlpha(root.colBorder, 0.3))
+                            border.width: isGroupActive ? 1.5 : 1
+                            scale: dockTaskMouse.containsMouse ? 1.25 : 1.0
+                            y: dockTaskMouse.containsMouse ? -6 : 0
+
+                            Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutBack } }
+                            Behavior on y { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
+
+                            Image {
+                                anchors.centerIn: parent
+                                width: 24
+                                height: 24
+                                source: groupData.icon_path ? ("file://" + groupData.icon_path) : (Quickshell.iconPath(groupData.icon || groupData.app_id || groupData.wm_class))
+                                fillMode: Image.PreserveAspectFit
+                            }
+
+                            // Active / Running Indicator Dot
+                            Rectangle {
+                                anchors.bottom: parent.bottom
+                                anchors.bottomMargin: 3
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                width: isGroupActive ? 12 : 5
+                                height: 3
+                                radius: 1.5
+                                color: isGroupActive ? root.colAccent : root.colAccentAlt
+                                opacity: isGroupMinimized ? 0.4 : 1.0
+                                Behavior on width { NumberAnimation { duration: 100 } }
+                            }
+
+                            MouseArea {
+                                id: dockTaskMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                onClicked: mouse => {
+                                    if (mouse.button === Qt.LeftButton) {
+                                        if (groupData.windows.length === 1) {
+                                            var w = groupData.windows[0];
+                                            if (w.address === root.taskbarState.active_addr) {
+                                                root.dispatchAction("minimize", w.address);
+                                            } else {
+                                                root.dispatchAction("activate", w.address);
+                                            }
+                                        } else {
+                                            groupMenuPopup.currentGroup = groupData;
+                                            groupMenuPopup.visible = true;
+                                        }
+                                    } else {
+                                        if (groupData.windows.length === 1) {
+                                            root.dispatchAction("close", groupData.windows[0].address);
+                                        } else {
+                                            groupMenuPopup.currentGroup = groupData;
+                                            groupMenuPopup.visible = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    // ========================================================
+    // 🕹️ RETRO GAMING BOTTOM CENTERED BOUNCY DOCK (DP-1)
+    // ========================================================
+    PanelWindow {
+        id: winSecBottom
+        visible: root.isRetroGaming
+        screen: {
+            for (var i = 0; i < Quickshell.screens.length; i++) {
+                if (Quickshell.screens[i].name === "DP-1") return Quickshell.screens[i];
+            }
+            return (Quickshell.screens.length > 1 ? Quickshell.screens[1] : Quickshell.screens[0]);
+        }
+        anchors {
+            bottom: true
+            left: true
+            right: true
+        }
+        implicitHeight: 68
+        color: "transparent"
+        WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.namespace: "garchy-dock-sec"
+        exclusionMode: ExclusionMode.Auto
+
+        // Floating Centered Obsidian Retro Dock
+        Rectangle {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 8
+            height: 52
+            width: secMainDockLayout.implicitWidth + 24
+            radius: 18
+            color: root.colBg
+            border.color: root.colAccent
+            border.width: 1.5
+
+            RowLayout {
+                id: secMainDockLayout
+                anchors.centerIn: parent
+                spacing: 8
+
+                // 📌 Pinned Apps with Bouncy Hover Animation
+                Row {
+                    spacing: 6
+                    Repeater {
+                        model: root.pinnedApps || []
+                        Rectangle {
+                            id: secPinnedDockItem
+                            width: 38
+                            height: 38
+                            radius: 12
+                            color: secDockPinMouse.containsMouse ? root.withAlpha(root.colAccent, 0.28) : root.colBgAlt
+                            border.color: secDockPinMouse.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.3)
+                            border.width: 1
+                            scale: secDockPinMouse.containsMouse ? 1.25 : 1.0
+                            y: secDockPinMouse.containsMouse ? -6 : 0
+
+                            Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutBack } }
+                            Behavior on y { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
+
+                            Image {
+                                anchors.centerIn: parent
+                                width: 24
+                                height: 24
+                                source: modelData.icon_path ? ("file://" + modelData.icon_path) : (Quickshell.iconPath(modelData.icon || modelData.id))
+                                fillMode: Image.PreserveAspectFit
+                            }
+
+                            MouseArea {
+                                id: secDockPinMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.runCmd(["bash", "-c", modelData.cmd + " & disown"])
+                            }
+                        }
+                    }
+                }
+
+                // Vertical Divider
+                Rectangle {
+                    visible: (root.pinnedApps && root.pinnedApps.length > 0) && (root.taskbarState && root.taskbarState.groups && root.taskbarState.groups.length > 0)
+                    width: 1.5
+                    height: 26
+                    color: root.withAlpha(root.colBorder, 0.4)
+                }
+
+                // 🪟 Running & Minimized Windows with Bouncy Hover Animation
+                Row {
+                    spacing: 6
+                    Repeater {
+                        model: (root.taskbarState && root.taskbarState.groups) ? root.taskbarState.groups : []
+                        Rectangle {
+                            id: secRunningDockItem
+                            property var groupData: modelData
+                            property bool isGroupActive: groupData.windows && groupData.windows.some(w => w.address === root.taskbarState.active_addr)
+                            property bool isGroupMinimized: groupData.windows && groupData.windows.every(w => (root.taskbarState.minimized_windows || []).indexOf(w.address) !== -1)
+
+                            width: 38
+                            height: 38
+                            radius: 12
+                            color: secDockTaskMouse.containsMouse ? root.withAlpha(root.colAccentAlt, 0.28) : (isGroupActive ? root.withAlpha(root.colAccent, 0.22) : root.colBgAlt)
+                            border.color: isGroupActive ? root.colAccent : (secDockTaskMouse.containsMouse ? root.colAccentAlt : root.withAlpha(root.colBorder, 0.3))
+                            border.width: isGroupActive ? 1.5 : 1
+                            scale: secDockTaskMouse.containsMouse ? 1.25 : 1.0
+                            y: secDockTaskMouse.containsMouse ? -6 : 0
+
+                            Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutBack } }
+                            Behavior on y { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
+
+                            Image {
+                                anchors.centerIn: parent
+                                width: 24
+                                height: 24
+                                source: groupData.icon_path ? ("file://" + groupData.icon_path) : (Quickshell.iconPath(groupData.icon || groupData.app_id || groupData.wm_class))
+                                fillMode: Image.PreserveAspectFit
+                            }
+
+                            // Active / Running Indicator Dot
+                            Rectangle {
+                                anchors.bottom: parent.bottom
+                                anchors.bottomMargin: 3
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                width: isGroupActive ? 12 : 5
+                                height: 3
+                                radius: 1.5
+                                color: isGroupActive ? root.colAccent : root.colAccentAlt
+                                opacity: isGroupMinimized ? 0.4 : 1.0
+                                Behavior on width { NumberAnimation { duration: 100 } }
+                            }
+
+                            MouseArea {
+                                id: secDockTaskMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                onClicked: mouse => {
+                                    if (mouse.button === Qt.LeftButton) {
+                                        if (groupData.windows.length === 1) {
+                                            var w = groupData.windows[0];
+                                            if (w.address === root.taskbarState.active_addr) {
+                                                root.dispatchAction("minimize", w.address);
+                                            } else {
+                                                root.dispatchAction("activate", w.address);
+                                            }
+                                        } else {
+                                            secGroupMenuPopup.currentGroup = groupData;
+                                            secGroupMenuPopup.visible = true;
+                                        }
+                                    } else {
+                                        if (groupData.windows.length === 1) {
+                                            root.dispatchAction("close", groupData.windows[0].address);
+                                        } else {
+                                            secGroupMenuPopup.currentGroup = groupData;
+                                            secGroupMenuPopup.visible = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 }
+
+

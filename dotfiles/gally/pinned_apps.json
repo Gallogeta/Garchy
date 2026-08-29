@@ -1,13 +1,13 @@
 [
   {
     "id": "brave",
-    "name": "Brave",
+    "name": "Brave-browser",
     "icon": "brave-desktop",
     "cmd": "brave"
   },
   {
     "id": "kitty",
-    "name": "Terminal",
+    "name": "kitty",
     "icon": "kitty",
     "cmd": "kitty"
   }

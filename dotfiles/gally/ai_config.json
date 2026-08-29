@@ -1,6 +1,6 @@
 {
   "active_provider": "local_ollama",
-  "active_model": "qwen2.5:0.5b",
+  "active_model": "gally-cephalon-ai",
   "gemini_api_key": "",
   "claude_api_key": "",
   "openai_api_key": "",

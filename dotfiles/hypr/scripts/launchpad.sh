@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
+# ==============================================================================
+# 🌌 Garchy OS — Instantaneous 144Hz Fullscreen Launchpad Dashboard (<Super>+Space)
+# ==============================================================================
 
-# Garchy OS — Native Quickshell GPU Launchpad Toggle
-QS_DIR="$HOME/.config/quickshell/launchpad"
-
-if pgrep -f "quickshell -p $QS_DIR" >/dev/null 2>&1; then
-    pkill -f "quickshell -p $QS_DIR" 2>/dev/null
-else
-    # Close rofi if open
+if pidof rofi >/dev/null 2>&1; then
     killall rofi 2>/dev/null
-    
-    # Launch Quickshell Launchpad on GPU overlay
-    exec quickshell -p "$QS_DIR"
+else
+    pkill -f "quickshell -p ~/.config/quickshell/launchpad" 2>/dev/null || true
+    rofi -show drun -theme ~/.config/rofi/launchpad.rasi -show-icons
 fi

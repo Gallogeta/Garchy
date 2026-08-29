@@ -1,7 +1,7 @@
 * {
-    bg-color: #1e1a2eF2;
-    bg-card: #2d2442;
-    fg-color: #fdf4ff;
-    accent-color: #f5bde6;
-    border-radius: 18px;
+    bg-color: #181222F2;
+    bg-card: #241b35;
+    fg-color: #f8f0fc;
+    accent-color: #ffb86c;
+    border-radius: 14px;
 }

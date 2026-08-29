@@ -3,9 +3,9 @@
   "desktop": "Hyprland Wayland Compositor + XFCE4 Fallback",
   "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
   "gpu": "NVIDIA GeForce RTX 3080 Ti, 610.57.04",
-  "ram": "31Gi Total (3,4Gi Used)",
-  "disk": "464G Total (121G Available)",
+  "ram": "31Gi Total (7,4Gi Used)",
+  "disk": "464G Total (105G Available)",
   "displays": "Dual Displays @ 144Hz (DP-1 & DP-2)",
   "audio": "PipeWire + WirePlumber + EasyEffects Equalizer",
-  "last_updated": "2026-08-27 17:11:53"
+  "last_updated": "2026-08-28 17:48:53"
 }
