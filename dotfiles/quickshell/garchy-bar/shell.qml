@@ -12,7 +12,7 @@ ShellRoot {
     // ========================================================
     // DYNAMIC WALLUST / THEME GALLERY PALETTE & GEOMETRY
     // ========================================================
-    property color colBg: "#181222F0"
+    property color colBg: "#F0181222"
     property color colBgAlt: "#281b36"
     property color colFg: "#fdf2f8"
     property color colFgMuted: "#d4b8e0"
@@ -36,6 +36,25 @@ ShellRoot {
     property int popupRadius: Math.max(4, root.themeRounding + 2)
     property var pinnedApps: []
 
+    property var allAppsList: []
+
+    FileView {
+        id: appsCacheFile
+        path: "/home/gallo/.cache/garchy_desktop_apps.json"
+        watchChanges: true
+        onLoaded: {
+            try {
+                root.allAppsList = JSON.parse(text());
+            } catch(e) {}
+        }
+        onFileChanged: {
+            reload();
+            try {
+                root.allAppsList = JSON.parse(text());
+            } catch(e) {}
+        }
+    }
+
     FileView {
         id: pinnedAppsFile
         path: "/home/gallo/.config/gally/pinned_apps.json"
@@ -53,12 +72,16 @@ ShellRoot {
         }
     }
 
+    function withAlpha(c, a) {
+        return Qt.rgba(c.r, c.g, c.b, a);
+    }
+
     function applyThemeJson(json) {
         if (!json) return;
         if (json.id) root.activeThemeId = json.id;
         if (json.bg) {
             var b = String(json.bg).trim();
-            root.colBg = b.length === 7 ? b + "F0" : b;
+            root.colBg = b.length === 7 ? ("#F0" + b.replace("#", "")) : b;
         }
         if (json.bg_alt || json.bg_card) root.colBgAlt = json.bg_alt || json.bg_card;
         if (json.fg) root.colFg = json.fg;
@@ -114,6 +137,7 @@ ShellRoot {
                 root.applyThemeJson(JSON.parse(activeThemeFile.text()));
             } catch(e) {}
             pinnedAppsFile.reload();
+            appsCacheFile.reload();
             try {
                 var p = JSON.parse(pinnedAppsFile.text());
                 if (Array.isArray(p)) root.pinnedApps = p;
@@ -239,7 +263,7 @@ ShellRoot {
 
         WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.namespace: "garchy-shell"
-        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: (startMenuPopup.visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None)
         exclusionMode: ExclusionMode.Auto
 
         Item {
@@ -282,7 +306,7 @@ ShellRoot {
                         width: 36
                         height: 36
                         radius: root.buttonRadius
-                        color: launchArea.containsMouse ? root.colAccent + "33" : (root.isFullSakura ? "transparent" : root.colBgAlt)
+                        color: launchArea.containsMouse ? root.withAlpha(root.colAccent, 0.20) : (root.isFullSakura ? "transparent" : root.colBgAlt)
                         border.color: launchArea.containsMouse ? root.colAccent : (root.isFullSakura ? "transparent" : root.colBorder)
                         border.width: 1
 
@@ -300,7 +324,7 @@ ShellRoot {
                             acceptedButtons: Qt.LeftButton | Qt.RightButton
                             onClicked: mouse => {
                                 if (mouse.button === Qt.LeftButton) {
-                                    root.runCmd(["bash", "-c", "~/.config/hypr/scripts/launchpad.sh"]);
+                                    startMenuPopup.visible = !startMenuPopup.visible;
                                 } else {
                                     root.runCmd(["bash", "-c", "~/.config/hypr/scripts/wallpaper-select.sh"]);
                                 }
@@ -341,11 +365,11 @@ ShellRoot {
                                 height: 36
                                 radius: 10
                                 color: isPinned 
-                                    ? (pinSlotMouse.containsMouse ? (root.colAccent + "33") : (isRunning ? (root.colBgAlt || "#281b36") : "transparent"))
-                                    : (pinSlotMouse.containsMouse ? (root.colAccent + "26") : (root.colBgAlt + "44"))
+                                    ? (pinSlotMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : (isRunning ? (root.colBgAlt || "#281b36") : "transparent"))
+                                    : (pinSlotMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.15)) : (root.withAlpha(root.colBgAlt, 0.27)))
                                 border.color: isPinned
-                                    ? (isRunning ? (root.colAccent || "#f472b6") : (pinSlotMouse.containsMouse ? (root.colAccent || "#f472b6") : (root.colAccentAlt + "44")))
-                                    : (pinSlotMouse.containsMouse ? (root.colAccent || "#f472b6") : (root.colBorder + "44"))
+                                    ? (isRunning ? (root.colAccent || "#f472b6") : (pinSlotMouse.containsMouse ? (root.colAccent || "#f472b6") : (root.withAlpha(root.colAccentAlt, 0.27))))
+                                    : (pinSlotMouse.containsMouse ? (root.colAccent || "#f472b6") : (root.withAlpha(root.colBorder, 0.27)))
                                 border.width: isPinned ? (isRunning ? 1.5 : 1) : 1
 
                                 // 1. If Pinned: Application Desktop Icon
@@ -355,7 +379,7 @@ ShellRoot {
                                     anchors.centerIn: parent
                                     width: 22
                                     height: 22
-                                    source: isPinned ? Quickshell.iconPath(appData.icon || appData.id) : ""
+                                    source: isPinned && appData ? Quickshell.iconPath(appData.icon || appData.id) : ""
                                     fillMode: Image.PreserveAspectFit
                                 }
 
@@ -426,7 +450,7 @@ ShellRoot {
                                             }
                                         } else {
                                             // Unpinned placeholder slot: Open Launchpad
-                                            root.runCmd(["bash", "-c", "~/.config/hypr/scripts/launchpad.sh"]);
+                                            startMenuPopup.visible = !startMenuPopup.visible;
                                         }
                                     }
                                 }
@@ -439,7 +463,7 @@ ShellRoot {
                         visible: root.isFullSakura
                         width: 1
                         height: 20
-                        color: root.colAccentAlt + "44"
+                        color: root.withAlpha(root.colAccentAlt, 0.27)
                         Layout.alignment: Qt.AlignVCenter
                     }
 
@@ -475,7 +499,7 @@ ShellRoot {
                                     width: 26
                                     height: 26
                                     radius: root.buttonRadius
-                                    color: isWsActive ? root.colAccent : (wsArea.containsMouse ? (root.colAccent + "33") : "transparent")
+                                    color: isWsActive ? root.colAccent : (wsArea.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : "transparent")
                                     border.color: isWsActive ? root.colAccent : (wsArea.containsMouse ? root.colAccent : "transparent")
                                     border.width: 1
 
@@ -517,7 +541,7 @@ ShellRoot {
                                     id: appPill
                                     anchors.fill: parent
                                     radius: root.buttonRadius
-                                    color: groupData.is_active ? root.colAccent + "33" : (appMouse.containsMouse ? (root.colAccent + "26") : "transparent")
+                                    color: groupData.is_active ? root.withAlpha(root.colAccent, 0.20) : (appMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.15)) : "transparent")
                                     border.color: groupData.is_active ? root.colAccent : (appMouse.containsMouse ? root.colAccent : "transparent")
                                     border.width: groupData.is_active ? 1.5 : 1
 
@@ -603,6 +627,567 @@ ShellRoot {
                                                 } else {
                                                     groupMenuPopup.currentGroup = groupData;
                                                     groupMenuPopup.visible = true;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+
+            // ========================================================
+            // 🪟 WINDOWS 10 STYLE START MENU POPUP (CYBER SAKURA)
+            // ========================================================
+            PopupWindow {
+                id: startMenuPopup
+                anchor.window: winMain
+                anchor.rect.x: 8
+                anchor.rect.y: root.isBottomBar ? 0 : 54
+                anchor.rect.width: 720
+                anchor.rect.height: 0
+                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
+                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
+                implicitWidth: 720
+                implicitHeight: 560
+                color: "transparent"
+                visible: false
+
+                Timer {
+                    id: searchFocusTimer
+                    interval: 60
+                    repeat: false
+                    onTriggered: {
+                        searchField.forceActiveFocus();
+                    }
+                }
+
+                onVisibleChanged: {
+                    if (visible) {
+                        searchField.text = "";
+                        searchFocusTimer.restart();
+                        Qt.callLater(function() { searchField.forceActiveFocus(); });
+                    }
+                }
+
+                Rectangle {
+                    focus: true
+                    Keys.onEscapePressed: startMenuPopup.visible = false
+                    anchors.fill: parent
+                    radius: root.popupRadius
+                    color: root.colBg
+                    border.color: root.colAccent
+                    border.width: 1.5
+                    clip: true
+
+                    RowLayout {
+                        anchors.fill: parent
+                        spacing: 0
+
+                        // 1. LEFT NARROW RAIL (50px)
+                        Rectangle {
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: 50
+                            color: root.withAlpha(root.colBgAlt, 0.4)
+                            border.color: root.withAlpha(root.colBorder, 0.2)
+                            border.width: 1
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 6
+                                spacing: 8
+
+                                // Top Hamburger Menu
+                                Rectangle {
+                                    Layout.preferredWidth: 38
+                                    Layout.preferredHeight: 38
+                                    radius: root.buttonRadius
+                                    color: navHamMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
+                                    border.color: navHamMouse.containsMouse ? root.colAccent : "transparent"
+                                    border.width: 1
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "󰍜"
+                                        font.pixelSize: 18
+                                        color: root.colAccent
+                                    }
+
+                                    MouseArea {
+                                        id: navHamMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                    }
+                                }
+
+                                Item { Layout.fillHeight: true }
+
+                                // User Avatar
+                                Rectangle {
+                                    Layout.preferredWidth: 38
+                                    Layout.preferredHeight: 38
+                                    radius: root.buttonRadius
+                                    color: navUserMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
+                                    border.color: navUserMouse.containsMouse ? root.colAccent : "transparent"
+                                    border.width: 1
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "󰀉"
+                                        font.pixelSize: 18
+                                        color: root.colFg
+                                    }
+
+                                    MouseArea {
+                                        id: navUserMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                    }
+                                }
+
+                                // Files Shortcut (Thunar)
+                                Rectangle {
+                                    Layout.preferredWidth: 38
+                                    Layout.preferredHeight: 38
+                                    radius: root.buttonRadius
+                                    color: navFilesMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
+                                    border.color: navFilesMouse.containsMouse ? root.colAccent : "transparent"
+                                    border.width: 1
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "󰉋"
+                                        font.pixelSize: 18
+                                        color: root.colAccentAlt
+                                    }
+
+                                    MouseArea {
+                                        id: navFilesMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.runCmd(["bash", "-c", "thunar & disown"]);
+                                            startMenuPopup.visible = false;
+                                        }
+                                    }
+                                }
+
+                                // Settings Shortcut
+                                Rectangle {
+                                    Layout.preferredWidth: 38
+                                    Layout.preferredHeight: 38
+                                    radius: root.buttonRadius
+                                    color: navSetMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
+                                    border.color: navSetMouse.containsMouse ? root.colAccent : "transparent"
+                                    border.width: 1
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "󰒓"
+                                        font.pixelSize: 18
+                                        color: root.colGold
+                                    }
+
+                                    MouseArea {
+                                        id: navSetMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.runCmd(["bash", "-c", "xfce4-settings-manager & disown"]);
+                                            startMenuPopup.visible = false;
+                                        }
+                                    }
+                                }
+
+                                // Lock Screen
+                                Rectangle {
+                                    Layout.preferredWidth: 38
+                                    Layout.preferredHeight: 38
+                                    radius: root.buttonRadius
+                                    color: navLockMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
+                                    border.color: navLockMouse.containsMouse ? root.colAccent : "transparent"
+                                    border.width: 1
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "󰌾"
+                                        font.pixelSize: 18
+                                        color: root.colAccent
+                                    }
+
+                                    MouseArea {
+                                        id: navLockMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.runCmd(["bash", "-c", "~/.config/hypr/scripts/dual-desktop.sh lock & disown"]);
+                                            startMenuPopup.visible = false;
+                                        }
+                                    }
+                                }
+
+                                // Power Button
+                                Rectangle {
+                                    Layout.preferredWidth: 38
+                                    Layout.preferredHeight: 38
+                                    radius: root.buttonRadius
+                                    color: navPwrMouse.containsMouse ? root.withAlpha(root.colRed, 0.25) : "transparent"
+                                    border.color: navPwrMouse.containsMouse ? root.colRed : "transparent"
+                                    border.width: 1
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "󰐥"
+                                        font.pixelSize: 18
+                                        color: navPwrMouse.containsMouse ? root.colRed : root.colFgMuted
+                                    }
+
+                                    MouseArea {
+                                        id: navPwrMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.runCmd(["bash", "-c", "wlogout & disown"]);
+                                            startMenuPopup.visible = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // 2. MIDDLE COLUMN: ALL APPS & REAL-TIME SEARCH (290px)
+                        Rectangle {
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: 290
+                            color: "transparent"
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 14
+                                spacing: 10
+
+                                // Search Box
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 38
+                                    radius: 8
+                                    color: root.colBgAlt
+                                    border.color: searchField.activeFocus ? root.colAccent : root.withAlpha(root.colBorder, 0.4)
+                                    border.width: searchField.activeFocus ? 1.5 : 1
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 8
+                                        spacing: 8
+
+                                        Text {
+                                            text: "🔍"
+                                            font.pixelSize: 13
+                                            color: root.colAccent
+                                        }
+
+                                        TextInput {
+                                            id: searchField
+                                            Layout.fillWidth: true
+                                            font.pixelSize: 12
+                                            color: root.colFg
+                                            clip: true
+                                            selectByMouse: true
+                                            focus: true
+                                            property string placeholder: "Type here to search apps..."
+
+                                            Keys.onEscapePressed: startMenuPopup.visible = false
+                                            onAccepted: {
+                                                if (appListView.count > 0 && appListView.model.length > 0) {
+                                                    var topApp = appListView.model[0];
+                                                    if (topApp && topApp.exec) {
+                                                        root.runCmd(["bash", "-c", topApp.exec + " & disown"]);
+                                                        startMenuPopup.visible = false;
+                                                    }
+                                                }
+                                            }
+
+                                            Text {
+                                                visible: searchField.text === "" && !searchField.activeFocus
+                                                text: searchField.placeholder
+                                                font.pixelSize: 12
+                                                color: root.colFgMuted
+                                                anchors.fill: parent
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+
+                                        // Clear button
+                                        Text {
+                                            visible: searchField.text !== ""
+                                            text: "✕"
+                                            font.pixelSize: 11
+                                            font.bold: true
+                                            color: clearSearchMouse.containsMouse ? root.colRed : root.colFgMuted
+
+                                            MouseArea {
+                                                id: clearSearchMouse
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    searchField.text = "";
+                                                    searchField.forceActiveFocus();
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Apps Header
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Text {
+                                        text: searchField.text === "" ? "All Applications" : "Search Results"
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                        color: root.colAccent
+                                    }
+                                    Item { Layout.fillWidth: true }
+                                    Text {
+                                        text: appListView.count + " apps"
+                                        font.pixelSize: 10
+                                        color: root.colFgMuted
+                                    }
+                                }
+
+                                // Scrollable App List
+                                ListView {
+                                    id: appListView
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+                                    spacing: 4
+                                    boundsBehavior: Flickable.StopAtBounds
+
+                                    model: {
+                                        var q = searchField.text.trim().toLowerCase();
+                                        if (!q || q === "") return root.allAppsList;
+                                        return (root.allAppsList || []).filter(function(a) {
+                                            return (a.name && a.name.toLowerCase().includes(q)) ||
+                                                   (a.comment && a.comment.toLowerCase().includes(q)) ||
+                                                   (a.exec && a.exec.toLowerCase().includes(q));
+                                        });
+                                    }
+
+                                    delegate: Rectangle {
+                                        width: appListView.width
+                                        height: 38
+                                        radius: 6
+                                        color: appItemMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
+                                        border.color: appItemMouse.containsMouse ? root.colAccent : "transparent"
+                                        border.width: 1
+
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 6
+                                            spacing: 10
+
+                                            Image {
+                                                id: appImg
+                                                Layout.preferredWidth: 24
+                                                Layout.preferredHeight: 24
+                                                source: modelData.icon_path ? ("file://" + modelData.icon_path) : (Quickshell.iconPath(modelData.icon) || "")
+                                                fillMode: Image.PreserveAspectFit
+                                                visible: status === Image.Ready
+                                            }
+
+                                            Text {
+                                                visible: !appImg.visible
+                                                Layout.preferredWidth: 24
+                                                Layout.preferredHeight: 24
+                                                horizontalAlignment: Text.AlignHCenter
+                                                verticalAlignment: Text.AlignVCenter
+                                                text: modelData.glyph || "󰀻"
+                                                font.pixelSize: 18
+                                                color: root.colAccent
+                                            }
+
+                                            ColumnLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 1
+
+                                                Text {
+                                                    Layout.fillWidth: true
+                                                    text: modelData.name
+                                                    font.pixelSize: 12
+                                                    font.bold: true
+                                                    color: root.colFg
+                                                    elide: Text.ElideRight
+                                                }
+
+                                                Text {
+                                                    visible: modelData.comment !== ""
+                                                    Layout.fillWidth: true
+                                                    text: modelData.comment || modelData.exec || ""
+                                                    font.pixelSize: 9
+                                                    color: root.colFgMuted
+                                                    elide: Text.ElideRight
+                                                }
+                                            }
+                                        }
+
+                                        MouseArea {
+                                            id: appItemMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: mouse => {
+                                                if (mouse.button === Qt.LeftButton) {
+                                                    root.runCmd(["bash", "-c", modelData.exec + " & disown"]);
+                                                    startMenuPopup.visible = false;
+                                                } else {
+                                                    root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "add", modelData.exec, modelData.name, modelData.icon]);
+                                                    startMenuPopup.visible = false;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Divider
+                        Rectangle {
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: 1
+                            color: root.withAlpha(root.colBorder, 0.3)
+                        }
+
+                        // 3. RIGHT COLUMN: WINDOWS 10 LIVE TILES / PINNED MATRIX (370px)
+                        Rectangle {
+                            Layout.fillHeight: true
+                            Layout.fillWidth: true
+                            color: "transparent"
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 14
+                                spacing: 12
+
+                                // Header
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 8
+
+                                    Text {
+                                        text: root.isFullSakura ? "🌸 Cyber Sakura Hub" : "󰣇 Life at a glance"
+                                        font.pixelSize: 14
+                                        font.bold: true
+                                        color: root.colFg
+                                    }
+
+                                    Item { Layout.fillWidth: true }
+
+                                    Text {
+                                        text: "Pinned Tiles"
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                        color: root.colAccent
+                                    }
+                                }
+
+                                // 2x5 Grid of Windows 10 Live Tiles
+                                GridLayout {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    columns: 2
+                                    rowSpacing: 10
+                                    columnSpacing: 10
+
+                                    Repeater {
+                                        model: [
+                                            { name: "Brave Browser", sub: "Web Explorer", icon: "brave", icon_path: "/home/gallo/.local/share/icons/Papirus/24x24/apps/brave.svg", glyph: "󰖟", cmd: "brave", accent: root.colAccent },
+                                            { name: "Kitty Terminal", sub: "144Hz CLI", icon: "kitty", icon_path: "/usr/share/icons/hicolor/scalable/apps/kitty.svg", glyph: "󰄛", cmd: "kitty", accent: root.colAccentAlt },
+                                            { name: "Visual Studio Code", sub: "Code Editor", icon: "code", icon_path: "/home/gallo/.local/share/icons/Papirus/24x24/apps/code.svg", glyph: "󰨞", cmd: "code", accent: root.colAccent },
+                                            { name: "Thunar Files", sub: "File System", icon: "thunar", icon_path: "/home/gallo/.local/share/icons/Papirus/24x24/apps/thunar.svg", glyph: "󰉋", cmd: "thunar", accent: root.colGold },
+                                            { name: "Steam Games", sub: "Gaming Hub", icon: "steam", icon_path: "/usr/share/icons/hicolor/48x48/apps/steam.png", glyph: "󰓓", cmd: "steam", accent: root.colAccentAlt },
+                                            { name: "Spotify Music", sub: "Audio Stream", icon: "spotify", icon_path: "/home/gallo/.local/share/icons/Papirus/24x24/apps/spotify.svg", glyph: "󰓇", cmd: "spotify", accent: root.colAccent },
+                                            { name: "Gally AI Copilot", sub: "AI Assistant", icon: "help-browser", icon_path: "/usr/share/icons/AdwaitaLegacy/48x48/legacy/help-browser.png", glyph: "󰚩", cmd: "python3 ~/.config/hypr/scripts/gally-ai-hud.py", accent: root.colGold },
+                                            { name: "Theme Gallery", sub: "Style Switcher", icon: "preferences-desktop-theme", icon_path: "/usr/share/icons/AdwaitaLegacy/48x48/legacy/preferences-desktop-theme.png", glyph: "󰏘", cmd: "~/.config/hypr/scripts/theme-switcher.sh", accent: root.colAccentAlt },
+                                            { name: "Wallpapers", sub: "Backgrounds", icon: "preferences-desktop-wallpaper", icon_path: "/usr/share/icons/AdwaitaLegacy/48x48/legacy/preferences-desktop-wallpaper.png", glyph: "󰸉", cmd: "~/.config/hypr/scripts/wallpaper-select.sh", accent: root.colAccent },
+                                            { name: "System Monitor", sub: "Hardware & BTOP", icon: "btop", icon_path: "/usr/share/icons/hicolor/scalable/apps/btop.svg", glyph: "󰍛", cmd: "kitty -e btop", accent: root.colAccentAlt }
+                                        ]
+
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            Layout.fillHeight: true
+                                            radius: 8
+                                            color: tileMouse.containsMouse ? root.withAlpha(modelData.accent, 0.22) : root.colBgAlt
+                                            border.color: tileMouse.containsMouse ? modelData.accent : root.withAlpha(root.colBorder, 0.35)
+                                            border.width: tileMouse.containsMouse ? 1.5 : 1
+
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.margins: 10
+                                                spacing: 10
+
+                                                Image {
+                                                    id: tileImg
+                                                    Layout.preferredWidth: 32
+                                                    Layout.preferredHeight: 32
+                                                    source: modelData.icon_path ? ("file://" + modelData.icon_path) : (Quickshell.iconPath(modelData.icon) || "")
+                                                    fillMode: Image.PreserveAspectFit
+                                                    visible: status === Image.Ready
+                                                }
+
+                                                Text {
+                                                    visible: !tileImg.visible
+                                                    Layout.preferredWidth: 32
+                                                    Layout.preferredHeight: 32
+                                                    horizontalAlignment: Text.AlignHCenter
+                                                    verticalAlignment: Text.AlignVCenter
+                                                    text: modelData.glyph || "󰀻"
+                                                    font.pixelSize: 24
+                                                    color: modelData.accent
+                                                }
+
+                                                ColumnLayout {
+                                                    Layout.fillWidth: true
+                                                    spacing: 2
+
+                                                    Text {
+                                                        Layout.fillWidth: true
+                                                        text: modelData.name
+                                                        font.pixelSize: 11
+                                                        font.bold: true
+                                                        color: root.colFg
+                                                        elide: Text.ElideRight
+                                                    }
+
+                                                    Text {
+                                                        Layout.fillWidth: true
+                                                        text: modelData.sub
+                                                        font.pixelSize: 9
+                                                        color: modelData.accent
+                                                        elide: Text.ElideRight
+                                                    }
+                                                }
+                                            }
+
+                                            MouseArea {
+                                                id: tileMouse
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    root.runCmd(["bash", "-c", modelData.cmd + " & disown"]);
+                                                    startMenuPopup.visible = false;
                                                 }
                                             }
                                         }
@@ -727,8 +1312,8 @@ ShellRoot {
                                         Layout.fillWidth: true
                                         Layout.preferredHeight: 38
                                         radius: root.cardRadius
-                                        color: itemMouse.containsMouse ? root.colBgAlt : (modelData.is_active ? root.colAccent + "33" : root.colBgAlt)
-                                        border.color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold + "88" : root.colBorder)
+                                        color: itemMouse.containsMouse ? root.colBgAlt : (modelData.is_active ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt)
+                                        border.color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.withAlpha(root.colGold, 0.55) : root.colBorder)
                                         border.width: 1
 
                                         RowLayout {
@@ -832,7 +1417,7 @@ ShellRoot {
                             Layout.fillWidth: true
                             height: 28
                             radius: root.buttonRadius
-                            color: pinToggleMouse.containsMouse ? (isGroupPinned ? (root.colRed + "33") : (root.colAccent + "33")) : root.colBgAlt
+                            color: pinToggleMouse.containsMouse ? (isGroupPinned ? (root.withAlpha(root.colRed, 0.20)) : (root.withAlpha(root.colAccent, 0.20))) : root.colBgAlt
                             border.color: pinToggleMouse.containsMouse ? (isGroupPinned ? root.colRed : root.colAccent) : root.colBorder
                             border.width: 1
 
@@ -938,7 +1523,7 @@ ShellRoot {
                             Layout.fillWidth: true
                             height: 28
                             radius: 6
-                            color: launchPinMouse.containsMouse ? (root.colAccent + "33") : "transparent"
+                            color: launchPinMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : "transparent"
 
                             RowLayout {
                                 anchors.fill: parent
@@ -968,7 +1553,7 @@ ShellRoot {
                             Layout.fillWidth: true
                             height: 28
                             radius: 6
-                            color: unpinMouse.containsMouse ? (root.colRed + "33") : "transparent"
+                            color: unpinMouse.containsMouse ? (root.withAlpha(root.colRed, 0.20)) : "transparent"
 
                             RowLayout {
                                 anchors.fill: parent
@@ -1027,7 +1612,7 @@ ShellRoot {
                             Rectangle {
                                 anchors.fill: parent
                                 radius: root.buttonRadius
-                                color: groupData.is_active ? root.colAccent + "33" : (centerAppMouse.containsMouse ? (root.colAccent + "26") : "transparent")
+                                color: groupData.is_active ? root.withAlpha(root.colAccent, 0.20) : (centerAppMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.15)) : "transparent")
                                 border.color: groupData.is_active ? root.colAccent : (centerAppMouse.containsMouse ? root.colAccent : "transparent")
                                 border.width: groupData.is_active ? 1.5 : 1
 
@@ -1192,7 +1777,7 @@ ShellRoot {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 32
                             radius: root.buttonRadius
-                            color: calBtnArea.containsMouse ? root.colAccent + "33" : root.colBgAlt
+                            color: calBtnArea.containsMouse ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt
                             border.color: calBtnArea.containsMouse ? root.colAccent : root.colBorder
                             border.width: 1
 
@@ -1283,7 +1868,7 @@ ShellRoot {
                         width: 34
                         height: 34
                         radius: root.buttonRadius
-                        color: aiMouse.containsMouse ? root.colAccent + "33" : "transparent"
+                        color: aiMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
 
                         Text {
                             anchors.centerIn: parent
@@ -1305,7 +1890,7 @@ ShellRoot {
                         width: 34
                         height: 34
                         radius: root.buttonRadius
-                        color: thmMouse.containsMouse ? root.colAccentAlt + "33" : "transparent"
+                        color: thmMouse.containsMouse ? root.withAlpha(root.colAccentAlt, 0.20) : "transparent"
 
                         Text {
                             anchors.centerIn: parent
@@ -1329,7 +1914,7 @@ ShellRoot {
                         height: 34
                         width: sakuraClockRow.implicitWidth + 20
                         radius: 14
-                        color: sakuraClockMouse.containsMouse ? (root.colAccent + "33") : (root.colBgAlt + "88")
+                        color: sakuraClockMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : (root.withAlpha(root.colBgAlt, 0.55))
                         border.color: "transparent"
                         border.width: 0
 
@@ -1367,7 +1952,7 @@ ShellRoot {
                         width: 34
                         height: 34
                         radius: root.buttonRadius
-                        color: trayArea.containsMouse || trayMenuPopup.visible ? (root.colAccent + "33") : "transparent"
+                        color: trayArea.containsMouse || trayMenuPopup.visible ? (root.withAlpha(root.colAccent, 0.20)) : "transparent"
                         border.color: trayArea.containsMouse || trayMenuPopup.visible ? root.colAccent : "transparent"
                         border.width: 1
 
@@ -1441,7 +2026,7 @@ ShellRoot {
                                 width: statusRow.implicitWidth + 10
                                 height: 20
                                 radius: root.buttonRadius
-                                color: root.colGreen + "22"
+                                color: root.withAlpha(root.colGreen, 0.15)
                                 border.color: root.colGreen
                                 border.width: 1
 
@@ -1648,7 +2233,7 @@ ShellRoot {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
                                 radius: root.buttonRadius
-                                color: gmMouse.containsMouse ? root.colAccent + "33" : root.colBgAlt
+                                color: gmMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt
                                 border.color: root.colBorder
                                 border.width: 1
 
@@ -1685,7 +2270,7 @@ ShellRoot {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
                                 radius: root.buttonRadius
-                                color: pavuMouse.containsMouse ? root.colAccent + "33" : root.colBgAlt
+                                color: pavuMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt
                                 border.color: root.colBorder
                                 border.width: 1
 
@@ -1723,7 +2308,7 @@ ShellRoot {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
                                 radius: root.buttonRadius
-                                color: thmQMouse.containsMouse ? root.colAccentAlt + "33" : root.colBgAlt
+                                color: thmQMouse.containsMouse ? root.withAlpha(root.colAccentAlt, 0.20) : root.colBgAlt
                                 border.color: root.colBorder
                                 border.width: 1
 
@@ -1776,7 +2361,7 @@ ShellRoot {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     radius: root.buttonRadius
-                                    color: lckMouse.containsMouse ? root.colAccent + "33" : "transparent"
+                                    color: lckMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
 
                                     Text {
                                         anchors.centerIn: parent
@@ -1808,7 +2393,7 @@ ShellRoot {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     radius: root.buttonRadius
-                                    color: rbtMouse.containsMouse ? root.colGold + "33" : "transparent"
+                                    color: rbtMouse.containsMouse ? root.withAlpha(root.colGold, 0.20) : "transparent"
 
                                     Text {
                                         anchors.centerIn: parent
@@ -1840,7 +2425,7 @@ ShellRoot {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     radius: root.buttonRadius
-                                    color: pwrMenuMouse.containsMouse ? root.colRed + "33" : "transparent"
+                                    color: pwrMenuMouse.containsMouse ? root.withAlpha(root.colRed, 0.20) : "transparent"
 
                                     Text {
                                         anchors.centerIn: parent
@@ -1891,7 +2476,7 @@ ShellRoot {
 
         WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.namespace: "garchy-shell"
-        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: (secStartMenuPopup.visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None)
         exclusionMode: ExclusionMode.Auto
 
         Item {
@@ -1934,7 +2519,7 @@ ShellRoot {
                         width: 36
                         height: 36
                         radius: root.buttonRadius
-                        color: secLaunchArea.containsMouse ? root.colAccent + "33" : (root.isFullSakura ? "transparent" : root.colBgAlt)
+                        color: secLaunchArea.containsMouse ? root.withAlpha(root.colAccent, 0.20) : (root.isFullSakura ? "transparent" : root.colBgAlt)
                         border.color: secLaunchArea.containsMouse ? root.colAccent : (root.isFullSakura ? "transparent" : root.colBorder)
                         border.width: 1
 
@@ -1952,7 +2537,7 @@ ShellRoot {
                             acceptedButtons: Qt.LeftButton | Qt.RightButton
                             onClicked: mouse => {
                                 if (mouse.button === Qt.LeftButton) {
-                                    root.runCmd(["bash", "-c", "~/.config/hypr/scripts/launchpad.sh"]);
+                                    startMenuPopup.visible = !startMenuPopup.visible;
                                 } else {
                                     root.runCmd(["bash", "-c", "~/.config/hypr/scripts/wallpaper-select.sh"]);
                                 }
@@ -1993,11 +2578,11 @@ ShellRoot {
                                 height: 36
                                 radius: 10
                                 color: isPinned 
-                                    ? (secPinSlotMouse.containsMouse ? (root.colAccent + "33") : (isRunning ? (root.colBgAlt || "#281b36") : "transparent"))
-                                    : (secPinSlotMouse.containsMouse ? (root.colAccent + "26") : (root.colBgAlt + "44"))
+                                    ? (secPinSlotMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : (isRunning ? (root.colBgAlt || "#281b36") : "transparent"))
+                                    : (secPinSlotMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.15)) : (root.withAlpha(root.colBgAlt, 0.27)))
                                 border.color: isPinned
-                                    ? (isRunning ? (root.colAccent || "#f472b6") : (secPinSlotMouse.containsMouse ? (root.colAccent || "#f472b6") : (root.colAccentAlt + "44")))
-                                    : (secPinSlotMouse.containsMouse ? (root.colAccent || "#f472b6") : (root.colBorder + "44"))
+                                    ? (isRunning ? (root.colAccent || "#f472b6") : (secPinSlotMouse.containsMouse ? (root.colAccent || "#f472b6") : (root.withAlpha(root.colAccentAlt, 0.27))))
+                                    : (secPinSlotMouse.containsMouse ? (root.colAccent || "#f472b6") : (root.withAlpha(root.colBorder, 0.27)))
                                 border.width: isPinned ? (isRunning ? 1.5 : 1) : 1
 
                                 // 1. If Pinned: Application Desktop Icon
@@ -2078,7 +2663,7 @@ ShellRoot {
                                             }
                                         } else {
                                             // Unpinned placeholder slot: Open Launchpad
-                                            root.runCmd(["bash", "-c", "~/.config/hypr/scripts/launchpad.sh"]);
+                                            startMenuPopup.visible = !startMenuPopup.visible;
                                         }
                                     }
                                 }
@@ -2091,7 +2676,7 @@ ShellRoot {
                         visible: root.isFullSakura
                         width: 1
                         height: 20
-                        color: root.colAccentAlt + "44"
+                        color: root.withAlpha(root.colAccentAlt, 0.27)
                         Layout.alignment: Qt.AlignVCenter
                     }
 
@@ -2127,7 +2712,7 @@ ShellRoot {
                                     width: 26
                                     height: 26
                                     radius: root.buttonRadius
-                                    color: isWsActive ? root.colAccent : (secWsMouse.containsMouse ? (root.colAccent + "33") : "transparent")
+                                    color: isWsActive ? root.colAccent : (secWsMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : "transparent")
                                     border.color: isWsActive ? root.colAccent : (secWsMouse.containsMouse ? root.colAccent : "transparent")
                                     border.width: 1
 
@@ -2173,7 +2758,7 @@ ShellRoot {
                                 Layout.preferredWidth: groupData.is_active ? 40 : 34
                                 Layout.preferredHeight: 32
                                 radius: root.buttonRadius
-                                color: groupData.is_active ? root.colAccent + "26" : (secAppMouse.containsMouse ? (root.colAccent + "26") : "transparent")
+                                color: groupData.is_active ? root.withAlpha(root.colAccent, 0.15) : (secAppMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.15)) : "transparent")
                                 border.color: groupData.is_active ? root.colAccent : (secAppMouse.containsMouse ? root.colAccent : "transparent")
                                 border.width: groupData.is_active ? 1.5 : 1
 
@@ -2256,6 +2841,567 @@ ShellRoot {
                                             } else {
                                                 secGroupMenuPopup.currentGroup = groupData;
                                                 secGroupMenuPopup.visible = true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+
+            // ========================================================
+            // 🪟 WINDOWS 10 STYLE START MENU POPUP (CYBER SAKURA)
+            // ========================================================
+            PopupWindow {
+                id: secStartMenuPopup
+                anchor.window: winSec
+                anchor.rect.x: 8
+                anchor.rect.y: root.isBottomBar ? 0 : 54
+                anchor.rect.width: 720
+                anchor.rect.height: 0
+                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
+                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
+                implicitWidth: 720
+                implicitHeight: 560
+                color: "transparent"
+                visible: false
+
+                Timer {
+                    id: secSearchFocusTimer
+                    interval: 60
+                    repeat: false
+                    onTriggered: {
+                        secSearchField.forceActiveFocus();
+                    }
+                }
+
+                onVisibleChanged: {
+                    if (visible) {
+                        secSearchField.text = "";
+                        secSearchFocusTimer.restart();
+                        Qt.callLater(function() { secSearchField.forceActiveFocus(); });
+                    }
+                }
+
+                Rectangle {
+                    focus: true
+                    Keys.onEscapePressed: secStartMenuPopup.visible = false
+                    anchors.fill: parent
+                    radius: root.popupRadius
+                    color: root.colBg
+                    border.color: root.colAccent
+                    border.width: 1.5
+                    clip: true
+
+                    RowLayout {
+                        anchors.fill: parent
+                        spacing: 0
+
+                        // 1. LEFT NARROW RAIL (50px)
+                        Rectangle {
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: 50
+                            color: root.withAlpha(root.colBgAlt, 0.4)
+                            border.color: root.withAlpha(root.colBorder, 0.2)
+                            border.width: 1
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 6
+                                spacing: 8
+
+                                // Top Hamburger Menu
+                                Rectangle {
+                                    Layout.preferredWidth: 38
+                                    Layout.preferredHeight: 38
+                                    radius: root.buttonRadius
+                                    color: secNavHamMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
+                                    border.color: secNavHamMouse.containsMouse ? root.colAccent : "transparent"
+                                    border.width: 1
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "󰍜"
+                                        font.pixelSize: 18
+                                        color: root.colAccent
+                                    }
+
+                                    MouseArea {
+                                        id: secNavHamMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                    }
+                                }
+
+                                Item { Layout.fillHeight: true }
+
+                                // User Avatar
+                                Rectangle {
+                                    Layout.preferredWidth: 38
+                                    Layout.preferredHeight: 38
+                                    radius: root.buttonRadius
+                                    color: secNavUserMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
+                                    border.color: secNavUserMouse.containsMouse ? root.colAccent : "transparent"
+                                    border.width: 1
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "󰀉"
+                                        font.pixelSize: 18
+                                        color: root.colFg
+                                    }
+
+                                    MouseArea {
+                                        id: secNavUserMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                    }
+                                }
+
+                                // Files Shortcut (Thunar)
+                                Rectangle {
+                                    Layout.preferredWidth: 38
+                                    Layout.preferredHeight: 38
+                                    radius: root.buttonRadius
+                                    color: secNavFilesMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
+                                    border.color: secNavFilesMouse.containsMouse ? root.colAccent : "transparent"
+                                    border.width: 1
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "󰉋"
+                                        font.pixelSize: 18
+                                        color: root.colAccentAlt
+                                    }
+
+                                    MouseArea {
+                                        id: secNavFilesMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.runCmd(["bash", "-c", "thunar & disown"]);
+                                            secStartMenuPopup.visible = false;
+                                        }
+                                    }
+                                }
+
+                                // Settings Shortcut
+                                Rectangle {
+                                    Layout.preferredWidth: 38
+                                    Layout.preferredHeight: 38
+                                    radius: root.buttonRadius
+                                    color: secNavSetMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
+                                    border.color: secNavSetMouse.containsMouse ? root.colAccent : "transparent"
+                                    border.width: 1
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "󰒓"
+                                        font.pixelSize: 18
+                                        color: root.colGold
+                                    }
+
+                                    MouseArea {
+                                        id: secNavSetMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.runCmd(["bash", "-c", "xfce4-settings-manager & disown"]);
+                                            secStartMenuPopup.visible = false;
+                                        }
+                                    }
+                                }
+
+                                // Lock Screen
+                                Rectangle {
+                                    Layout.preferredWidth: 38
+                                    Layout.preferredHeight: 38
+                                    radius: root.buttonRadius
+                                    color: secNavLockMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
+                                    border.color: secNavLockMouse.containsMouse ? root.colAccent : "transparent"
+                                    border.width: 1
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "󰌾"
+                                        font.pixelSize: 18
+                                        color: root.colAccent
+                                    }
+
+                                    MouseArea {
+                                        id: secNavLockMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.runCmd(["bash", "-c", "~/.config/hypr/scripts/dual-desktop.sh lock & disown"]);
+                                            secStartMenuPopup.visible = false;
+                                        }
+                                    }
+                                }
+
+                                // Power Button
+                                Rectangle {
+                                    Layout.preferredWidth: 38
+                                    Layout.preferredHeight: 38
+                                    radius: root.buttonRadius
+                                    color: secNavPwrMouse.containsMouse ? root.withAlpha(root.colRed, 0.25) : "transparent"
+                                    border.color: secNavPwrMouse.containsMouse ? root.colRed : "transparent"
+                                    border.width: 1
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "󰐥"
+                                        font.pixelSize: 18
+                                        color: secNavPwrMouse.containsMouse ? root.colRed : root.colFgMuted
+                                    }
+
+                                    MouseArea {
+                                        id: secNavPwrMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.runCmd(["bash", "-c", "wlogout & disown"]);
+                                            secStartMenuPopup.visible = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // 2. MIDDLE COLUMN: ALL APPS & REAL-TIME SEARCH (290px)
+                        Rectangle {
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: 290
+                            color: "transparent"
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 14
+                                spacing: 10
+
+                                // Search Box
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 38
+                                    radius: 8
+                                    color: root.colBgAlt
+                                    border.color: secSearchField.activeFocus ? root.colAccent : root.withAlpha(root.colBorder, 0.4)
+                                    border.width: secSearchField.activeFocus ? 1.5 : 1
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 8
+                                        spacing: 8
+
+                                        Text {
+                                            text: "🔍"
+                                            font.pixelSize: 13
+                                            color: root.colAccent
+                                        }
+
+                                        TextInput {
+                                            id: secSearchField
+                                            Layout.fillWidth: true
+                                            font.pixelSize: 12
+                                            color: root.colFg
+                                            clip: true
+                                            selectByMouse: true
+                                            focus: true
+                                            property string placeholder: "Type here to search apps..."
+
+                                            Keys.onEscapePressed: secStartMenuPopup.visible = false
+                                            onAccepted: {
+                                                if (secAppListView.count > 0 && secAppListView.model.length > 0) {
+                                                    var topApp = secAppListView.model[0];
+                                                    if (topApp && topApp.exec) {
+                                                        root.runCmd(["bash", "-c", topApp.exec + " & disown"]);
+                                                        secStartMenuPopup.visible = false;
+                                                    }
+                                                }
+                                            }
+
+                                            Text {
+                                                visible: secSearchField.text === "" && !secSearchField.activeFocus
+                                                text: secSearchField.placeholder
+                                                font.pixelSize: 12
+                                                color: root.colFgMuted
+                                                anchors.fill: parent
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+
+                                        // Clear button
+                                        Text {
+                                            visible: secSearchField.text !== ""
+                                            text: "✕"
+                                            font.pixelSize: 11
+                                            font.bold: true
+                                            color: secClearSearchMouse.containsMouse ? root.colRed : root.colFgMuted
+
+                                            MouseArea {
+                                                id: secClearSearchMouse
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    secSearchField.text = "";
+                                                    secSearchField.forceActiveFocus();
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Apps Header
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Text {
+                                        text: secSearchField.text === "" ? "All Applications" : "Search Results"
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                        color: root.colAccent
+                                    }
+                                    Item { Layout.fillWidth: true }
+                                    Text {
+                                        text: secAppListView.count + " apps"
+                                        font.pixelSize: 10
+                                        color: root.colFgMuted
+                                    }
+                                }
+
+                                // Scrollable App List
+                                ListView {
+                                    id: secAppListView
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+                                    spacing: 4
+                                    boundsBehavior: Flickable.StopAtBounds
+
+                                    model: {
+                                        var q = secSearchField.text.trim().toLowerCase();
+                                        if (!q || q === "") return root.allAppsList;
+                                        return (root.allAppsList || []).filter(function(a) {
+                                            return (a.name && a.name.toLowerCase().includes(q)) ||
+                                                   (a.comment && a.comment.toLowerCase().includes(q)) ||
+                                                   (a.exec && a.exec.toLowerCase().includes(q));
+                                        });
+                                    }
+
+                                    delegate: Rectangle {
+                                        width: secAppListView.width
+                                        height: 38
+                                        radius: 6
+                                        color: secAppItemMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
+                                        border.color: secAppItemMouse.containsMouse ? root.colAccent : "transparent"
+                                        border.width: 1
+
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 6
+                                            spacing: 10
+
+                                            Image {
+                                                id: secAppImg
+                                                Layout.preferredWidth: 24
+                                                Layout.preferredHeight: 24
+                                                source: modelData.icon_path ? ("file://" + modelData.icon_path) : (Quickshell.iconPath(modelData.icon) || "")
+                                                fillMode: Image.PreserveAspectFit
+                                                visible: status === Image.Ready
+                                            }
+
+                                            Text {
+                                                visible: !secAppImg.visible
+                                                Layout.preferredWidth: 24
+                                                Layout.preferredHeight: 24
+                                                horizontalAlignment: Text.AlignHCenter
+                                                verticalAlignment: Text.AlignVCenter
+                                                text: modelData.glyph || "󰀻"
+                                                font.pixelSize: 18
+                                                color: root.colAccent
+                                            }
+
+                                            ColumnLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 1
+
+                                                Text {
+                                                    Layout.fillWidth: true
+                                                    text: modelData.name
+                                                    font.pixelSize: 12
+                                                    font.bold: true
+                                                    color: root.colFg
+                                                    elide: Text.ElideRight
+                                                }
+
+                                                Text {
+                                                    visible: modelData.comment !== ""
+                                                    Layout.fillWidth: true
+                                                    text: modelData.comment || modelData.exec || ""
+                                                    font.pixelSize: 9
+                                                    color: root.colFgMuted
+                                                    elide: Text.ElideRight
+                                                }
+                                            }
+                                        }
+
+                                        MouseArea {
+                                            id: secAppItemMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: mouse => {
+                                                if (mouse.button === Qt.LeftButton) {
+                                                    root.runCmd(["bash", "-c", modelData.exec + " & disown"]);
+                                                    secStartMenuPopup.visible = false;
+                                                } else {
+                                                    root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "add", modelData.exec, modelData.name, modelData.icon]);
+                                                    secStartMenuPopup.visible = false;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Divider
+                        Rectangle {
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: 1
+                            color: root.withAlpha(root.colBorder, 0.3)
+                        }
+
+                        // 3. RIGHT COLUMN: WINDOWS 10 LIVE TILES / PINNED MATRIX (370px)
+                        Rectangle {
+                            Layout.fillHeight: true
+                            Layout.fillWidth: true
+                            color: "transparent"
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 14
+                                spacing: 12
+
+                                // Header
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 8
+
+                                    Text {
+                                        text: root.isFullSakura ? "🌸 Cyber Sakura Hub" : "󰣇 Life at a glance"
+                                        font.pixelSize: 14
+                                        font.bold: true
+                                        color: root.colFg
+                                    }
+
+                                    Item { Layout.fillWidth: true }
+
+                                    Text {
+                                        text: "Pinned Tiles"
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                        color: root.colAccent
+                                    }
+                                }
+
+                                // 2x5 Grid of Windows 10 Live Tiles
+                                GridLayout {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    columns: 2
+                                    rowSpacing: 10
+                                    columnSpacing: 10
+
+                                    Repeater {
+                                        model: [
+                                            { name: "Brave Browser", sub: "Web Explorer", icon: "brave", icon_path: "/home/gallo/.local/share/icons/Papirus/24x24/apps/brave.svg", glyph: "󰖟", cmd: "brave", accent: root.colAccent },
+                                            { name: "Kitty Terminal", sub: "144Hz CLI", icon: "kitty", icon_path: "/usr/share/icons/hicolor/scalable/apps/kitty.svg", glyph: "󰄛", cmd: "kitty", accent: root.colAccentAlt },
+                                            { name: "Visual Studio Code", sub: "Code Editor", icon: "code", icon_path: "/home/gallo/.local/share/icons/Papirus/24x24/apps/code.svg", glyph: "󰨞", cmd: "code", accent: root.colAccent },
+                                            { name: "Thunar Files", sub: "File System", icon: "thunar", icon_path: "/home/gallo/.local/share/icons/Papirus/24x24/apps/thunar.svg", glyph: "󰉋", cmd: "thunar", accent: root.colGold },
+                                            { name: "Steam Games", sub: "Gaming Hub", icon: "steam", icon_path: "/usr/share/icons/hicolor/48x48/apps/steam.png", glyph: "󰓓", cmd: "steam", accent: root.colAccentAlt },
+                                            { name: "Spotify Music", sub: "Audio Stream", icon: "spotify", icon_path: "/home/gallo/.local/share/icons/Papirus/24x24/apps/spotify.svg", glyph: "󰓇", cmd: "spotify", accent: root.colAccent },
+                                            { name: "Gally AI Copilot", sub: "AI Assistant", icon: "help-browser", icon_path: "/usr/share/icons/AdwaitaLegacy/48x48/legacy/help-browser.png", glyph: "󰚩", cmd: "python3 ~/.config/hypr/scripts/gally-ai-hud.py", accent: root.colGold },
+                                            { name: "Theme Gallery", sub: "Style Switcher", icon: "preferences-desktop-theme", icon_path: "/usr/share/icons/AdwaitaLegacy/48x48/legacy/preferences-desktop-theme.png", glyph: "󰏘", cmd: "~/.config/hypr/scripts/theme-switcher.sh", accent: root.colAccentAlt },
+                                            { name: "Wallpapers", sub: "Backgrounds", icon: "preferences-desktop-wallpaper", icon_path: "/usr/share/icons/AdwaitaLegacy/48x48/legacy/preferences-desktop-wallpaper.png", glyph: "󰸉", cmd: "~/.config/hypr/scripts/wallpaper-select.sh", accent: root.colAccent },
+                                            { name: "System Monitor", sub: "Hardware & BTOP", icon: "btop", icon_path: "/usr/share/icons/hicolor/scalable/apps/btop.svg", glyph: "󰍛", cmd: "kitty -e btop", accent: root.colAccentAlt }
+                                        ]
+
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            Layout.fillHeight: true
+                                            radius: 8
+                                            color: secTileMouse.containsMouse ? root.withAlpha(modelData.accent, 0.22) : root.colBgAlt
+                                            border.color: secTileMouse.containsMouse ? modelData.accent : root.withAlpha(root.colBorder, 0.35)
+                                            border.width: secTileMouse.containsMouse ? 1.5 : 1
+
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.margins: 10
+                                                spacing: 10
+
+                                                Image {
+                                                    id: secTileImg
+                                                    Layout.preferredWidth: 32
+                                                    Layout.preferredHeight: 32
+                                                    source: modelData.icon_path ? ("file://" + modelData.icon_path) : (Quickshell.iconPath(modelData.icon) || "")
+                                                    fillMode: Image.PreserveAspectFit
+                                                    visible: status === Image.Ready
+                                                }
+
+                                                Text {
+                                                    visible: !secTileImg.visible
+                                                    Layout.preferredWidth: 32
+                                                    Layout.preferredHeight: 32
+                                                    horizontalAlignment: Text.AlignHCenter
+                                                    verticalAlignment: Text.AlignVCenter
+                                                    text: modelData.glyph || "󰀻"
+                                                    font.pixelSize: 24
+                                                    color: modelData.accent
+                                                }
+
+                                                ColumnLayout {
+                                                    Layout.fillWidth: true
+                                                    spacing: 2
+
+                                                    Text {
+                                                        Layout.fillWidth: true
+                                                        text: modelData.name
+                                                        font.pixelSize: 11
+                                                        font.bold: true
+                                                        color: root.colFg
+                                                        elide: Text.ElideRight
+                                                    }
+
+                                                    Text {
+                                                        Layout.fillWidth: true
+                                                        text: modelData.sub
+                                                        font.pixelSize: 9
+                                                        color: modelData.accent
+                                                        elide: Text.ElideRight
+                                                    }
+                                                }
+                                            }
+
+                                            MouseArea {
+                                                id: secTileMouse
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    root.runCmd(["bash", "-c", modelData.cmd + " & disown"]);
+                                                    secStartMenuPopup.visible = false;
+                                                }
                                             }
                                         }
                                     }
@@ -2379,8 +3525,8 @@ ShellRoot {
                                         Layout.fillWidth: true
                                         Layout.preferredHeight: 38
                                         radius: root.cardRadius
-                                        color: secItemMouse.containsMouse ? root.colBgAlt : (modelData.is_active ? root.colAccent + "33" : root.colBgAlt)
-                                        border.color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold + "88" : root.colBorder)
+                                        color: secItemMouse.containsMouse ? root.colBgAlt : (modelData.is_active ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt)
+                                        border.color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.withAlpha(root.colGold, 0.55) : root.colBorder)
                                         border.width: 1
 
                                         RowLayout {
@@ -2483,7 +3629,7 @@ ShellRoot {
                             Layout.fillWidth: true
                             height: 28
                             radius: root.buttonRadius
-                            color: secPinToggleMouse.containsMouse ? (isGroupPinned ? (root.colRed + "33") : (root.colAccent + "33")) : root.colBgAlt
+                            color: secPinToggleMouse.containsMouse ? (isGroupPinned ? (root.withAlpha(root.colRed, 0.20)) : (root.withAlpha(root.colAccent, 0.20))) : root.colBgAlt
                             border.color: secPinToggleMouse.containsMouse ? (isGroupPinned ? root.colRed : root.colAccent) : root.colBorder
                             border.width: 1
 
@@ -2589,7 +3735,7 @@ ShellRoot {
                             Layout.fillWidth: true
                             height: 28
                             radius: 6
-                            color: secLaunchPinMouse.containsMouse ? (root.colAccent + "33") : "transparent"
+                            color: secLaunchPinMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : "transparent"
 
                             RowLayout {
                                 anchors.fill: parent
@@ -2619,7 +3765,7 @@ ShellRoot {
                             Layout.fillWidth: true
                             height: 28
                             radius: 6
-                            color: secUnpinMouse.containsMouse ? (root.colRed + "33") : "transparent"
+                            color: secUnpinMouse.containsMouse ? (root.withAlpha(root.colRed, 0.20)) : "transparent"
 
                             RowLayout {
                                 anchors.fill: parent
@@ -2678,7 +3824,7 @@ ShellRoot {
                             Rectangle {
                                 anchors.fill: parent
                                 radius: root.buttonRadius
-                                color: groupData.is_active ? root.colAccent + "33" : (secCenterAppMouse.containsMouse ? (root.colAccent + "26") : "transparent")
+                                color: groupData.is_active ? root.withAlpha(root.colAccent, 0.20) : (secCenterAppMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.15)) : "transparent")
                                 border.color: groupData.is_active ? root.colAccent : (secCenterAppMouse.containsMouse ? root.colAccent : "transparent")
                                 border.width: groupData.is_active ? 1.5 : 1
 
@@ -2849,7 +3995,7 @@ ShellRoot {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 32
                             radius: root.buttonRadius
-                            color: secCalBtnArea.containsMouse ? root.colAccent + "33" : root.colBgAlt
+                            color: secCalBtnArea.containsMouse ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt
                             border.color: secCalBtnArea.containsMouse ? root.colAccent : root.colBorder
                             border.width: 1
 
@@ -2940,7 +4086,7 @@ ShellRoot {
                         width: 34
                         height: 34
                         radius: root.buttonRadius
-                        color: secAiMouse.containsMouse ? root.colAccent + "33" : "transparent"
+                        color: secAiMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
 
                         Text {
                             anchors.centerIn: parent
@@ -2962,7 +4108,7 @@ ShellRoot {
                         width: 34
                         height: 34
                         radius: root.buttonRadius
-                        color: secThmMouse.containsMouse ? root.colAccentAlt + "33" : "transparent"
+                        color: secThmMouse.containsMouse ? root.withAlpha(root.colAccentAlt, 0.20) : "transparent"
 
                         Text {
                             anchors.centerIn: parent
@@ -2986,7 +4132,7 @@ ShellRoot {
                         height: 34
                         width: secSakuraClockRow.implicitWidth + 20
                         radius: 14
-                        color: secSakuraClockMouse.containsMouse ? (root.colAccent + "33") : (root.colBgAlt + "88")
+                        color: secSakuraClockMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : (root.withAlpha(root.colBgAlt, 0.55))
                         border.color: "transparent"
                         border.width: 0
 
@@ -3024,7 +4170,7 @@ ShellRoot {
                         width: 34
                         height: 34
                         radius: root.buttonRadius
-                        color: secTrayArea.containsMouse || secTrayMenuPopup.visible ? (root.colAccent + "33") : "transparent"
+                        color: secTrayArea.containsMouse || secTrayMenuPopup.visible ? (root.withAlpha(root.colAccent, 0.20)) : "transparent"
                         border.color: secTrayArea.containsMouse || secTrayMenuPopup.visible ? root.colAccent : "transparent"
                         border.width: 1
 
@@ -3097,7 +4243,7 @@ ShellRoot {
                                 width: secStatusRow.implicitWidth + 10
                                 height: 20
                                 radius: root.buttonRadius
-                                color: root.colGreen + "22"
+                                color: root.withAlpha(root.colGreen, 0.15)
                                 border.color: root.colGreen
                                 border.width: 1
 
@@ -3300,7 +4446,7 @@ ShellRoot {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
                                 radius: root.buttonRadius
-                                color: secGmMouse.containsMouse ? root.colAccent + "33" : root.colBgAlt
+                                color: secGmMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt
                                 border.color: root.colBorder
                                 border.width: 1
 
@@ -3336,7 +4482,7 @@ ShellRoot {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
                                 radius: root.buttonRadius
-                                color: secPavuMouse.containsMouse ? root.colAccent + "33" : root.colBgAlt
+                                color: secPavuMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt
                                 border.color: root.colBorder
                                 border.width: 1
 
@@ -3373,7 +4519,7 @@ ShellRoot {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
                                 radius: root.buttonRadius
-                                color: secThmQMouse.containsMouse ? root.colAccentAlt + "33" : root.colBgAlt
+                                color: secThmQMouse.containsMouse ? root.withAlpha(root.colAccentAlt, 0.20) : root.colBgAlt
                                 border.color: root.colBorder
                                 border.width: 1
 
@@ -3425,7 +4571,7 @@ ShellRoot {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     radius: root.buttonRadius
-                                    color: secLckMouse.containsMouse ? root.colAccent + "33" : "transparent"
+                                    color: secLckMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
 
                                     Text {
                                         anchors.centerIn: parent
@@ -3456,7 +4602,7 @@ ShellRoot {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     radius: root.buttonRadius
-                                    color: secRbtMouse.containsMouse ? root.colGold + "33" : "transparent"
+                                    color: secRbtMouse.containsMouse ? root.withAlpha(root.colGold, 0.20) : "transparent"
 
                                     Text {
                                         anchors.centerIn: parent
@@ -3487,7 +4633,7 @@ ShellRoot {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     radius: root.buttonRadius
-                                    color: secPwrMenuMouse.containsMouse ? root.colRed + "33" : "transparent"
+                                    color: secPwrMenuMouse.containsMouse ? root.withAlpha(root.colRed, 0.20) : "transparent"
 
                                     Text {
                                         anchors.centerIn: parent

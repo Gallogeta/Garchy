@@ -223,7 +223,10 @@ ShellRoot {
                                             width: 58
                                             height: 18
                                             radius: 4
-                                            color: (modelData.accent || "#38bdf8") + "33"
+                                            color: {
+                                                var col = Qt.color(modelData.accent || "#38bdf8");
+                                                return Qt.rgba(col.r, col.g, col.b, 0.2);
+                                            }
                                             border.color: modelData.accent || "#38bdf8"
                                             border.width: 1
 

@@ -158,10 +158,10 @@ color0                {bg}
 color8                {bg_alt}
 color1                #f472b6
 color9                {peach}
-color2                #a7f3d0
-color10               #6ee7b7
+color2                {"#fbcfe8" if "sakura" in theme_dict.get("id", "") else ("#a6e3a1" if "matcha" in theme_dict.get("id", "") else "#86efac")}
+color10               {"#f9a8d4" if "sakura" in theme_dict.get("id", "") else ("#94e2d5" if "matcha" in theme_dict.get("id", "") else "#a5f3fc")}
 color3                {gold}
-color11               #fef08a
+color11               #fed7aa
 color4                {accent_alt}
 color12               {accent}
 color5                #c084fc
