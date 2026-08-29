@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# 🌌 Garchy OS Cockpit — Launch 3-Way Terminal Dashboard (Shell + BTOP + CAVA)
+kitty --title "🌌 Garchy OS Cockpit" --session "$HOME/.config/kitty/cockpit.session" &

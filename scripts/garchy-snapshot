@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# 🌌 Garchy OS — Instant Btrfs Snapshot Generator
+# ==============================================================================
+
+DESC="${1:-Manual Snapshot Checkpoint}"
+TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+
+echo "📸 [Garchy OS] Creating System Snapshot Checkpoint..."
+echo "Description: $DESC"
+echo "Timestamp:   $TIMESTAMP"
+echo "---------------------------------------------------------"
+
+if which snapper >/dev/null 2>&1; then
+    sudo snapper -c root create -d "GarchyOS: $DESC"
+    echo "✔ Snapper root snapshot created successfully."
+elif which timeshift >/dev/null 2>&1; then
+    sudo timeshift --create --comments "GarchyOS: $DESC" --tags D
+    echo "✔ Timeshift snapshot created successfully."
+else
+    # Fallback to direct btrfs subvolume snapshot if available
+    ROOT_DEV=$(findmnt -n -o SOURCE / 2>/dev/null)
+    if [ -d "/.snapshots" ]; then
+        sudo btrfs subvolume snapshot -r / "/.snapshots/snapshot-${TIMESTAMP}"
+        echo "✔ Btrfs read-only snapshot created at /.snapshots/snapshot-${TIMESTAMP}"
+    else
+        echo "ℹ Installing Timeshift / Snapper recommended for automated snapshot indexing."
+        echo "Running Cephalon Rescue snapshot engine..."
+        python3 /home/gallo/.config/hypr/scripts/gally_system_rescue.py snapshot "$DESC"
+    fi
+fi
+
+notify-send -a "Garchy OS Snapshot" "📸 Snapshot Created" "$DESC ($TIMESTAMP)" 2>/dev/null || true
+echo "---------------------------------------------------------"
+echo "✔ Snapshot operation complete."

@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+"""
+Cephalon Gally — Instant Terminal Assistant (100% Offline + Multi-Cloud Models)
+4 Persona Modes (Non-Adult 10-16, Normal 16+, Professional Sudo, Master Sudo),
+Safety Shield, Offline Self-Healing Rescue, Security Sentinel & Fast Natural File Search.
+"""
+
+import os
+import sys
+import json
+import time
+import subprocess
+
+sys.path.insert(0, os.path.expanduser("~/.config/hypr/scripts"))
+try:
+    import gally_ai_router
+except Exception:
+    gally_ai_router = None
+
+try:
+    import gally_memory_manager
+except Exception:
+    gally_memory_manager = None
+
+try:
+    import gally_system_rescue
+except Exception:
+    gally_system_rescue = None
+
+def main():
+    if len(sys.argv) < 2:
+        print("\033[1;36m🌌 CEPHALON GALLY — TERMINAL ASSISTANT\033[0m")
+        print("Usage: ai [options] <query or directive>")
+        print("\nTerminal Directives:")
+        print("  ai login              ➔ 🔑 Show API keys and cloud login guide")
+        print("  ai login gemini <key> ➔ 🔑 Register Gemini API key and switch model")
+        print("  ai model <name>       ➔ 🔄 Switch model: qwen (Tier 1 Default), gally (Tier 2), hermes (Tier 3), gemini, claude, etc.")
+        print("  ai models             ➔ 📋 List all available models")
+        print("  ai status             ➔ 📊 Show current engine, mode & privacy status")
+        print("  ai find <query>       ➔ 🔍 Fast local file search")
+        print("  ai security           ➔ 🛡️ Run Security Sentinel sweep")
+        print("  ai repair audio       ➔ 🔊 100% Offline audio recovery")
+        print("  ai unlock pacman      ➔ 🔧 Clear stale pacman locks")
+        print("  ai snapshot           ➔ 💾 Create instant offline restore snapshot")
+        print("\nModes:")
+        print("  ai --non-adult <q>    ➔ 🌱 Non-Adult Mode (Youth & Teen companion, ages 10-16)")
+        print("  ai --sudo <query>     ➔ ⚡ Professional Sudo Mode (Deep Linux sysadmin architect)")
+        print("  ai --master <query>   ➔ ⚡ Master Architect / Full Sudo Mode (Unlocked root authority)")
+        print("  ai <query>            ➔ 🚀 Normal Mode (Balanced Cephalon companion)")
+        sys.exit(0)
+
+    mode = "normal"
+    args = sys.argv[1:]
+    
+    if args[0] in ["--non-adult", "--child", "-c"]:
+        mode = "non_adult"
+        args = args[1:]
+    elif args[0] in ["--master", "--full-sudo", "-m"]:
+        mode = "full_sudo"
+        args = args[1:]
+    elif args[0] in ["--sudo", "-s"]:
+        mode = "professional_sudo"
+        args = args[1:]
+
+    prompt = " ".join(args)
+
+    if gally_ai_router:
+        cfg = gally_ai_router.load_ai_config()
+        if mode == "normal":
+            mode = cfg.get("mode", "normal")
+            
+        # 1. Safety Command Interceptor (Guarantees system cannot be messed up)
+        if gally_system_rescue:
+            is_safe, safety_msg = gally_system_rescue.validate_command_safety(prompt, mode)
+            if not is_safe:
+                print(f"\033[1;31m🛑 SAFETY SHIELD INTERCEPTION:\033[0m\n{safety_msg}\n")
+                sys.exit(1)
+
+        # 2. In-Terminal Login / API / Model Directives
+        handled, cli_msg, new_cfg = gally_ai_router.handle_terminal_command(prompt, cfg)
+        if handled:
+            print(f"\033[1;33m{cli_msg}\033[0m\n")
+            sys.exit(0)
+            
+        # 3. Memory, Rescue & Sentinel Directives
+        if gally_memory_manager:
+            mem_res = gally_memory_manager.check_for_memory_directives(prompt)
+            if mem_res:
+                print(f"\033[1;33m◈ CEPHALON GALLY:\033[0m\n{mem_res}\n")
+                sys.exit(0)
+                
+            sys_inst = gally_memory_manager.get_mode_system_instruction(
+                mode=mode, internet_ok=cfg.get("internet_permitted", False), doc_ok=cfg.get("document_access_permitted", False)
+            )
+        else:
+            sys_inst = "You are Cephalon Gally, the intelligent companion for Garchy Linux."
+
+        history = gally_ai_router.load_history()
+        active_mod = cfg.get("active_model", "gally-cephalon-ai")
+        badge_color = "\033[1;35m" if mode == "non_adult" else ("\033[1;31m" if mode in ["professional_sudo", "full_sudo"] else "\033[1;33m")
+        print(f"{badge_color}◈ CEPHALON GALLY [{active_mod.upper()} | {mode.upper()}]:\033[0m Streaming matrices for Operator...\n")
+
+        def on_token(token):
+            print(token, end="", flush=True)
+
+        def on_complete(full_resp):
+            print("\n")
+            history.append({"role": "operator", "text": prompt, "time": time.time()})
+            history.append({"role": "cephalon", "text": full_resp, "time": time.time()})
+            gally_ai_router.save_history(history)
+            if gally_memory_manager:
+                gally_memory_manager.learn_from_interaction_async(prompt, full_resp)
+
+        gally_ai_router.stream_query(
+            prompt=prompt,
+            config=cfg,
+            token_callback=on_token,
+            complete_callback=on_complete,
+            history_messages=history,
+            system_instruction=sys_inst
+        )
+    else:
+        print("Error: AI router not found.")
+
+if __name__ == "__main__":
+    main()

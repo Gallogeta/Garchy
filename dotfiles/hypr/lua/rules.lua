@@ -22,7 +22,7 @@ hl.window_rule({
 hl.window_rule({
     name = "float-system-dialogs",
     match = {
-        class = "^(pavucontrol|nm-connection-editor|blueman-manager|org\\.pulseaudio\\.pavucontrol)$",
+        class = "^(pavucontrol|nm-connection-editor|blueman-manager|org\\.pulseaudio\\.pavucontrol|garchy-btop)$",
     },
     float = true,
     center = true,

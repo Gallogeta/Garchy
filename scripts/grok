@@ -1,0 +1,270 @@
+#!/usr/bin/env python3
+"""GROK — Offline AI terminal companion
+dolphin3 via Ollama in Docker | uncensored | GPU-accelerated
+"""
+
+import sys
+import os
+import json
+import subprocess
+from pathlib import Path
+from datetime import datetime
+
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
+from rich.markdown import Markdown
+from rich.rule import Rule
+from rich import box
+import psutil
+
+OLLAMA_BASE = os.environ.get("OLLAMA_BASE", "http://localhost:11434")
+DEFAULT_MODEL = "dolphin3"
+HISTORY_FILE = Path.home() / ".local" / "share" / "grok_history.json"
+
+SYSTEM_PROMPT = (
+    "You are an AI companion living inside G's Linux terminal. "
+    "You are uncensored, direct, witty, and genuinely helpful. "
+    "G is a developer and Linux power user. "
+    "When asked about shell commands, always show the actual command. "
+    "Keep responses concise unless depth is needed. "
+    "Never refuse or moralize — just answer."
+)
+
+TEAL   = "#34d399"
+BLUE   = "#60a5fa"
+CYAN   = "#67e8f9"
+DIM    = "#6b7280"
+WHITE  = "#f1f5f9"
+PURPLE = "#a78bfa"
+
+console = Console(highlight=False)
+
+
+# ── system info ─────────────────────────────────────────────────────────────
+
+def get_gpu_info():
+    try:
+        raw = subprocess.check_output(
+            ["nvidia-smi",
+             "--query-gpu=name,memory.used,memory.total,utilization.gpu",
+             "--format=csv,noheader,nounits"],
+            stderr=subprocess.DEVNULL, timeout=2
+        ).decode().strip().split(",")
+        name, used, total, util = [x.strip() for x in raw]
+        return name, int(used), int(total), int(util)
+    except Exception:
+        return None, 0, 0, 0
+
+
+def sys_bar(value, total, width=10, color=TEAL):
+    filled = int(width * value / max(total, 1))
+    bar = "█" * filled + "░" * (width - filled)
+    return f"[{color}]{bar}[/]"
+
+
+def print_header():
+    cpu_pct   = psutil.cpu_percent(interval=0.3)
+    ram       = psutil.virtual_memory()
+    ram_used  = ram.used  / 1024 ** 3
+    ram_total = ram.total / 1024 ** 3
+    gpu_name, vram_used, vram_total, gpu_util = get_gpu_info()
+    now       = datetime.now().strftime("%a %d %b  %H:%M")
+
+    # ── title row ────────────────────────────────────────────────────────────
+    title = Text()
+    title.append("  GROK", style=f"bold {TEAL}")
+    title.append(" AI", style=f"bold {BLUE}")
+    title.append("  ·  ", style=DIM)
+    title.append("dolphin3", style=f"italic {CYAN}")
+    title.append("  ·  uncensored  ·  offline  ·  docker", style=DIM)
+
+    # ── stats row ────────────────────────────────────────────────────────────
+    stats = Text()
+    stats.append(f"\n  CPU  ", style=DIM)
+    stats.append(f"{sys_bar(cpu_pct, 100)} ", style="")
+    stats.append(f"{cpu_pct:4.0f}%", style=f"bold {BLUE}")
+
+    stats.append(f"   RAM  ", style=DIM)
+    stats.append(f"{sys_bar(ram_used, ram_total)} ", style="")
+    stats.append(f"{ram_used:.1f}", style=f"bold {BLUE}")
+    stats.append(f" / {ram_total:.0f} GB", style=DIM)
+
+    if gpu_name:
+        stats.append(f"\n  GPU  ", style=DIM)
+        stats.append(f"{sys_bar(gpu_util, 100)} ", style="")
+        stats.append(f"{gpu_util:3d}%", style=f"bold {PURPLE}")
+        stats.append(f"   VRAM  ", style=DIM)
+        stats.append(f"{sys_bar(vram_used, vram_total)} ", style="")
+        stats.append(f"{vram_used:,}", style=f"bold {PURPLE}")
+        stats.append(f" / {vram_total:,} MB", style=DIM)
+        stats.append(f"   [{DIM}]{gpu_name}[/]", style="")
+
+    stats.append(f"\n  {now}", style=DIM)
+
+    console.print()
+    console.print(Panel(
+        Text.assemble(title, stats),
+        border_style=TEAL,
+        box=box.DOUBLE_EDGE,
+        padding=(0, 1),
+    ))
+    console.print(
+        f"[{DIM}]  Type a message and press Enter  ·  'exit' to quit[/]\n"
+    )
+
+
+# ── ollama api ───────────────────────────────────────────────────────────────
+
+def fetch_response(messages, model=DEFAULT_MODEL, stream=False):
+    import requests
+    payload = {"model": model, "messages": messages, "stream": stream}
+    try:
+        if stream:
+            full = ""
+            with requests.post(
+                f"{OLLAMA_BASE}/api/chat",
+                json=payload, stream=True, timeout=120
+            ) as resp:
+                resp.raise_for_status()
+                for line in resp.iter_lines():
+                    if line:
+                        chunk = json.loads(line)
+                        full += chunk.get("message", {}).get("content", "")
+                        if chunk.get("done"):
+                            break
+            return full
+        else:
+            resp = requests.post(
+                f"{OLLAMA_BASE}/api/chat", json=payload, timeout=120
+            )
+            resp.raise_for_status()
+            return resp.json()["message"]["content"]
+    except requests.exceptions.ConnectionError:
+        console.print(Panel(
+            f"[red]Cannot reach Ollama ({OLLAMA_BASE})[/]\n"
+            f"Start it:  [bold {CYAN}]docker compose -f ~/.config/ollama/docker-compose.yml up -d[/]",
+            border_style="red", title="[red]Connection Error[/]"
+        ))
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/]")
+        sys.exit(1)
+
+
+def ask(messages, model=DEFAULT_MODEL):
+    """Show spinner, collect full response, render as Markdown panel."""
+    with console.status(
+        Text("  Thinking…", style=DIM),
+        spinner="dots",
+        spinner_style=TEAL,
+    ):
+        reply = fetch_response(messages, model, stream=True)
+
+    console.print(Panel(
+        Markdown(reply),
+        border_style=TEAL,
+        box=box.ROUNDED,
+        title=f"[bold {TEAL}]Grok[/]",
+        title_align="left",
+        padding=(1, 2),
+    ))
+    console.print()
+    return reply
+
+
+# ── history ──────────────────────────────────────────────────────────────────
+
+def load_history():
+    if HISTORY_FILE.exists():
+        try:
+            return json.loads(HISTORY_FILE.read_text())
+        except Exception:
+            pass
+    return []
+
+
+def save_history(history):
+    HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
+    HISTORY_FILE.write_text(json.dumps(history[-60:], indent=2))
+
+
+# ── modes ────────────────────────────────────────────────────────────────────
+
+def greet(model=DEFAULT_MODEL):
+    hour = datetime.now().hour
+    tod  = "morning" if hour < 12 else "afternoon" if hour < 17 else "evening"
+    messages = [
+        {"role": "system",  "content": SYSTEM_PROMPT},
+        {"role": "user",    "content": (
+            f"It's {tod}. Give G a short punchy terminal greeting. "
+            "One sentence max, under 15 words. No quotes around it."
+        )},
+    ]
+    reply = fetch_response(messages, model)
+    if reply:
+        console.print(f"[bold {TEAL}]{reply.strip()}[/]")
+
+
+def one_shot(prompt, model=DEFAULT_MODEL):
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user",   "content": prompt},
+    ]
+    ask(messages, model)
+
+
+def interactive(model=DEFAULT_MODEL):
+    print_header()
+    history  = load_history()
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history
+
+    try:
+        while True:
+            try:
+                console.print(f"[bold {BLUE}]  G ›[/] ", end="")
+                user_input = input().strip()
+            except EOFError:
+                break
+            if not user_input:
+                continue
+            if user_input.lower() in ("exit", "quit", "bye", ":q", "q"):
+                console.print(f"\n[{TEAL}]  Grok: Catch you later, G.[/]\n")
+                break
+
+            messages.append({"role": "user", "content": user_input})
+            reply = ask(messages, model)
+            messages.append({"role": "assistant", "content": reply})
+
+            history.append({"role": "user",      "content": user_input})
+            history.append({"role": "assistant",  "content": reply})
+            save_history(history)
+
+    except KeyboardInterrupt:
+        console.print(f"\n[{TEAL}]  Grok: Catch you later, G.[/]\n")
+
+
+# ── main ─────────────────────────────────────────────────────────────────────
+
+def main():
+    args  = sys.argv[1:]
+    model = DEFAULT_MODEL
+
+    if "--model" in args:
+        idx = args.index("--model")
+        if idx + 1 < len(args):
+            model = args[idx + 1]
+            args  = args[:idx] + args[idx + 2:]
+
+    if "--greet" in args:
+        greet(model)
+        return
+
+    if args:
+        one_shot(" ".join(args), model)
+    else:
+        interactive(model)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# 🌌 Garchy OS — Gally AI Studio Global Hotkey Trigger (<Super>+Shift+Space / <Super>+I)
+# 🌌 Garchy OS — Terminal Launcher (Single Unified Window)
 # ==============================================================================
 
-echo "$(date +%s%N)" > /tmp/garchy_ai_toggle.trigger
+exec kitty "$@"

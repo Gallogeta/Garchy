@@ -1,43 +1,158 @@
-import Quickshell
-import Quickshell.Wayland
-import Quickshell.Widgets
-import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import Quickshell
+import Quickshell.Wayland
+import Quickshell.Io
 
 ShellRoot {
     id: root
 
-    // ========================================================
-    // DYNAMIC WALLUST / THEME GALLERY PALETTE & GEOMETRY
-    // ========================================================
-    property color colBg: "#F0181222"
-    property color colBgAlt: "#281b36"
-    property color colFg: "#fdf2f8"
-    property color colFgMuted: "#d4b8e0"
-    property color colAccent: "#f9a8d4"
-    property color colAccentAlt: "#c084fc"
-    property color colBorder: "#c084fc"
-    property color colGold: "#fed7aa"
-    property color colRed: "#fca5a5"
-    property color colGreen: "#f9a8d4"
-    property int themeRounding: 6
-    property string layoutStyle: "garchy"
-    property string activeThemeId: "garchy"
-    property bool isFullSakura: root.layoutStyle === "full_sakura" || root.activeThemeId === "cyber_sakura"
-    property bool isWindows11: root.layoutStyle === "windows11" || root.activeThemeId === "fluent_mica"
-    property bool isMacBook: root.layoutStyle === "macbook" || root.layoutStyle === "macbook_dock" || root.activeThemeId === "neo_matcha"
-    property bool isRetroGaming: root.layoutStyle === "retro_gaming" || root.activeThemeId === "sunset_vapour"
-    property bool isDockCentered: (root.isFullSakura || root.isWindows11 || root.isMacBook) && !root.isRetroGaming
-    property bool isBottomBar: (root.isFullSakura || root.isWindows11 || root.isMacBook || root.layoutStyle === "bottom") && !root.isRetroGaming
-    property int barHeight: root.isWindows11 ? 65 : (root.isMacBook ? 62 : (root.isFullSakura ? 58 : 48))
+        // =========================================================================
+    // 🧠 GALLY AI CHAT STATE & HELPERS
+    // =========================================================================
+    property var chatHistory: []
+    property string activeAiModel: "qwen2.5:0.5b"
+    property bool isAiVoiceEnabled: true
 
-    // Live Hardware Telemetry for Retro Gaming / Performance Mode
+    FileView {
+        id: aiHistoryFile
+        path: "/tmp/gally_chat_history.json"
+        watchChanges: true
+        onLoaded: {
+            try { root.chatHistory = JSON.parse(text()); } catch(e){}
+        }
+        onFileChanged: {
+            reload();
+            try { root.chatHistory = JSON.parse(text()); } catch(e){}
+        }
+    }
+
+    property int aiToggleCount: 0
+    FileView {
+        id: aiToggleWatcher
+        path: "/tmp/garchy_ai_toggle.trigger"
+        watchChanges: true
+        onFileChanged: {
+            reload();
+            root.aiToggleCount += 1;
+        }
+    }
+
+    function sendAiPrompt(p) {
+        if (!p || !p.trim()) return;
+        runCmd(["python3", "/home/gallo/.config/hypr/scripts/gally_chat_service.py", "send", p.trim()]);
+    }
+
+    function clearAiChat() {
+        runCmd(["python3", "/home/gallo/.config/hypr/scripts/gally_chat_service.py", "clear"]);
+    }
+
+    function setAiModel(m) {
+        root.activeAiModel = m;
+        runCmd(["python3", "/home/gallo/.config/hypr/scripts/gally_chat_service.py", "set-model", m]);
+    }
+
+    function toggleAiVoice() {
+        root.isAiVoiceEnabled = !root.isAiVoiceEnabled;
+        runCmd(["python3", "/home/gallo/.config/hypr/scripts/gally_chat_service.py", "toggle-voice"]);
+    }
+
+// =========================================================================
+    // 🎨 DYNAMIC THEME ENGINE & GARCHY 5-COLOR PALETTE
+    // =========================================================================
+    property string activeThemeId: "garchy_signature"
+    property string layoutStyle: "garchy"
+    property color colBg: "#C4080c16"
+    property color colBgAlt: "#80121d33"
+    property color colCard: "#660c1424"
+    property color colFg: "#f1f5f9"
+    property color colFgMuted: "#94a3b8"
+    property color colAccent: "#38bdf8"
+    property color colAccentAlt: "#3b82f6"
+    property color colGold: "#fbbf24"
+    property color colBorder: "#38bdf8"
+    property color colRed: "#f43f5e"
+    property color colGreen: "#10b981"
+
+    property int themeRounding: 0
+    property int islandWidth: 510
+    property int islandRadius: 0
+    property int buttonRadius: 0
+    property int cardRadius: 0
+    property int popupRadius: 0
+
+    function withAlpha(c, a) {
+        return Qt.rgba(c.r, c.g, c.b, a);
+    }
+
+    function applyTheme(t) {
+        if (!t) return;
+        if (t.id) activeThemeId = t.id;
+        if (t.layout_style) layoutStyle = t.layout_style;
+        if (t.bg) colBg = t.bg.length === 7 ? ("#C4" + t.bg.replace("#", "")) : t.bg;
+        if (t.bg_alt || t.bg_card) colBgAlt = t.bg_alt || t.bg_card;
+        if (t.bg_card) colCard = t.bg_card;
+        if (t.fg) colFg = t.fg;
+        if (t.fg_muted) colFgMuted = t.fg_muted;
+        if (t.accent) colAccent = t.accent;
+        if (t.accent_alt) colAccentAlt = t.accent_alt;
+        if (t.gold) colGold = t.gold;
+        if (t.border || t.border_col) colBorder = t.border || t.border_col;
+
+        var r = (t.rounding !== undefined) ? parseInt(t.rounding) : 0;
+        themeRounding = r;
+        islandRadius = r;
+        buttonRadius = r === 0 ? 0 : Math.max(2, r - 2);
+        cardRadius = r === 0 ? 0 : Math.max(3, r - 2);
+        popupRadius = r === 0 ? 0 : Math.max(4, r + 2);
+    }
+
+    FileView {
+        id: themeFile
+        path: "/home/gallo/.config/gally/active_theme.json"
+        watchChanges: true
+        onLoaded: { try { root.applyTheme(JSON.parse(text())); } catch(e){} }
+        onFileChanged: { reload(); try { root.applyTheme(JSON.parse(text())); } catch(e){} }
+    }
+
+    // =========================================================================
+    // ⏱️ TIME & DATE
+    // =========================================================================
+    property string timeStr: "00:00"
+    property string secondsStr: "00"
+    property string dateShortStr: "TODAY"
+    property string fullDateStr: ""
+
+    Timer {
+        interval: 1000
+        running: true
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: {
+            var d = new Date();
+            var h = String(d.getHours()).padStart(2, "0");
+            var m = String(d.getMinutes()).padStart(2, "0");
+            var s = String(d.getSeconds()).padStart(2, "0");
+            root.timeStr = h + ":" + m;
+            root.secondsStr = s;
+
+            var days = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+            var months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+            root.dateShortStr = days[d.getDay()] + ", " + months[d.getMonth()] + " " + d.getDate();
+
+            var fullDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            var fullMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            root.fullDateStr = fullDays[d.getDay()] + ", " + fullMonths[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
+        }
+    }
+
+    // =========================================================================
+    // ⚡ HARDWARE TELEMETRY
+    // =========================================================================
     property string cpuUsage: "0%"
     property string gpuUsage: "0%"
     property string ramUsage: "0%"
-    property string vramUsage: "0%"
     property string gpuTemp: "45°C"
 
     FileView {
@@ -50,21 +165,10 @@ ShellRoot {
                 if (d.cpu) root.cpuUsage = d.cpu;
                 if (d.gpu) root.gpuUsage = d.gpu;
                 if (d.ram) root.ramUsage = d.ram;
-                if (d.vram) root.vramUsage = d.vram;
                 if (d.gpu_temp) root.gpuTemp = d.gpu_temp;
             } catch(e) {}
         }
-        onFileChanged: {
-            reload();
-            try {
-                var d = JSON.parse(text());
-                if (d.cpu) root.cpuUsage = d.cpu;
-                if (d.gpu) root.gpuUsage = d.gpu;
-                if (d.ram) root.ramUsage = d.ram;
-                if (d.vram) root.vramUsage = d.vram;
-                if (d.gpu_temp) root.gpuTemp = d.gpu_temp;
-            } catch(e) {}
-        }
+        onFileChanged: { reload(); }
     }
 
     Timer {
@@ -78,57 +182,18 @@ ShellRoot {
                 if (d.cpu) root.cpuUsage = d.cpu;
                 if (d.gpu) root.gpuUsage = d.gpu;
                 if (d.ram) root.ramUsage = d.ram;
-                if (d.vram) root.vramUsage = d.vram;
                 if (d.gpu_temp) root.gpuTemp = d.gpu_temp;
             } catch(e) {}
         }
     }
-    property int pinnedDockCapacity: 5
 
-    property int islandRadius: root.themeRounding
-    property int cardRadius: Math.max(3, root.themeRounding - 2)
-    property int buttonRadius: Math.max(2, root.themeRounding - 2)
-    property int popupRadius: Math.max(4, root.themeRounding + 2)
-    property var pinnedApps: []
-
-    property var allAppsList: []
-
-    FileView {
-        id: appsCacheFile
-        path: "/home/gallo/.cache/garchy_desktop_apps.json"
-        watchChanges: true
-        onLoaded: {
-            try {
-                root.allAppsList = JSON.parse(text());
-            } catch(e) {}
-        }
-        onFileChanged: {
-            reload();
-            try {
-                root.allAppsList = JSON.parse(text());
-            } catch(e) {}
-        }
-    }
-
-    property var diskStatus: ({ warning: false, avail_gb: "85.8", use_pct: "82%" })
-
-    FileView {
-        id: diskStatusFile
-        path: "/tmp/garchy_disk_status.json"
-        watchChanges: true
-        onLoaded: {
-            try { root.diskStatus = JSON.parse(text()); } catch(e) {}
-        }
-        onFileChanged: {
-            reload();
-            try { root.diskStatus = JSON.parse(text()); } catch(e) {}
-        }
-    }
-
-    property var cavaBars: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+    // =========================================================================
+    // 🎵 LIVE CAVA AUDIO SPECTRUM (PipeWire Streaming)
+    // =========================================================================
+    property var cavaBars: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
 
     Process {
-        id: cavaProcess
+        id: cavaProc
         command: ["cava", "-p", "/home/gallo/.config/cava/garchy_bar.conf"]
         running: true
         stdout: SplitParser {
@@ -136,7 +201,7 @@ ShellRoot {
                 var p = data.trim().split(";");
                 if (p.length >= 8) {
                     var arr = [];
-                    for (var i = 0; i < Math.min(12, p.length); i++) {
+                    for (var i = 0; i < Math.min(10, p.length); i++) {
                         var n = parseInt(p[i]);
                         arr.push(isNaN(n) ? 3 : Math.max(3, Math.min(22, n)));
                     }
@@ -146,100 +211,53 @@ ShellRoot {
         }
     }
 
-    FileView {
-        id: pinnedAppsFile
-        path: "/home/gallo/.config/gally/pinned_apps.json"
-        watchChanges: true
-        onLoaded: {
-            try {
-                root.pinnedApps = JSON.parse(text());
-            } catch(e) {}
-        }
-        onFileChanged: {
-            reload();
-            try {
-                root.pinnedApps = JSON.parse(text());
-            } catch(e) {}
-        }
-    }
-
-    function withAlpha(c, a) {
-        return Qt.rgba(c.r, c.g, c.b, a);
-    }
-
-    function applyThemeJson(json) {
-        if (!json) return;
-        if (json.id) root.activeThemeId = json.id;
-        if (json.bg) {
-            var b = String(json.bg).trim();
-            root.colBg = b.length === 7 ? ("#F0" + b.replace("#", "")) : b;
-        }
-        if (json.bg_alt || json.bg_card) root.colBgAlt = json.bg_alt || json.bg_card;
-        if (json.fg) root.colFg = json.fg;
-        if (json.fg_muted) root.colFgMuted = json.fg_muted;
-        if (json.accent) root.colAccent = json.accent;
-        if (json.accent_alt) root.colAccentAlt = json.accent_alt;
-        if (json.border || json.border_col) root.colBorder = json.border || json.border_col;
-        else if (json.accent) root.colBorder = json.accent;
-        if (json.gold) root.colGold = json.gold;
-        if (json.rounding !== undefined) {
-            var r = parseInt(json.rounding);
-            root.themeRounding = r;
-            root.islandRadius = r;
-            root.cardRadius = Math.max(3, r - 2);
-            root.buttonRadius = Math.max(2, r - 2);
-            root.popupRadius = Math.max(4, r + 2);
-        } else if (json.hypr_rounding !== undefined) {
-            var r = parseInt(json.hypr_rounding);
-            root.themeRounding = r;
-            root.islandRadius = r;
-            root.cardRadius = Math.max(3, r - 2);
-            root.buttonRadius = Math.max(2, r - 2);
-            root.popupRadius = Math.max(4, r + 2);
-        }
-        if (json.layout_style) root.layoutStyle = json.layout_style;
-        if (json.bar_height) root.barHeight = parseInt(json.bar_height);
-    }
+    // =========================================================================
+    // 🎛️ UNIFIED HUB STATE (MPRIS Media, Network, Bluetooth, Audio, Weather)
+    // =========================================================================
+    property var hubState: ({
+        media: { available: false, player: "", status: "Stopped", title: "No Media", artist: "Offline", position: 0, length: 0, position_str: "0:00", length_str: "0:00", progress: 0.0 },
+        network: { connected: true, type: "ethernet", name: "Wired", icon: "󰈀" },
+        bluetooth: { powered: false, connected_device: "", icon: "󰂲" },
+        audio: { volume: 50, muted: false, mic_volume: 100, mic_muted: false, default_sink: "", sinks: [] },
+        toggles: { night_light: false, gamemode: false, dnd: false },
+        weather: { temp: "+17°C", condition: "Overcast", icon: "🌤️", display: "🌤️ +17°C" }
+    })
 
     FileView {
-        id: activeThemeFile
-        path: "/home/gallo/.config/gally/active_theme.json"
+        id: hubFile
+        path: "/tmp/garchy_hub_state.json"
         watchChanges: true
-        onLoaded: {
-            try {
-                root.applyThemeJson(JSON.parse(text()));
-            } catch(e) {}
-        }
-        onFileChanged: {
-            reload();
-            try {
-                root.applyThemeJson(JSON.parse(text()));
-            } catch(e) {}
-        }
+        onLoaded: { try { root.hubState = JSON.parse(text()); } catch(e){} }
+        onFileChanged: { reload(); try { root.hubState = JSON.parse(text()); } catch(e){} }
     }
 
     Timer {
-        interval: 800
+        interval: 1000
         running: true
         repeat: true
         onTriggered: {
-            activeThemeFile.reload();
-            try {
-                root.applyThemeJson(JSON.parse(activeThemeFile.text()));
-            } catch(e) {}
-            pinnedAppsFile.reload();
-            appsCacheFile.reload();
-            try {
-                var p = JSON.parse(pinnedAppsFile.text());
-                if (Array.isArray(p)) root.pinnedApps = p;
-            } catch(e) {}
+            hubFile.reload();
+            try { root.hubState = JSON.parse(hubFile.text()); } catch(e){}
         }
     }
 
-    // ========================================================
-    // HYPRLAND REAL-TIME WINDOW STATE
-    // ========================================================
+    // =========================================================================
+    // 🗔 HYPRLAND WINDOW STATE & APPLICATIONS
+    // =========================================================================
     property var taskbarState: ({ groups: [], minimized_windows: [], active_addr: "", monitors: [] })
+    property var allAppsList: []
+    // Notification History State
+    property var notifHistory: []
+
+    FileView {
+        id: notifHistoryFile
+        path: "/tmp/garchy_notif_history.json"
+        watchChanges: true
+        onLoaded: { try { root.notifHistory = JSON.parse(text()); } catch(e){} }
+        onFileChanged: { reload(); try { root.notifHistory = JSON.parse(text()); } catch(e){} }
+    }
+
+    property var pinnedApps: []
 
     Process {
         id: taskbarProc
@@ -249,346 +267,166 @@ ShellRoot {
             onRead: data => {
                 try {
                     var parsed = JSON.parse(data.trim());
-                    if (parsed && parsed.groups !== undefined) {
-                        root.taskbarState = parsed;
-                    }
+                    if (parsed && parsed.groups !== undefined) root.taskbarState = parsed;
                 } catch(e) {}
             }
         }
     }
 
-    function dispatchAction(action, addr) {
-        actionProc.exec(["python3", "/home/gallo/.config/quickshell/garchy-bar/taskbar_service.py", action, addr || ""]);
+    FileView {
+        id: appsFile
+        path: "/home/gallo/.cache/garchy_desktop_apps.json"
+        watchChanges: true
+        onLoaded: { try { root.allAppsList = JSON.parse(text()); } catch(e){} }
+        onFileChanged: { reload(); try { root.allAppsList = JSON.parse(text()); } catch(e){} }
+    }
+
+    FileView {
+        id: pinnedFile
+        path: "/home/gallo/.config/gally/pinned_apps.json"
+        watchChanges: true
+        onLoaded: { try { root.pinnedApps = JSON.parse(text()); } catch(e){} }
+        onFileChanged: { reload(); try { root.pinnedApps = JSON.parse(text()); } catch(e){} }
     }
 
     function runCmd(cmdList) {
-        cmdProc.exec(cmdList);
-    }
-
-    Process {
-        id: actionProc
-        function exec(args) {
-            running = false;
-            command = args;
-            running = true;
+        try {
+            Qt.createQmlObject("import Quickshell; import Quickshell.Io; Process { running: true; command: " + JSON.stringify(cmdList) + "; onExited: destroy() }", root);
+        } catch(e) {
+            console.error("runCmd error:", e);
         }
     }
 
-    Process {
-        id: cmdProc
-        function exec(args) {
-            running = false;
-            command = args;
-            running = true;
-        }
+    function dispatchAction(action, addr) {
+        runCmd(["python3", "/home/gallo/.config/quickshell/garchy-bar/taskbar_service.py", action, addr || ""]);
     }
 
-    // ========================================================
-    // TIME & AUDIO TELEMETRY
-    // ========================================================
-    property string timeStr: "00:00"
-    property string dateStr: "01/01/2026"
-    property string fullDateStr: "Monday, 1 January 2026"
-    property int volPercent: 50
-    property bool isMuted: false
+    // =========================================================================
+    // 🔊 FLOATING ON-SCREEN DISPLAY (OSD) EVENT LISTENER
+    // =========================================================================
+    property var osdEvent: ({ type: "volume", volume: 50, muted: false, timestamp: 0 })
+    property bool osdVisible: false
 
-    Timer {
-        interval: 1000
-        running: true
-        repeat: true
-        triggeredOnStart: true
-        onTriggered: {
-            var now = new Date();
-            var hours = String(now.getHours()).padStart(2, '0');
-            var mins = String(now.getMinutes()).padStart(2, '0');
-            root.timeStr = hours + ":" + mins;
-
-            var day = String(now.getDate()).padStart(2, '0');
-            var month = String(now.getMonth() + 1).padStart(2, '0');
-            var year = now.getFullYear();
-            root.dateStr = day + "/" + month + "/" + year;
-
-            var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-            var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-            root.fullDateStr = days[now.getDay()] + ", " + months[now.getMonth()] + " " + now.getDate() + ", " + now.getFullYear();
+    FileView {
+        id: osdFile
+        path: "/tmp/garchy_osd_event.json"
+        watchChanges: true
+        onLoaded: {
+            try {
+                root.osdEvent = JSON.parse(text());
+                root.osdVisible = true;
+                osdTimer.restart();
+            } catch(e){}
         }
-    }
-
-    Process {
-        id: audioProc
-        command: ["bash", "-c", "wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print int($2*100), ($3==\"[MUTED]\"?1:0)}' 2>/dev/null || echo '50 0'"]
-        running: false
-        stdout: SplitParser {
-            onRead: data => {
-                var p = data.trim().split(" ");
-                if (p.length >= 2) {
-                    root.volPercent = parseInt(p[0]) || 50;
-                    root.isMuted = (p[1] === "1");
-                }
-            }
+        onFileChanged: {
+            reload();
+            try {
+                root.osdEvent = JSON.parse(text());
+                root.osdVisible = true;
+                osdTimer.restart();
+            } catch(e){}
         }
     }
 
     Timer {
-        interval: 2000
-        running: true
-        repeat: true
-        triggeredOnStart: true
-        onTriggered: audioProc.running = true
+        id: osdTimer
+        interval: 1800
+        repeat: false
+        onTriggered: root.osdVisible = false
     }
 
-    // ========================================================
-    // PRIMARY SCREEN (DP-2) - 3 FLOATING ISLANDS
-    // ========================================================
-    PanelWindow {
-        id: winMain
-        screen: {
-            for (var i = 0; i < Quickshell.screens.length; i++) {
-                if (Quickshell.screens[i].name === "DP-2") return Quickshell.screens[i];
+    // =========================================================================
+    // 🖥️ MULTI-MONITOR TOP BARS (Variants for DP-2 & DP-1)
+    // =========================================================================
+    Variants {
+        model: Quickshell.screens
+        delegate: PanelWindow {
+            id: barWin
+            required property var modelData
+            screen: modelData
+            anchors {
+                top: true
+                left: true
+                right: true
             }
-            return Quickshell.screens[0];
-        }
+            implicitHeight: 52
+            color: "transparent"
+            WlrLayershell.layer: WlrLayer.Top
+            WlrLayershell.namespace: "garchy-bar"
+            exclusionMode: ExclusionMode.Auto
 
-        anchors {
-            top: !root.isBottomBar
-            bottom: root.isBottomBar
-            left: true
-            right: true
-        }
-        implicitHeight: root.barHeight
-        color: "transparent"
+            property bool isPrimary: modelData && (modelData.name === "DP-2")
 
-        WlrLayershell.layer: WlrLayer.Top
-        WlrLayershell.namespace: "garchy-shell"
-        WlrLayershell.keyboardFocus: (startMenuPopup.visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None)
-        exclusionMode: ExclusionMode.Auto
+            // Global Flyout Toggle Controller
+            function toggleFlyout(target) {
+                var wasVis = target.visible;
+                if (typeof startMenuPopup !== "undefined") startMenuPopup.visible = false;
+                if (typeof datePopup !== "undefined") datePopup.visible = false;
+                if (typeof quickSettingsPopup !== "undefined") quickSettingsPopup.visible = false;
+                if (typeof groupMenuPopup !== "undefined") groupMenuPopup.visible = false;
+                if (typeof notifDrawerPopup !== "undefined") notifDrawerPopup.visible = false;
+                if (typeof bentoOverlayPopup !== "undefined") bentoOverlayPopup.visible = false;
+                if (typeof gallyAiPopup !== "undefined") gallyAiPopup.visible = false;
+                target.visible = !wasVis;
+            }
 
-        Item {
-            anchors.fill: parent
-            anchors.topMargin: root.isBottomBar ? 5 : 4
-            anchors.bottomMargin: root.isBottomBar ? 5 : 4
-            anchors.leftMargin: 10
-            anchors.rightMargin: 10
-
-            // 🌸 CYBER SAKURA CONTINUOUS FULL BAR CONTAINER
-            Rectangle {
-                id: fullSakuraBar
-                visible: root.isDockCentered || root.isRetroGaming
+            Item {
                 anchors.fill: parent
-                radius: 18
-                color: root.colBg
-                border.color: root.colBorder
-                border.width: 1.5
-            }
 
-            // 1. LEFT ISLAND: Launcher, Pinned Apps, Workspaces 1-4
-            Rectangle {
-                id: leftIsland
-                anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                width: leftLayout.implicitWidth + 20
-                color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBg
-                border.color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBorder
-                border.width: (root.isDockCentered || root.isRetroGaming) ? 0 : 1.5
-                radius: root.islandRadius
+                // -------------------------------------------------------------
+                // 1. LEFT ISLAND: Flagship Shield + Workspaces + Animated Taskbar (Equal Size)
+                // -------------------------------------------------------------
+                Rectangle {
+                    id: leftIsland
+                    anchors.left: parent.left
+                    anchors.leftMargin: 20
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 42
+                    width: root.islandWidth
+                    radius: root.islandRadius
+                    color: root.colBg
+                    border.color: root.colBorder
+                    border.width: 1.0
 
-                RowLayout {
-                    id: leftLayout
-                    anchors.centerIn: parent
-                    spacing: 8
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 6
+                        spacing: 8
 
-                    // 🍵 macOS Active App Name
-                    Text {
-                        visible: root.isMacBook
-                        text: root.activeTitle ? root.activeTitle : "Finder"
-                        font.pixelSize: 13
-                        font.bold: true
-                        color: root.colFg
-                        elide: Text.ElideRight
-                        Layout.maximumWidth: 150
-                    }
+                        // Flagship Shield Start Button (Toggles Caelestia Start Menu)
+                        Rectangle {
+                            width: 32
+                            height: 30
+                            radius: root.buttonRadius
+                            color: startMenuPopup.visible ? root.colAccent : (startMouse.containsMouse ? root.withAlpha(root.colAccent, 0.25) : root.colBgAlt)
+                            border.color: startMenuPopup.visible ? root.colAccent : (startMouse.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.4))
+                            border.width: 1
 
-                    // 🌌 / 🌸 Launcher Button
-                    Rectangle {
-                        width: 36
-                        height: 36
-                        radius: root.buttonRadius
-                        color: launchArea.containsMouse ? root.withAlpha(root.colAccent, 0.20) : ((root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBgAlt)
-                        border.color: launchArea.containsMouse ? root.colAccent : ((root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBorder)
-                        border.width: 1
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: root.isFullSakura ? "🌸" : (root.isWindows11 ? "󰍲" : (root.isMacBook ? "🍵" : (root.isRetroGaming ? "󰊴" : "󰣇")))
-                            font.pixelSize: root.isWindows11 ? 22 : (root.isFullSakura ? 19 : 20)
-                            color: root.colAccent
-                        }
-
-                        MouseArea {
-                            id: launchArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            acceptedButtons: Qt.LeftButton | Qt.RightButton
-                            onClicked: mouse => {
-                                if (mouse.button === Qt.LeftButton) {
-                                    startMenuPopup.visible = !startMenuPopup.visible;
-                                } else {
-                                    root.runCmd(["bash", "-c", "~/.config/hypr/scripts/wallpaper-select.sh"]);
-                                }
+                            Text {
+                                anchors.centerIn: parent
+                                text: "󰣇"
+                                font.pixelSize: 18
+                                color: startMenuPopup.visible ? "#080c16" : root.colAccent
                             }
-                        }
-                    }
 
-                    // 🌸 CYBER SAKURA PINNED QUICK-LAUNCH DOCK (With Emoticon Placeholders for Unpinned Slots)
-                    Row {
-                        id: pinnedRow
-                        visible: root.isDockCentered || root.isRetroGaming
-                        spacing: 5
-                        Layout.alignment: Qt.AlignVCenter
-
-                        Repeater {
-                            model: Math.max(root.pinnedDockCapacity, (root.pinnedApps ? root.pinnedApps.length : 0))
-
-                            Rectangle {
-                                id: pinSlotItem
-                                property int slotIndex: index
-                                property bool isPinned: root.pinnedApps && slotIndex < root.pinnedApps.length
-                                property var appData: isPinned ? root.pinnedApps[slotIndex] : null
-
-                                property bool isRunning: {
-                                    if (!isPinned || !appData || !root.taskbarState || !root.taskbarState.groups) return false;
-                                    var pId = (appData.id || "").toLowerCase();
-                                    var pCmd = (appData.cmd || "").toLowerCase();
-                                    for (var i = 0; i < root.taskbarState.groups.length; i++) {
-                                        var g = root.taskbarState.groups[i];
-                                        var gId = (g.app_id || "").toLowerCase();
-                                        var gClass = (g.wm_class || "").toLowerCase();
-                                        if (gId.includes(pId) || gId.includes(pCmd) || gClass.includes(pId) || gClass.includes(pCmd)) return true;
-                                    }
-                                    return false;
-                                }
-
-                                width: 36
-                                height: 36
-                                radius: 10
-                                color: isPinned 
-                                    ? (pinSlotMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : (isRunning ? (root.colBgAlt || "#281b36") : "transparent"))
-                                    : (pinSlotMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.15)) : (root.withAlpha(root.colBgAlt, 0.27)))
-                                border.color: isPinned
-                                    ? (isRunning ? (root.colAccent || "#f472b6") : (pinSlotMouse.containsMouse ? (root.colAccent || "#f472b6") : (root.withAlpha(root.colAccentAlt, 0.27))))
-                                    : (pinSlotMouse.containsMouse ? (root.colAccent || "#f472b6") : (root.withAlpha(root.colBorder, 0.27)))
-                                border.width: isPinned ? (isRunning ? 1.5 : 1) : 1
-
-                                // 1. If Pinned: Application Desktop Icon
-                                Image {
-                                    id: pinSlotIcon
-                                    visible: isPinned
-                                    anchors.centerIn: parent
-                                    width: 22
-                                    height: 22
-                                    source: isPinned && appData ? Quickshell.iconPath(appData.icon || appData.id) : ""
-                                    fillMode: Image.PreserveAspectFit
-                                }
-
-                                // 2. If Pinned but icon failed to load: Pin Glyph
-                                Text {
-                                    visible: isPinned && pinSlotIcon.status !== Image.Ready
-                                    anchors.centerIn: parent
-                                    text: "󰤱"
-                                    font.pixelSize: 16
-                                    color: root.colAccent
-                                }
-
-                                // 3. If Unpinned Placeholder: Pastel Pin Glyph
-                                Text {
-                                    visible: !isPinned
-                                    anchors.centerIn: parent
-                                    text: "󰤱"
-                                    font.pixelSize: 16
-                                    color: root.colAccent
-                                    opacity: pinSlotMouse.containsMouse ? 1.0 : 0.4
-                                }
-
-                                // Subtle Blossom Glow Dot when Running
-                                Rectangle {
-                                    visible: isPinned && isRunning
-                                    width: 4
-                                    height: 4
-                                    radius: 2
-                                    color: root.colAccent || "#f5bde6"
-                                    anchors.bottom: parent.bottom
-                                    anchors.bottomMargin: 2
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                }
-
-                                MouseArea {
-                                    id: pinSlotMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
-                                    onClicked: mouse => {
-                                        if (isPinned) {
-                                            if (mouse.button === Qt.LeftButton) {
-                                                var foundAddr = "";
-                                                if (root.taskbarState && root.taskbarState.groups) {
-                                                    var pId = (appData.id || "").toLowerCase();
-                                                    var pCmd = (appData.cmd || "").toLowerCase();
-                                                    for (var i = 0; i < root.taskbarState.groups.length; i++) {
-                                                        var g = root.taskbarState.groups[i];
-                                                        var gId = (g.app_id || "").toLowerCase();
-                                                        var gClass = (g.wm_class || "").toLowerCase();
-                                                        if (gId.includes(pId) || gId.includes(pCmd) || gClass.includes(pId) || gClass.includes(pCmd)) {
-                                                            if (g.windows && g.windows.length > 0) {
-                                                                foundAddr = g.windows[0].address;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                                if (foundAddr) {
-                                                    root.dispatchAction("focus", foundAddr);
-                                                } else {
-                                                    root.runCmd(["bash", "-c", (appData.cmd || appData.id) + " & disown"]);
-                                                }
-                                            } else if (mouse.button === Qt.RightButton) {
-                                                pinnedMenuPopup.targetApp = appData;
-                                                pinnedMenuPopup.visible = true;
-                                            }
-                                        } else {
-                                            // Unpinned placeholder slot: Open Launchpad
-                                            startMenuPopup.visible = !startMenuPopup.visible;
-                                        }
+                            MouseArea {
+                                id: startMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (barWin.isPrimary) {
+                                        barWin.toggleFlyout(startMenuPopup);
+                                    } else {
+                                        root.runCmd(["bash", "-c", "~/.config/hypr/scripts/launchpad.sh"]);
                                     }
                                 }
                             }
                         }
-                    }
 
-                    // Delicate Vertical Divider
-                    Rectangle {
-                        visible: root.isFullSakura
-                        width: 1
-                        height: 20
-                        color: root.withAlpha(root.colAccentAlt, 0.27)
-                        Layout.alignment: Qt.AlignVCenter
-                    }
-
-                    // 🔢 Workspaces (1 2 3 4)
-                    Rectangle {
-                        height: 36
-                        width: wsRow.implicitWidth + 10
-                        radius: root.cardRadius
-                        color: root.colBgAlt
-                        border.color: root.colBorder
-                        border.width: 1
-
+                        // Sharp Square Workspaces [1] [2] [3] [4]
                         Row {
-                            id: wsRow
-                            anchors.centerIn: parent
                             spacing: 3
-
                             Repeater {
                                 model: [1, 2, 3, 4]
                                 Rectangle {
@@ -596,586 +434,36 @@ ShellRoot {
                                     property bool isWsActive: {
                                         var mons = root.taskbarState.monitors || [];
                                         for (var i = 0; i < mons.length; i++) {
-                                            if (mons[i].name === "DP-2") {
+                                            if (mons[i].name === barWin.modelData.name) {
                                                 var actId = mons[i].activeWorkspace ? mons[i].activeWorkspace.id : 1;
                                                 return (Math.ceil(actId / 2) === wsNum) || (actId === wsNum);
                                             }
                                         }
-                                        return wsNum === 1;
+                                        return wsNum === (barWin.isPrimary ? 1 : 2);
                                     }
 
-                                    width: 26
-                                    height: 26
+                                    width: 25
+                                    height: 28
                                     radius: root.buttonRadius
-                                    color: isWsActive ? root.colAccent : (wsArea.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : "transparent")
-                                    border.color: isWsActive ? root.colAccent : (wsArea.containsMouse ? root.colAccent : "transparent")
+                                    color: isWsActive ? root.colAccent : (wsItemMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt)
+                                    border.color: isWsActive ? root.colAccent : (wsItemMouse.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.3))
                                     border.width: 1
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: modelData
-                                        font.pixelSize: 13
-                                        font.bold: true
-                                        color: isWsActive ? "#181222" : (wsArea.containsMouse ? root.colAccent : root.colFgMuted)
-                                    }
-
-                                    MouseArea {
-                                        id: wsArea
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        onClicked: root.runCmd(["bash", "-c", "~/.config/hypr/scripts/dual-desktop.sh switch " + modelData])
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // 🗔 WINDOWS 11 / KDE INTERACTIVE TASKBAR (When NOT Cyber Sakura)
-                    Row {
-                        id: taskbarRow
-                        visible: !root.isDockCentered
-                        spacing: 8
-
-                        Repeater {
-                            model: root.taskbarState.groups || []
-
-                            Item {
-                                id: appItem
-                                property var groupData: modelData
-                                width: 38
-                                height: 32
-
-                                Rectangle {
-                                    id: appPill
-                                    anchors.fill: parent
-                                    radius: root.buttonRadius
-                                    color: groupData.is_active ? root.withAlpha(root.colAccent, 0.20) : (appMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.15)) : "transparent")
-                                    border.color: groupData.is_active ? root.colAccent : (appMouse.containsMouse ? root.colAccent : "transparent")
-                                    border.width: groupData.is_active ? 1.5 : 1
-
-                                    // App Desktop Icon
-                                    Image {
-                                        id: appIcon
-                                        anchors.centerIn: parent
-                                        width: 22
-                                        height: 22
-                                        source: Quickshell.iconPath(groupData.icon)
-                                        fillMode: Image.PreserveAspectFit
-                                        opacity: groupData.is_minimized ? 0.5 : 1.0
-                                        visible: status === Image.Ready
-                                    }
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        visible: appIcon.status !== Image.Ready
-                                        text: "󰖯"
-                                        font.pixelSize: 18
-                                        color: groupData.is_active ? root.colAccent : root.colFg
-                                    }
-
-                                    // Active underline indicator
-                                    Rectangle {
-                                        anchors.bottom: parent.bottom
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                        anchors.bottomMargin: 2
-                                        width: groupData.is_active ? 18 : 4
-                                        height: 2.5
-                                        radius: Math.max(1, root.buttonRadius / 4)
-                                        color: groupData.is_active ? root.colAccent : (groupData.is_minimized ? root.colGold : root.colFgMuted)
-                                        Behavior on width { NumberAnimation { duration: 150 } }
-                                    }
-
-                                    // Multi-window count badge (e.g. 2, 3)
-                                    Rectangle {
-                                        visible: groupData.count > 1
-                                        anchors.top: parent.top
-                                        anchors.right: parent.right
-                                        anchors.topMargin: 2
-                                        anchors.rightMargin: 2
-                                        width: 14
-                                        height: 14
-                                        radius: Math.max(2, root.buttonRadius - 2)
-                                        color: root.colAccentAlt
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: groupData.count
-                                            font.pixelSize: 9
-                                            font.bold: true
-                                            color: "#ffffff"
-                                        }
-                                    }
-
-                                    MouseArea {
-                                        id: appMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-
-                                        onClicked: mouse => {
-                                            if (mouse.button === Qt.RightButton || (mouse.button === Qt.LeftButton && groupData.windows.length > 1 && groupData.is_minimized)) {
-                                                groupMenuPopup.currentGroup = groupData;
-                                                var p = appItem.mapToItem(null, 0, 0);
-                                                groupMenuPopup.anchor.rect.x = Math.max(10, Math.min(winMain.width - 320, p.x - 20));
-                                                groupMenuPopup.visible = !groupMenuPopup.visible;
-                                            } else if (mouse.button === Qt.LeftButton) {
-                                                if (groupData.windows.length === 1) {
-                                                    root.dispatchAction("toggle", groupData.windows[0].address);
-                                                } else {
-                                                    var act = groupData.windows.find(w => w.is_active);
-                                                    if (act) {
-                                                        root.dispatchAction("toggle", act.address);
-                                                    } else {
-                                                        root.dispatchAction("focus", groupData.windows[0].address);
-                                                    }
-                                                }
-                                            } else if (mouse.button === Qt.MiddleButton) {
-                                                if (groupData.windows.length === 1) {
-                                                    root.dispatchAction("close", groupData.windows[0].address);
-                                                } else {
-                                                    groupMenuPopup.currentGroup = groupData;
-                                                    groupMenuPopup.visible = true;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-
-            // ========================================================
-            // 🪟 WINDOWS 10 STYLE START MENU POPUP (CYBER SAKURA)
-            // ========================================================
-            PopupWindow {
-                id: startMenuPopup
-                anchor.window: winMain
-                anchor.rect.x: 8
-                anchor.rect.y: root.isBottomBar ? 0 : 54
-                anchor.rect.width: 720
-                anchor.rect.height: 0
-                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
-                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
-                implicitWidth: 720
-                implicitHeight: 560
-                color: "transparent"
-                visible: false
-
-                Timer {
-                    id: searchFocusTimer
-                    interval: 60
-                    repeat: false
-                    onTriggered: {
-                        searchField.forceActiveFocus();
-                    }
-                }
-
-                onVisibleChanged: {
-                    if (visible) {
-                        searchField.text = "";
-                        searchFocusTimer.restart();
-                        Qt.callLater(function() { searchField.forceActiveFocus(); });
-                    }
-                }
-
-                Rectangle {
-                    focus: true
-                    Keys.onEscapePressed: { startMenuPopup.visible = false; event.accepted = true; }
-                    Keys.onPressed: event => { if (event.key === Qt.Key_Escape) { startMenuPopup.visible = false; event.accepted = true; } }
-                    scale: startMenuPopup.visible ? 1.0 : 0.94
-                    opacity: startMenuPopup.visible ? 1.0 : 0.0
-                    Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                    Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
-                    anchors.fill: parent
-                    radius: root.popupRadius
-                    color: root.colBg
-                    border.color: root.colAccent
-                    border.width: 1.5
-                    clip: true
-
-                    RowLayout {
-                        anchors.fill: parent
-                        spacing: 0
-
-                        // 1. LEFT NARROW RAIL (50px)
-                        Rectangle {
-                            Layout.fillHeight: true
-                            Layout.preferredWidth: 50
-                            color: root.withAlpha(root.colBgAlt, 0.4)
-                            border.color: root.withAlpha(root.colBorder, 0.2)
-                            border.width: 1
-
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 6
-                                spacing: 8
-
-                                // Top Hamburger Menu
-                                Rectangle {
-                                    Layout.preferredWidth: 38
-                                    Layout.preferredHeight: 38
-                                    radius: root.buttonRadius
-                                    color: navHamMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
-                                    border.color: navHamMouse.containsMouse ? root.colAccent : "transparent"
-                                    border.width: 1
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "󰍜"
-                                        font.pixelSize: 18
-                                        color: root.colAccent
-                                    }
-
-                                    MouseArea {
-                                        id: navHamMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                    }
-                                }
-
-                                Item { Layout.fillHeight: true }
-
-                                // User Avatar
-                                Rectangle {
-                                    Layout.preferredWidth: 38
-                                    Layout.preferredHeight: 38
-                                    radius: root.buttonRadius
-                                    color: navUserMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
-                                    border.color: navUserMouse.containsMouse ? root.colAccent : "transparent"
-                                    border.width: 1
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "󰀉"
-                                        font.pixelSize: 18
-                                        color: root.colFg
-                                    }
-
-                                    MouseArea {
-                                        id: navUserMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                    }
-                                }
-
-                                // Files Shortcut (Thunar)
-                                Rectangle {
-                                    Layout.preferredWidth: 38
-                                    Layout.preferredHeight: 38
-                                    radius: root.buttonRadius
-                                    color: navFilesMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
-                                    border.color: navFilesMouse.containsMouse ? root.colAccent : "transparent"
-                                    border.width: 1
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "󰉋"
-                                        font.pixelSize: 18
-                                        color: root.colAccentAlt
-                                    }
-
-                                    MouseArea {
-                                        id: navFilesMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            root.runCmd(["bash", "-c", "thunar & disown"]);
-                                            startMenuPopup.visible = false;
-                                        }
-                                    }
-                                }
-
-                                // Settings Shortcut
-                                Rectangle {
-                                    Layout.preferredWidth: 38
-                                    Layout.preferredHeight: 38
-                                    radius: root.buttonRadius
-                                    color: navSetMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
-                                    border.color: navSetMouse.containsMouse ? root.colAccent : "transparent"
-                                    border.width: 1
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "󰒓"
-                                        font.pixelSize: 18
-                                        color: root.colGold
-                                    }
-
-                                    MouseArea {
-                                        id: navSetMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            root.runCmd(["bash", "-c", "xfce4-settings-manager & disown"]);
-                                            startMenuPopup.visible = false;
-                                        }
-                                    }
-                                }
-
-                                // Lock Screen
-                                Rectangle {
-                                    Layout.preferredWidth: 38
-                                    Layout.preferredHeight: 38
-                                    radius: root.buttonRadius
-                                    color: navLockMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
-                                    border.color: navLockMouse.containsMouse ? root.colAccent : "transparent"
-                                    border.width: 1
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "󰌾"
-                                        font.pixelSize: 18
-                                        color: root.colAccent
-                                    }
-
-                                    MouseArea {
-                                        id: navLockMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            root.runCmd(["bash", "-c", "~/.config/hypr/scripts/dual-desktop.sh lock & disown"]);
-                                            startMenuPopup.visible = false;
-                                        }
-                                    }
-                                }
-
-                                // Power Button
-                                Rectangle {
-                                    Layout.preferredWidth: 38
-                                    Layout.preferredHeight: 38
-                                    radius: root.buttonRadius
-                                    color: navPwrMouse.containsMouse ? root.withAlpha(root.colRed, 0.25) : "transparent"
-                                    border.color: navPwrMouse.containsMouse ? root.colRed : "transparent"
-                                    border.width: 1
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "󰐥"
-                                        font.pixelSize: 18
-                                        color: navPwrMouse.containsMouse ? root.colRed : root.colFgMuted
-                                    }
-
-                                    MouseArea {
-                                        id: navPwrMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            root.runCmd(["bash", "-c", "wlogout & disown"]);
-                                            startMenuPopup.visible = false;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // 2. MIDDLE COLUMN: ALL APPS & REAL-TIME SEARCH (290px)
-                        Rectangle {
-                            Layout.fillHeight: true
-                            Layout.preferredWidth: 290
-                            color: "transparent"
-
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 14
-                                spacing: 10
-
-                                // Search Box
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 38
-                                    radius: 8
-                                    color: root.colBgAlt
-                                    border.color: searchField.activeFocus ? root.colAccent : root.withAlpha(root.colBorder, 0.4)
-                                    border.width: searchField.activeFocus ? 1.5 : 1
-
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: 8
-                                        spacing: 8
-
-                                        Text {
-                                            text: "🔍"
-                                            font.pixelSize: 13
-                                            color: root.colAccent
-                                        }
-
-                                        TextInput {
-                                            id: searchField
-                                            Layout.fillWidth: true
-                                            font.pixelSize: 12
-                                            color: root.colFg
-                                            clip: true
-                                            selectByMouse: true
-                                            focus: true
-                                            property string placeholder: "Type here to search apps..."
-
-                                            Keys.onEscapePressed: { startMenuPopup.visible = false; event.accepted = true; }
-                                            Keys.onPressed: event => {
-                                                if (event.key === Qt.Key_Escape) {
-                                                    startMenuPopup.visible = false;
-                                                    event.accepted = true;
-                                                }
-                                            }
-                                            onAccepted: {
-                                                if (appListView.count > 0 && appListView.model.length > 0) {
-                                                    var topApp = appListView.model[0];
-                                                    if (topApp && topApp.exec) {
-                                                        root.runCmd(["bash", "-c", topApp.exec + " & disown"]);
-                                                        startMenuPopup.visible = false;
-                                                    }
-                                                }
-                                            }
-
-                                            Text {
-                                                visible: searchField.text === "" && !searchField.activeFocus
-                                                text: searchField.placeholder
-                                                font.pixelSize: 12
-                                                color: root.colFgMuted
-                                                anchors.fill: parent
-                                                verticalAlignment: Text.AlignVCenter
-                                            }
-                                        }
-
-                                        // Clear button
-                                        Text {
-                                            visible: searchField.text !== ""
-                                            text: "✕"
-                                            font.pixelSize: 11
-                                            font.bold: true
-                                            color: clearSearchMouse.containsMouse ? root.colRed : root.colFgMuted
-
-                                            MouseArea {
-                                                id: clearSearchMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: {
-                                                    searchField.text = "";
-                                                    searchField.forceActiveFocus();
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // Apps Header
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Text {
-                                        text: searchField.text === "" ? "All Applications" : "Search Results"
+                                        font.family: "Orbitron"
                                         font.pixelSize: 11
                                         font.bold: true
-                                        color: root.colAccent
-                                    }
-                                    Item { Layout.fillWidth: true }
-                                    Text {
-                                        text: appListView.count + " apps"
-                                        font.pixelSize: 10
-                                        color: root.colFgMuted
-                                    }
-                                }
-
-                                // Scrollable App List
-                                ListView {
-                                    id: appListView
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    clip: true
-                                    spacing: 4
-                                    boundsBehavior: Flickable.StopAtBounds
-
-                                    model: {
-                                        var q = searchField.text.trim().toLowerCase();
-                                        if (!q || q === "") return root.allAppsList;
-                                        return (root.allAppsList || []).filter(function(a) {
-                                            return (a.name && a.name.toLowerCase().includes(q)) ||
-                                                   (a.comment && a.comment.toLowerCase().includes(q)) ||
-                                                   (a.exec && a.exec.toLowerCase().includes(q));
-                                        });
+                                        color: isWsActive ? "#080c16" : (wsItemMouse.containsMouse ? root.colAccent : root.colFgMuted)
                                     }
 
-                                    delegate: Rectangle {
-                                        width: appListView.width
-                                        height: 38
-                                        radius: 6
-                                        color: appItemMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
-                                        border.color: appItemMouse.containsMouse ? root.colAccent : "transparent"
-                                        border.width: 1
-
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.margins: 6
-                                            spacing: 10
-
-                                            Image {
-                                                id: appImg
-                                                Layout.preferredWidth: 24
-                                                Layout.preferredHeight: 24
-                                                source: modelData.icon_path ? ("file://" + modelData.icon_path) : (Quickshell.iconPath(modelData.icon) || "")
-                                                fillMode: Image.PreserveAspectFit
-                                                visible: status === Image.Ready
-                                            }
-
-                                            Text {
-                                                visible: !appImg.visible
-                                                Layout.preferredWidth: 24
-                                                Layout.preferredHeight: 24
-                                                horizontalAlignment: Text.AlignHCenter
-                                                verticalAlignment: Text.AlignVCenter
-                                                text: modelData.glyph || "󰀻"
-                                                font.pixelSize: 18
-                                                color: root.colAccent
-                                            }
-
-                                            ColumnLayout {
-                                                Layout.fillWidth: true
-                                                spacing: 1
-
-                                                Text {
-                                                    Layout.fillWidth: true
-                                                    text: modelData.name
-                                                    font.pixelSize: 12
-                                                    font.bold: true
-                                                    color: root.colFg
-                                                    elide: Text.ElideRight
-                                                }
-
-                                                Text {
-                                                    visible: modelData.comment !== ""
-                                                    Layout.fillWidth: true
-                                                    text: modelData.comment || modelData.exec || ""
-                                                    font.pixelSize: 9
-                                                    color: root.colFgMuted
-                                                    elide: Text.ElideRight
-                                                }
-                                            }
-                                        }
-
-                                        MouseArea {
-                                            id: appItemMouse
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            acceptedButtons: Qt.LeftButton | Qt.RightButton
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: mouse => {
-                                                if (mouse.button === Qt.LeftButton) {
-                                                    root.runCmd(["bash", "-c", modelData.exec + " & disown"]);
-                                                    startMenuPopup.visible = false;
-                                                } else {
-                                                    root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "add", modelData.exec, modelData.name, modelData.icon]);
-                                                    startMenuPopup.visible = false;
-                                                }
-                                            }
-                                        }
+                                    MouseArea {
+                                        id: wsItemMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.runCmd(["bash", "-c", "~/.config/hypr/scripts/dual-desktop.sh switch " + modelData])
                                     }
                                 }
                             }
@@ -1183,3982 +471,2637 @@ ShellRoot {
 
                         // Divider
                         Rectangle {
+                            width: 1
+                            height: 16
+                            color: root.withAlpha(root.colBorder, 0.35)
+                        }
+
+                        // Running Apps Taskbar with Fluid Minimize / Restore / Launch Animations
+                        Item {
+                            Layout.fillWidth: true
                             Layout.fillHeight: true
-                            Layout.preferredWidth: 1
-                            color: root.withAlpha(root.colBorder, 0.3)
-                        }
-
-                        // 3. RIGHT COLUMN: WINDOWS 10 LIVE TILES / PINNED MATRIX (370px)
-                        Rectangle {
-                            Layout.fillHeight: true
-                            Layout.fillWidth: true
-                            color: "transparent"
-
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 14
-                                spacing: 12
-
-                                // Header with Live CAVA Audio Spectrum
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 8
-
-                                    Text {
-                                        text: root.isFullSakura ? "🌸 Cyber Sakura Hub" : (root.isWindows11 ? "🪟 Windows 11 Fluent Hub" : (root.isMacBook ? "🍵 Neo-Tokyo Matcha Hub" : (root.isRetroGaming ? "🕹️ Sunset Arcade Hub" : "󰣇 Life at a glance")))
-                                        font.pixelSize: 14
-                                        font.bold: true
-                                        color: root.colFg
-                                    }
-
-                                    Item { Layout.fillWidth: true }
-
-                                    // Live CAVA Visualizer in Start Menu (Bottom-Anchored Spectrum)
-                                    Row {
-                                        spacing: 2.5
-                                        Layout.alignment: Qt.AlignVCenter
-                                        Repeater {
-                                            model: 12
-                                            Item {
-                                                width: 3.5
-                                                height: 18
-
-                                                Rectangle {
-                                                    anchors.fill: parent
-                                                    radius: 1.75
-                                                    color: root.withAlpha(root.colBorder, 0.18)
-                                                }
-
-                                                Rectangle {
-                                                    anchors.bottom: parent.bottom
-                                                    anchors.horizontalCenter: parent.horizontalCenter
-                                                    width: parent.width
-                                                    height: (root.cavaBars && root.cavaBars[index] !== undefined) ? Math.max(3, Math.min(18, root.cavaBars[index])) : 3
-                                                    radius: 1.75
-                                                    color: height > 13 ? root.colGold : (height > 7 ? root.colAccent : root.colAccentAlt)
-                                                    opacity: Math.max(0.7, Math.min(1.0, height / 14.0))
-
-                                                    Behavior on height { NumberAnimation { duration: 45; easing.type: Easing.OutQuad } }
-                                                    Behavior on color { ColorAnimation { duration: 60 } }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    Text {
-                                        text: "Pinned"
-                                        font.pixelSize: 11
-                                        font.bold: true
-                                        color: root.colAccent
-                                    }
-                                }
-
-                                // 2x5 Grid of Windows 10 Live Tiles
-                                GridLayout {
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    columns: 2
-                                    rowSpacing: 10
-                                    columnSpacing: 10
-
-                                    Repeater {
-                                        model: [
-                                            { name: "Brave Browser", sub: "Web Explorer", icon: "brave", icon_path: "/home/gallo/.local/share/icons/Papirus/24x24/apps/brave.svg", glyph: "󰖟", cmd: "brave", accent: root.colAccent },
-                                            { name: "Kitty Terminal", sub: "144Hz CLI", icon: "kitty", icon_path: "/usr/share/icons/hicolor/scalable/apps/kitty.svg", glyph: "󰄛", cmd: "kitty", accent: root.colAccentAlt },
-                                            { name: "Visual Studio Code", sub: "Code Editor", icon: "code", icon_path: "/home/gallo/.local/share/icons/Papirus/24x24/apps/code.svg", glyph: "󰨞", cmd: "code", accent: root.colAccent },
-                                            { name: "Thunar Files", sub: "File System", icon: "thunar", icon_path: "/home/gallo/.local/share/icons/Papirus/24x24/apps/thunar.svg", glyph: "󰉋", cmd: "thunar", accent: root.colGold },
-                                            { name: "Steam Games", sub: "Gaming Hub", icon: "steam", icon_path: "/usr/share/icons/hicolor/48x48/apps/steam.png", glyph: "󰓓", cmd: "steam", accent: root.colAccentAlt },
-                                            { name: "Spotify Music", sub: "Audio Stream", icon: "spotify", icon_path: "/home/gallo/.local/share/icons/Papirus/24x24/apps/spotify.svg", glyph: "󰓇", cmd: "spotify", accent: root.colAccent },
-                                            { name: "Gally AI Copilot", sub: "AI Assistant", icon: "help-browser", icon_path: "/usr/share/icons/AdwaitaLegacy/48x48/legacy/help-browser.png", glyph: "󰚩", cmd: "python3 ~/.config/hypr/scripts/gally-ai-hud.py", accent: root.colGold },
-                                            { name: "Theme Gallery", sub: "Style Switcher", icon: "preferences-desktop-theme", icon_path: "/usr/share/icons/AdwaitaLegacy/48x48/legacy/preferences-desktop-theme.png", glyph: "󰏘", cmd: "~/.config/hypr/scripts/theme-switcher.sh", accent: root.colAccentAlt },
-                                            { name: "Wallpapers", sub: "Backgrounds", icon: "preferences-desktop-wallpaper", icon_path: "/usr/share/icons/AdwaitaLegacy/48x48/legacy/preferences-desktop-wallpaper.png", glyph: "󰸉", cmd: "~/.config/hypr/scripts/wallpaper-select.sh", accent: root.colAccent },
-                                            { name: "System Monitor", sub: "Hardware & BTOP", icon: "btop", icon_path: "/usr/share/icons/hicolor/scalable/apps/btop.svg", glyph: "󰍛", cmd: "kitty -e btop", accent: root.colAccentAlt }
-                                        ]
-
-                                        Rectangle {
-                                            Layout.fillWidth: true
-                                            Layout.fillHeight: true
-                                            radius: 8
-                                            color: tileMouse.containsMouse ? root.withAlpha(modelData.accent, 0.22) : root.colBgAlt
-                                            border.color: tileMouse.containsMouse ? modelData.accent : root.withAlpha(root.colBorder, 0.35)
-                                            border.width: tileMouse.containsMouse ? 1.5 : 1
-
-                                            RowLayout {
-                                                anchors.fill: parent
-                                                anchors.margins: 10
-                                                spacing: 10
-
-                                                Image {
-                                                    id: tileImg
-                                                    Layout.preferredWidth: 32
-                                                    Layout.preferredHeight: 32
-                                                    source: modelData.icon_path ? ("file://" + modelData.icon_path) : (Quickshell.iconPath(modelData.icon) || "")
-                                                    fillMode: Image.PreserveAspectFit
-                                                    visible: status === Image.Ready
-                                                }
-
-                                                Text {
-                                                    visible: !tileImg.visible
-                                                    Layout.preferredWidth: 32
-                                                    Layout.preferredHeight: 32
-                                                    horizontalAlignment: Text.AlignHCenter
-                                                    verticalAlignment: Text.AlignVCenter
-                                                    text: modelData.glyph || "󰀻"
-                                                    font.pixelSize: 24
-                                                    color: modelData.accent
-                                                }
-
-                                                ColumnLayout {
-                                                    Layout.fillWidth: true
-                                                    spacing: 2
-
-                                                    Text {
-                                                        Layout.fillWidth: true
-                                                        text: modelData.name
-                                                        font.pixelSize: 11
-                                                        font.bold: true
-                                                        color: root.colFg
-                                                        elide: Text.ElideRight
-                                                    }
-
-                                                    Text {
-                                                        Layout.fillWidth: true
-                                                        text: modelData.sub
-                                                        font.pixelSize: 9
-                                                        color: modelData.accent
-                                                        elide: Text.ElideRight
-                                                    }
-                                                }
-                                            }
-
-                                            MouseArea {
-                                                id: tileMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: {
-                                                    root.runCmd(["bash", "-c", modelData.cmd + " & disown"]);
-                                                    startMenuPopup.visible = false;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 📂 Primary Screen Multi-Window Popup (Right-Click Selection)
-            PopupWindow {
-                id: groupMenuPopup
-                property var currentGroup: null
-
-                anchor.window: winMain
-                anchor.rect.x: 120
-                anchor.rect.y: root.isBottomBar ? 0 : 46
-                anchor.rect.width: 320
-                anchor.rect.height: 0
-                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
-                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
-                implicitWidth: 320
-                implicitHeight: Math.min(380, menuCol.implicitHeight + 24)
-                color: "transparent"
-                visible: false
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: root.popupRadius
-                    color: "#0a0f1d"
-                    border.color: root.colAccent
-                    border.width: 1.5
-
-                    ColumnLayout {
-                        id: menuCol
-                        anchors.fill: parent
-                        anchors.margins: 12
-                        spacing: 8
-
-                        // Header: Icon + Title + Window Count
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8
-
-                            Item {
-                                width: 22
-                                height: 22
-                                Layout.alignment: Qt.AlignVCenter
-
-                                Image {
-                                    anchors.fill: parent
-                                    source: Quickshell.iconPath(groupMenuPopup.currentGroup ? groupMenuPopup.currentGroup.icon : "")
-                                    fillMode: Image.PreserveAspectFit
-                                    visible: status === Image.Ready
-                                }
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    visible: !parent.children[0].visible
-                                    text: "󰖯"
-                                    font.pixelSize: 16
-                                    color: root.colAccent
-                                }
-                            }
-
-                            Text {
-                                text: (groupMenuPopup.currentGroup ? groupMenuPopup.currentGroup.class : "App") + " (" + (groupMenuPopup.currentGroup ? groupMenuPopup.currentGroup.count : 0) + " open)"
-                                font.pixelSize: 12
-                                font.bold: true
-                                color: root.colFg
-                            }
-
-                            Item { Layout.fillWidth: true }
-
-                            Rectangle {
-                                width: 20
-                                height: 20
-                                radius: root.buttonRadius
-                                color: closeGrpMouse.containsMouse ? root.colRed : root.colBgAlt
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "✕"
-                                    font.pixelSize: 9
-                                    color: closeGrpMouse.containsMouse ? "#ffffff" : root.colFgMuted
-                                }
-
-                                MouseArea {
-                                    id: closeGrpMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: groupMenuPopup.visible = false
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 1
-                            color: root.colBorder
-                        }
-
-                        // Window List (Scrollable if more than 5 windows)
-                        ScrollView {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: Math.min(260, winListCol.implicitHeight)
                             clip: true
-                            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                            ScrollBar.vertical.policy: winListCol.implicitHeight > 260 ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
 
-                            ColumnLayout {
-                                id: winListCol
-                                width: 296
-                                spacing: 6
+                            Row {
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: 4
 
                                 Repeater {
-                                    model: groupMenuPopup.currentGroup ? groupMenuPopup.currentGroup.windows : []
+                                    model: barWin.isPrimary ? (root.taskbarState.groups || []) : []
+                                    delegate: Rectangle {
+                                        id: taskDelegate
+                                        property var gData: modelData
+                                        property bool isAct: gData.active
+                                        property bool isPinned: gData.is_pinned
+                                        property bool isRunning: gData.running
 
-                                    Rectangle {
-                                        Layout.fillWidth: true
-                                        Layout.preferredHeight: 38
-                                        radius: root.cardRadius
-                                        color: itemMouse.containsMouse ? root.colBgAlt : (modelData.is_active ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt)
-                                        border.color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.withAlpha(root.colGold, 0.55) : root.colBorder)
+                                        height: 30
+                                        width: Math.min(130, taskRow.implicitWidth + 14)
+                                        radius: root.buttonRadius
+                                        color: isAct ? root.withAlpha(root.colAccent, 0.22) : (taskM.containsMouse ? root.withAlpha(root.colAccent, 0.12) : root.colBgAlt)
+                                        border.color: isAct ? root.colAccent : (taskM.containsMouse ? root.withAlpha(root.colBorder, 0.5) : root.withAlpha(root.colBorder, 0.25))
                                         border.width: 1
+                                        clip: true
 
                                         RowLayout {
+                                            id: taskRow
+                                            anchors.centerIn: parent
+                                            spacing: 5
+
+                                            Image {
+                                                Layout.preferredWidth: 16
+                                                Layout.preferredHeight: 16
+                                                sourceSize: Qt.size(16, 16)
+                                                width: 16
+                                                height: 16
+                                                source: Quickshell.iconPath(gData.icon || gData.class || "application-default")
+                                                fillMode: Image.PreserveAspectFit
+                                                visible: status === Image.Ready
+                                            }
+
+                                            Text {
+                                                text: gData.title || gData.class
+                                                font.pixelSize: 11
+                                                font.bold: isAct
+                                                color: isAct ? root.colAccent : (taskM.containsMouse ? root.colFg : root.colFgMuted)
+                                                elide: Text.ElideRight
+                                                Layout.maximumWidth: 85
+                                            }
+                                        }
+
+                                        MouseArea {
+                                            id: taskM
                                             anchors.fill: parent
-                                            anchors.leftMargin: 10
-                                            anchors.rightMargin: 8
-                                            spacing: 8
-
-                                            // Left area: Focus / Restore Window
-                                            Item {
-                                                Layout.fillWidth: true
-                                                Layout.fillHeight: true
-
-                                                RowLayout {
-                                                    anchors.fill: parent
-                                                    spacing: 8
-
-                                                    Rectangle {
-                                                        width: 8
-                                                        height: 8
-                                                        radius: 4
-                                                        color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold : root.colFgMuted)
-                                                    }
-
-                                                    ColumnLayout {
-                                                        Layout.fillWidth: true
-                                                        spacing: 1
-
-                                                        Text {
-                                                            Layout.fillWidth: true
-                                                            text: modelData.title || "Window"
-                                                            font.pixelSize: 11
-                                                            font.bold: modelData.is_active
-                                                            elide: Text.ElideRight
-                                                            color: modelData.is_active ? root.colAccent : root.colFg
-                                                        }
-
-                                                        Text {
-                                                            Layout.fillWidth: true
-                                                            text: modelData.is_minimized ? "🗕 Minimized (Click to Restore)" : (modelData.is_active ? "● Active Window" : "Workspace " + (modelData.workspace_name || modelData.workspace_id))
-                                                            font.pixelSize: 9
-                                                            color: modelData.is_minimized ? root.colGold : root.colFgMuted
-                                                        }
-                                                    }
-                                                }
-
-                                                MouseArea {
-                                                    id: itemMouse
-                                                    anchors.fill: parent
-                                                    hoverEnabled: true
-                                                    cursorShape: Qt.PointingHandCursor
-                                                    onClicked: {
-                                                        root.dispatchAction("focus", modelData.address);
-                                                        groupMenuPopup.visible = false;
-                                                    }
-                                                }
-                                            }
-
-                                            // Right area: Close Specific Window
-                                            Rectangle {
-                                                width: 24
-                                                height: 24
-                                                radius: root.buttonRadius
-                                                color: winCloseMouse.containsMouse ? root.colRed : root.colBgAlt
-                                                border.color: winCloseMouse.containsMouse ? root.colRed : root.colBorder
-                                                border.width: 1
-
-                                                Text {
-                                                    anchors.centerIn: parent
-                                                    text: "✕"
-                                                    font.pixelSize: 10
-                                                    font.bold: true
-                                                    color: winCloseMouse.containsMouse ? "#ffffff" : root.colFgMuted
-                                                }
-
-                                                MouseArea {
-                                                    id: winCloseMouse
-                                                    anchors.fill: parent
-                                                    hoverEnabled: true
-                                                    cursorShape: Qt.PointingHandCursor
-                                                    onClicked: {
-                                                        root.dispatchAction("close", modelData.address);
-                                                        groupMenuPopup.visible = false;
-                                                    }
+                                            hoverEnabled: true
+                                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: mouse => {
+                                                if (mouse.button === Qt.RightButton || gData.count > 1) {
+                                                    groupMenuPopup.currentGroup = gData;
+                                                    barWin.toggleFlyout(groupMenuPopup);
+                                                } else if (gData.count === 1) {
+                                                    root.dispatchAction("toggle", gData.windows[0].address);
                                                 }
                                             }
                                         }
                                     }
-                                }
-                            }
-                        }
-                        // Pin/Unpin option for Cyber Sakura
-                        Rectangle {
-                            property bool isGroupPinned: {
-                                if (!groupMenuPopup.currentGroup || !root.pinnedApps) return false;
-                                var cls = (groupMenuPopup.currentGroup.class || "").toLowerCase();
-                                return root.pinnedApps.some(p => p.id === cls || p.cmd === cls || (p.name && p.name.toLowerCase() === cls));
-                            }
-
-                            visible: root.isDockCentered || root.isRetroGaming && groupMenuPopup.currentGroup
-                            Layout.fillWidth: true
-                            height: 28
-                            radius: root.buttonRadius
-                            color: pinToggleMouse.containsMouse ? (isGroupPinned ? (root.withAlpha(root.colRed, 0.20)) : (root.withAlpha(root.colAccent, 0.20))) : root.colBgAlt
-                            border.color: pinToggleMouse.containsMouse ? (isGroupPinned ? root.colRed : root.colAccent) : root.colBorder
-                            border.width: 1
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.margins: 6
-                                spacing: 8
-
-                                Text {
-                                    text: parent.parent.isGroupPinned ? "󰤲" : "󰤱"
-                                    font.pixelSize: 14
-                                    color: parent.parent.isGroupPinned ? root.colRed : root.colAccent
-                                }
-
-                                Text {
-                                    text: (parent.parent.isGroupPinned ? "Unpin " : "Pin ") + (groupMenuPopup.currentGroup ? groupMenuPopup.currentGroup.class : "App") + (parent.parent.isGroupPinned ? " from Sakura Dock" : " to Sakura Dock")
-                                    font.pixelSize: 10
-                                    font.bold: true
-                                    color: parent.parent.isGroupPinned && pinToggleMouse.containsMouse ? root.colRed : root.colFg
-                                }
-                            }
-
-                            MouseArea {
-                                id: pinToggleMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (groupMenuPopup.currentGroup) {
-                                        var g = groupMenuPopup.currentGroup;
-                                        if (parent.isGroupPinned) {
-                                            root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "remove", g.class.toLowerCase()]);
-                                        } else {
-                                            root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "add", g.class.toLowerCase(), g.class, g.icon || g.class.toLowerCase(), g.class.toLowerCase()]);
-                                        }
-                                    }
-                                    groupMenuPopup.visible = false;
                                 }
                             }
                         }
                     }
                 }
-            }
-
-            // 📌 Primary Screen Pinned App Context Menu
-            PopupWindow {
-                id: pinnedMenuPopup
-                property var targetApp: null
-
-                anchor.window: winMain
-                anchor.rect.x: 80
-                anchor.rect.y: root.isBottomBar ? 0 : 46
-                anchor.rect.width: 220
-                anchor.rect.height: 0
-                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
-                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
-                implicitWidth: 220
-                implicitHeight: pinMenuCol.implicitHeight + 20
-                color: "transparent"
-                visible: false
-
+                // -------------------------------------------------------------
+                // 2. CENTER ISLAND: Dynamic Notch / Morphing Island (Equal Size)
+                // -------------------------------------------------------------
                 Rectangle {
-                    anchors.fill: parent
-                    radius: root.popupRadius
-                    color: root.colBgAlt
-                    border.color: root.colAccent
-                    border.width: 1.5
+                    id: centerIsland
+                    property bool isMediaActive: barWin.isPrimary && root.hubState && root.hubState.media && (root.hubState.media.available || (root.hubState.media.title && root.hubState.media.title !== "No Media"))
+                    property bool isGameActive: root.hubState && root.hubState.toggles && root.hubState.toggles.gamemode
 
-                    ColumnLayout {
-                        id: pinMenuCol
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 42
+                    width: root.islandWidth
+                    radius: root.islandRadius
+                    color: root.colBg
+                    border.color: datePopup.visible ? root.colGold : (isGameActive ? root.colGold : (isMediaActive ? root.colAccentAlt : root.colBorder))
+                    border.width: 1.0
+
+                    // Background Click Area (Toggles Dynamic Notch Flyout)
+                    MouseArea {
                         anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 6
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (barWin.isPrimary) barWin.toggleFlyout(datePopup);
+                        }
+                    }
 
-                        // Header
+                    RowLayout {
+                        id: centerLayout
+                        anchors.centerIn: parent
+                        spacing: 8
+
+                        // Mode A: Dynamic Media Notch (Spinning Vinyl Disc + Track + Micro-Controls)
                         RowLayout {
-                            Layout.fillWidth: true
+                            visible: centerIsland.isMediaActive
                             spacing: 8
 
-                            Image {
-                                width: 18
-                                height: 18
-                                source: Quickshell.iconPath(pinnedMenuPopup.targetApp ? (pinnedMenuPopup.targetApp.icon || pinnedMenuPopup.targetApp.id) : "application-x-executable")
-                                fillMode: Image.PreserveAspectFit
+                            // 💿 Spinning Vinyl Record
+                            Rectangle {
+                                width: 24
+                                height: 24
+                                radius: 12
+                                color: "#050811"
+                                border.color: root.colGold
+                                border.width: 1
+                                clip: true
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "💿"
+                                    font.pixelSize: 15
+                                    transformOrigin: Item.Center
+
+                                    RotationAnimation on rotation {
+                                        from: 0
+                                        to: 360
+                                        duration: 3000
+                                        loops: Animation.Infinite
+                                        running: root.hubState && root.hubState.media && root.hubState.media.status === "Playing"
+                                    }
+                                }
                             }
 
+                            // Track & Artist Label
                             Text {
-                                text: pinnedMenuPopup.targetApp ? pinnedMenuPopup.targetApp.name : "Pinned App"
+                                text: root.hubState && root.hubState.media ? (root.hubState.media.artist + " • " + root.hubState.media.title) : ""
                                 font.pixelSize: 12
                                 font.bold: true
                                 color: root.colFg
-                            }
-                        }
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 1
-                            color: root.colBorder
-                        }
-
-                        // Launch
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 28
-                            radius: 6
-                            color: launchPinMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : "transparent"
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 8
-                                spacing: 6
-
-                                Text { text: "🚀"; font.pixelSize: 12 }
-                                Text { text: "Launch Application"; font.pixelSize: 11; color: root.colFg }
+                                elide: Text.ElideRight
+                                Layout.maximumWidth: 150
                             }
 
-                            MouseArea {
-                                id: launchPinMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (pinnedMenuPopup.targetApp) {
-                                        root.runCmd(["bash", "-c", (pinnedMenuPopup.targetApp.cmd || pinnedMenuPopup.targetApp.id) + " & disown"]);
-                                    }
-                                    pinnedMenuPopup.visible = false;
-                                }
-                            }
-                        }
+                            // Micro Playback Controls
+                            Row {
+                                spacing: 4
+                                z: 10
 
-                        // Unpin
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 28
-                            radius: 6
-                            color: unpinMouse.containsMouse ? (root.withAlpha(root.colRed, 0.20)) : "transparent"
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 8
-                                spacing: 6
-
-                                Text { text: "󰤲"; font.pixelSize: 14; color: unpinMouse.containsMouse ? root.colRed : root.colAccent }
-                                Text { text: "Unpin from Dock"; font.pixelSize: 11; color: unpinMouse.containsMouse ? root.colRed : root.colFg }
-                            }
-
-                            MouseArea {
-                                id: unpinMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (pinnedMenuPopup.targetApp) {
-                                        root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "remove", pinnedMenuPopup.targetApp.id]);
-                                    }
-                                    pinnedMenuPopup.visible = false;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 2. CENTER ISLAND: Centered Taskbar in Cyber Sakura, or Digital Clock in Garchy Signature
-            Rectangle {
-                id: centerIsland
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                width: root.isDockCentered ? (centerTaskRow.implicitWidth + 24) : (clockLayout.implicitWidth + 36)
-                color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBg
-                border.color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBorder
-                border.width: (root.isDockCentered || root.isRetroGaming) ? 0 : 1.5
-                radius: root.islandRadius
-
-                // A. Centered Taskbar (When Cyber Sakura is active)
-                Row {
-                    id: centerTaskRow
-                    visible: root.isDockCentered && !root.isRetroGaming
-                    anchors.centerIn: parent
-                    spacing: 8
-
-                    Repeater {
-                        model: root.taskbarState.groups || []
-
-                        Item {
-                            id: centerAppItem
-                            property var groupData: modelData
-                            width: 42
-                            height: 36
-
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: root.buttonRadius
-                                color: groupData.is_active ? root.withAlpha(root.colAccent, 0.20) : (centerAppMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.15)) : "transparent")
-                                border.color: groupData.is_active ? root.colAccent : (centerAppMouse.containsMouse ? root.colAccent : "transparent")
-                                border.width: groupData.is_active ? 1.5 : 1
-
-                                Image {
-                                    id: centerAppIcon
-                                    anchors.centerIn: parent
-                                    width: 24
-                                    height: 24
-                                    source: Quickshell.iconPath(groupData.icon)
-                                    fillMode: Image.PreserveAspectFit
-                                    opacity: groupData.is_minimized ? 0.5 : 1.0
-                                    visible: status === Image.Ready
-                                }
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    visible: centerAppIcon.status !== Image.Ready
-                                    text: "󰖯"
-                                    font.pixelSize: 20
-                                    color: groupData.is_active ? root.colAccent : root.colFg
-                                }
-
-                                // Active underline indicator
                                 Rectangle {
-                                    anchors.bottom: parent.bottom
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    anchors.bottomMargin: 2
-                                    width: groupData.is_active ? 20 : 5
-                                    height: 3
-                                    radius: Math.max(1.5, root.buttonRadius / 4)
-                                    color: groupData.is_active ? root.colAccent : (groupData.is_minimized ? root.colGold : root.colFgMuted)
-                                    Behavior on width { NumberAnimation { duration: 150 } }
+                                    width: 20
+                                    height: 20
+                                    radius: 3
+                                    color: prevM.containsMouse ? root.withAlpha(root.colAccent, 0.25) : "transparent"
+                                    Text { anchors.centerIn: parent; text: "󰒮"; font.pixelSize: 13; color: prevM.containsMouse ? root.colAccent : root.colFgMuted }
+                                    MouseArea {
+                                        id: prevM
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "media-prev"])
+                                    }
                                 }
 
-                                // Multi-window count badge (e.g. 2, 3)
                                 Rectangle {
-                                    visible: groupData.count > 1
-                                    anchors.top: parent.top
-                                    anchors.right: parent.right
-                                    anchors.topMargin: 2
-                                    anchors.rightMargin: 2
-                                    width: 14
-                                    height: 14
-                                    radius: Math.max(2, root.buttonRadius - 2)
-                                    color: root.colAccentAlt
-
+                                    width: 20
+                                    height: 20
+                                    radius: 3
+                                    color: playM.containsMouse ? root.withAlpha(root.colAccentAlt, 0.35) : root.withAlpha(root.colAccentAlt, 0.15)
                                     Text {
                                         anchors.centerIn: parent
-                                        text: groupData.count
-                                        font.pixelSize: 9
-                                        font.bold: true
-                                        color: "#ffffff"
+                                        text: root.hubState && root.hubState.media && root.hubState.media.status === "Playing" ? "󰏤" : "󰐊"
+                                        font.pixelSize: 13
+                                        color: root.colAccentAlt
+                                    }
+                                    MouseArea {
+                                        id: playM
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "media-play-pause"])
                                     }
                                 }
 
-                                MouseArea {
-                                    id: centerAppMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-
-                                    onClicked: mouse => {
-                                        if (mouse.button === Qt.RightButton || (mouse.button === Qt.LeftButton && groupData.windows.length > 1 && groupData.is_minimized)) {
-                                            groupMenuPopup.currentGroup = groupData;
-                                            var p = centerAppItem.mapToItem(null, 0, 0);
-                                            groupMenuPopup.anchor.rect.x = Math.max(10, Math.min(winMain.width - 320, p.x - 20));
-                                            groupMenuPopup.visible = !groupMenuPopup.visible;
-                                        } else if (mouse.button === Qt.LeftButton) {
-                                            if (groupData.windows.length === 1) {
-                                                root.dispatchAction("toggle", groupData.windows[0].address);
-                                            } else {
-                                                var act = groupData.windows.find(w => w.is_active);
-                                                if (act) {
-                                                    root.dispatchAction("toggle", act.address);
-                                                } else {
-                                                    root.dispatchAction("focus", groupData.windows[0].address);
-                                                }
-                                            }
-                                        } else if (mouse.button === Qt.MiddleButton) {
-                                            if (groupData.windows.length === 1) {
-                                                root.dispatchAction("close", groupData.windows[0].address);
-                                            } else {
-                                                groupMenuPopup.currentGroup = groupData;
-                                                groupMenuPopup.visible = true;
-                                            }
-                                        }
+                                Rectangle {
+                                    width: 20
+                                    height: 20
+                                    radius: 3
+                                    color: nextM.containsMouse ? root.withAlpha(root.colAccent, 0.25) : "transparent"
+                                    Text { anchors.centerIn: parent; text: "󰒭"; font.pixelSize: 13; color: nextM.containsMouse ? root.colAccent : root.colFgMuted }
+                                    MouseArea {
+                                        id: nextM
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "media-next"])
                                     }
                                 }
                             }
-                        }
-                    }
-                }
 
-                // B. Retro Gaming Pure Center CAVA Equalizer (No Clock)
-                Rectangle {
-                    id: retroCenterLayout
-                    visible: root.isRetroGaming
-                    anchors.centerIn: parent
-                    height: 34
-                    width: retroCavaRow.implicitWidth + 24
-                    radius: root.buttonRadius
-                    color: retroCavaMouse.containsMouse ? root.withAlpha(root.colAccentAlt, 0.20) : root.withAlpha(root.colBgAlt, 0.7)
-                    border.color: retroCavaMouse.containsMouse ? root.colAccentAlt : root.withAlpha(root.colBorder, 0.3)
-                    border.width: 1
-
-                    Row {
-                        id: retroCavaRow
-                        anchors.centerIn: parent
-                        spacing: 4.0
-
-                        Repeater {
-                            model: 16
-                            Item {
-                                width: 5.0
-                                height: 22
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    radius: 2.5
-                                    color: root.withAlpha(root.colBorder, 0.18)
-                                }
-
-                                Rectangle {
-                                    id: retroBarItem
-                                    anchors.bottom: parent.bottom
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    width: parent.width
-                                    height: (root.cavaBars && root.cavaBars[index] !== undefined) ? Math.max(3, Math.min(22, root.cavaBars[index])) : 3
-                                    radius: 2.5
-                                    color: height > 15 ? root.colGold : (height > 9 ? root.colAccent : root.colAccentAlt)
-                                    opacity: Math.max(0.7, Math.min(1.0, height / 18.0))
-
-                                    Behavior on height { NumberAnimation { duration: 40; easing.type: Easing.OutQuad } }
-                                    Behavior on color { ColorAnimation { duration: 60 } }
-                                }
+                            Rectangle {
+                                width: 1
+                                height: 16
+                                color: root.withAlpha(root.colBorder, 0.4)
                             }
                         }
-                    }
 
-                    MouseArea {
-                        id: retroCavaMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.runCmd(["pavucontrol"])
-                    }
-                }
-
-                // C. Digital Clock (When NOT Cyber Sakura / Garchy Signature / Retro Gaming)
-                Item {
-                    id: clockLayout
-                    visible: !root.isDockCentered && !root.isRetroGaming
-                    anchors.centerIn: parent
-                    width: clockTxt.implicitWidth + 20
-                    height: 34
-
-                    Text {
-                        id: clockTxt
-                        anchors.centerIn: parent
-                        text: root.timeStr
-                        font.family: "Orbitron"
-                        font.pixelSize: 14
-                        font.bold: true
-                        color: root.colAccent
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: datePopup.visible = !datePopup.visible
-                    }
-                }
-            }
-
-            // 📅 Center Clock Dropdown: Date & Calendar Menu
-            PopupWindow {
-                id: datePopup
-                anchor.window: winMain
-                anchor.rect.x: root.isDockCentered ? (winMain.width - 320) : Math.round((winMain.width - 280) / 2)
-                anchor.rect.y: root.isBottomBar ? 0 : 46
-                anchor.rect.width: 280
-                anchor.rect.height: 0
-                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
-                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
-                implicitWidth: 280
-                implicitHeight: dateCol.implicitHeight + 28
-                color: "transparent"
-                visible: false
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: root.popupRadius
-                    color: root.colBg
-                    border.color: root.colAccent
-                    border.width: 1.5
-
-                    ColumnLayout {
-                        id: dateCol
-                        anchors.fill: parent
-                        anchors.margins: 14
-                        spacing: 10
-
-                        // Full Date Header
-                        Text {
-                            text: root.fullDateStr
-                            font.pixelSize: 13
-                            font.bold: true
-                            color: root.colAccent
-                            Layout.alignment: Qt.AlignHCenter
-                        }
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 1
-                            color: root.colBorder
-                        }
-
-                        // Open Calendar Button
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 32
-                            radius: root.buttonRadius
-                            color: calBtnArea.containsMouse ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt
-                            border.color: calBtnArea.containsMouse ? root.colAccent : root.colBorder
-                            border.width: 1
-
-                            RowLayout {
-                                anchors.centerIn: parent
-                                spacing: 8
-
-                                Text {
-                                    text: "󰸗"
-                                    font.pixelSize: 14
-                                    color: root.colAccent
-                                }
-
-                                Text {
-                                    text: "Open Calendar"
-                                    font.pixelSize: 12
-                                    font.bold: true
-                                    color: root.colFg
-                                }
-                            }
-
-                            MouseArea {
-                                id: calBtnArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: {
-                                    root.runCmd(["bash", "-c", "gnome-calendar || korganizer || xfce4-calendar"]);
-                                    datePopup.visible = false;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 3. RIGHT ISLAND: Volume, Gally AI, Theme, Clock (in Cyber Sakura), Down Arrow Menu
-            Rectangle {
-                id: rightIsland
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                width: rightLayout.implicitWidth + 24
-                color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBg
-                border.color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBorder
-                border.width: (root.isDockCentered || root.isRetroGaming) ? 0 : 1.5
-                radius: root.islandRadius
-
-                RowLayout {
-                    id: rightLayout
-                    anchors.centerIn: parent
-                    spacing: 8
-
-                    // 🔊 Volume Pill
-                    Rectangle {
-                        height: 34
-                        width: volRow.implicitWidth + 16
-                        radius: root.buttonRadius
-                        color: root.colBgAlt
-
+                        // Mode B: GameMode Alert Notch
                         RowLayout {
-                            id: volRow
-                            anchors.centerIn: parent
+                            visible: centerIsland.isGameActive && !centerIsland.isMediaActive
                             spacing: 6
-
+                            Text { text: "🎮"; font.pixelSize: 13 }
                             Text {
-                                text: root.isMuted ? "󰝟" : (root.volPercent > 50 ? "󰕾" : "󰖀")
-                                font.pixelSize: 15
-                                color: root.isMuted ? root.colRed : root.colAccent
-                            }
-
-                            Text {
-                                text: root.volPercent + "%"
-                                font.pixelSize: 13
-                                font.bold: true
-                                color: root.colFg
-                            }
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: root.runCmd(["pavucontrol"])
-                        }
-                    }
-
-                    // 🎮 Live Hardware Telemetry Badges (CPU, RTX 3080 Ti GPU, VRAM, RAM)
-                    Rectangle {
-                        visible: root.isRetroGaming
-                        height: 34
-                        width: hwRow.implicitWidth + 16
-                        radius: root.buttonRadius
-                        color: hwMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : root.withAlpha(root.colBgAlt, 0.75)
-                        border.color: hwMouse.containsMouse ? root.colAccent : root.withAlpha(root.colAccentAlt, 0.4)
-                        border.width: 1
-
-                        Row {
-                            id: hwRow
-                            anchors.centerIn: parent
-                            spacing: 8
-
-                            Text {
-                                text: "󰻠 " + root.cpuUsage
-                                font.family: "Orbitron"
-                                font.pixelSize: 11
-                                font.bold: true
-                                color: root.colAccent
-                            }
-
-                            Text {
-                                text: "󰢮 " + root.gpuUsage + " " + root.gpuTemp
+                                text: "GAMEMODE 144Hz"
                                 font.family: "Orbitron"
                                 font.pixelSize: 11
                                 font.bold: true
                                 color: root.colGold
                             }
-
-                            Text {
-                                text: "󰍛 " + root.ramUsage
-                                font.family: "Orbitron"
-                                font.pixelSize: 11
-                                font.bold: true
-                                color: root.colAccentAlt
-                            }
+                            Rectangle { width: 1; height: 16; color: root.withAlpha(root.colBorder, 0.4) }
                         }
 
-                        MouseArea {
-                            id: hwMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.runCmd(["kitty", "-e", "btop"])
-                        }
-                    }
-
-                    // 🎵 Live Taskbar CAVA Visualizer Pill (Bottom-Anchored Chill Audio Equalizer)
-                    Rectangle {
-                        id: cavaTaskbarPill
-                        visible: !root.isRetroGaming
-                        height: 34
-                        width: cavaTaskbarRow.implicitWidth + 18
-                        radius: root.buttonRadius
-                        color: cavaPillMouse.containsMouse ? root.withAlpha(root.colAccent, 0.18) : root.withAlpha(root.colBgAlt, 0.75)
-                        border.color: cavaPillMouse.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.35)
-                        border.width: 1
-
-                        Row {
-                            id: cavaTaskbarRow
-                            anchors.centerIn: parent
-                            spacing: 3
-
-                            Repeater {
-                                model: 10
-                                Item {
-                                    width: 3.5
-                                    height: 20
-
-                                    // Subtle background track
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        radius: 1.75
-                                        color: root.withAlpha(root.colBorder, 0.18)
-                                    }
-
-                                    // Real-Time Audio Bar (Anchored to Bottom)
-                                    Rectangle {
-                                        id: barItem
-                                        anchors.bottom: parent.bottom
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                        width: parent.width
-                                        height: (root.cavaBars && root.cavaBars[index] !== undefined) ? Math.max(3, Math.min(20, root.cavaBars[index])) : 3
-                                        radius: 1.75
-                                        color: height > 14 ? root.colGold : (height > 8 ? root.colAccent : root.colAccentAlt)
-                                        opacity: Math.max(0.65, Math.min(1.0, height / 16.0))
-
-                                        Behavior on height { NumberAnimation { duration: 45; easing.type: Easing.OutQuad } }
-                                        Behavior on color { ColorAnimation { duration: 60 } }
-                                    }
-                                }
-                            }
-                        }
-
-                        MouseArea {
-                            id: cavaPillMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.runCmd(["pavucontrol"])
-                        }
-                    }
-
-                    // ⚠️ Critical Low Disk Space Warning Badge (< 5GB)
-                    Rectangle {
-                        visible: root.diskStatus && root.diskStatus.warning
-                        height: 34
-                        width: diskWarnRow.implicitWidth + 16
-                        radius: root.buttonRadius
-                        color: "#ef4444"
-                        border.color: "#fca5a5"
-                        border.width: 1.5
-
-                        Row {
-                            id: diskWarnRow
-                            anchors.centerIn: parent
-                            spacing: 6
-
-                            Text {
-                                text: "⚠️ " + (root.diskStatus ? root.diskStatus.avail_gb : "4.9") + " GB LEFT"
-                                font.family: "Orbitron"
-                                font.pixelSize: 11
-                                font.bold: true
-                                color: "#ffffff"
-                            }
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.runCmd(["kitty", "-e", "bash", "-c", "df -h /; echo ; ncdu ~; exec bash"])
-                        }
-                    }
-
-
-
-                    // 🧠 Gally AI Hub
-                    Rectangle {
-                        width: 34
-                        height: 34
-                        radius: root.buttonRadius
-                        color: aiMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
-
+                        // Time Display
                         Text {
-                            anchors.centerIn: parent
-                            text: root.isFullSakura ? "✨" : "󰚩"
-                            font.pixelSize: 18
-                            color: root.colAccent
-                        }
-
-                        MouseArea {
-                            id: aiMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: root.runCmd(["bash", "-c", "python3 ~/.config/hypr/scripts/gally-ai-hud.py"])
-                        }
-                    }
-
-                    // 🎨 Wallust Theme Switcher
-                    Rectangle {
-                        width: 34
-                        height: 34
-                        radius: root.buttonRadius
-                        color: thmMouse.containsMouse ? root.withAlpha(root.colAccentAlt, 0.20) : "transparent"
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "󰏘"
-                            font.pixelSize: 18
-                            color: root.colAccentAlt
-                        }
-
-                        MouseArea {
-                            id: thmMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: root.runCmd(["bash", "-c", "~/.config/hypr/scripts/theme-switcher.sh"])
-                        }
-                    }
-
-                    // 👾 Pixel Digital Clock (Clean Time Only)
-                    Rectangle {
-                        id: sakuraClockBtn
-                        visible: root.isDockCentered || root.isRetroGaming
-                        height: 34
-                        width: sakuraClockRow.implicitWidth + 20
-                        radius: root.buttonRadius
-                        color: sakuraClockMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : root.colBgAlt
-                        border.color: sakuraClockMouse.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.3)
-                        border.width: 1
-
-                        RowLayout {
-                            id: sakuraClockRow
-                            anchors.centerIn: parent
-                            spacing: 6
-
-                            Text {
-                                text: root.timeStr
-                                font.family: "Orbitron"
-                                font.pixelSize: 14
-                                font.bold: true
-                                color: root.colAccent
-                            }
-                        }
-
-                        MouseArea {
-                            id: sakuraClockMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: datePopup.visible = !datePopup.visible
-                        }
-                    }
-
-                    // 󰅀 Down Arrow / Minimized Tray Menu
-                    Rectangle {
-                        id: trayBtn
-                        width: 34
-                        height: 34
-                        radius: root.buttonRadius
-                        color: trayArea.containsMouse || trayMenuPopup.visible ? (root.withAlpha(root.colAccent, 0.20)) : "transparent"
-                        border.color: trayArea.containsMouse || trayMenuPopup.visible ? root.colAccent : "transparent"
-                        border.width: 1
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "󰅀"
-                            font.pixelSize: 16
-                            color: root.taskbarState.minimized_windows && root.taskbarState.minimized_windows.length > 0 ? root.colGold : root.colFgMuted
-                        }
-
-                        MouseArea {
-                            id: trayArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: trayMenuPopup.visible = !trayMenuPopup.visible
-                        }
-                    }
-                }
-            }
-
-            // 🗕 GARCHY SHELL LUXURY OBSIDIAN TRAY & SYSTEM HUB
-            PopupWindow {
-                id: trayMenuPopup
-                anchor.window: winMain
-                anchor.rect.x: winMain.width - 364
-                anchor.rect.y: root.isBottomBar ? 0 : 46
-                anchor.rect.width: 350
-                anchor.rect.height: 0
-                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
-                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
-                implicitWidth: 350
-                implicitHeight: hubCol.implicitHeight + 28
-                color: "transparent"
-                visible: false
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: root.popupRadius
-                    color: root.colBg
-                    border.color: root.colAccent
-                    border.width: 1.5
-
-                    ColumnLayout {
-                        id: hubCol
-                        anchors.fill: parent
-                        anchors.margins: 14
-                        spacing: 10
-
-                        // 1. TOP HEADER
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8
-
-                            Text {
-                                text: "󰣇"
-                                font.pixelSize: 18
-                                color: root.colAccent
-                            }
-
-                            Text {
-                                text: "Garchy Shell Hub"
-                                font.pixelSize: 13
-                                font.bold: true
-                                color: root.colFg
-                            }
-
-                            Item { Layout.fillWidth: true }
-
-                            // Emerald Active Badge
-                            Rectangle {
-                                width: statusRow.implicitWidth + 10
-                                height: 20
-                                radius: root.buttonRadius
-                                color: root.withAlpha(root.colGreen, 0.15)
-                                border.color: root.colGreen
-                                border.width: 1
-
-                                RowLayout {
-                                    id: statusRow
-                                    anchors.centerIn: parent
-                                    spacing: 4
-
-                                    Rectangle {
-                                        width: 6
-                                        height: 6
-                                        radius: Math.max(1, root.buttonRadius / 2)
-                                        color: root.colGreen
-                                    }
-
-                                    Text {
-                                        text: "Active"
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        color: root.colGreen
-                                    }
-                                }
-                            }
-
-                            // Close Button
-                            Rectangle {
-                                width: 22
-                                height: 22
-                                radius: root.buttonRadius
-                                color: closeHubMouse.containsMouse ? root.colRed : root.colBgAlt
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "✕"
-                                    font.pixelSize: 10
-                                    color: closeHubMouse.containsMouse ? "#ffffff" : root.colFgMuted
-                                }
-
-                                MouseArea {
-                                    id: closeHubMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: trayMenuPopup.visible = false
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 1
-                            color: root.colBorder
-                        }
-
-                        // 2. BACKGROUND & TRAY SERVICES SECTION (SCROLLABLE)
-                        Text {
-                            text: "BACKGROUND & TRAY SERVICES"
-                            font.pixelSize: 9
+                            text: root.timeStr
+                            font.family: "Orbitron"
+                            font.pixelSize: 14
                             font.bold: true
                             color: root.colAccent
-                            Layout.topMargin: 2
-                        }
-
-                        ScrollView {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: Math.min(230, svcCol.implicitHeight)
-                            clip: true
-                            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                            ScrollBar.vertical.policy: svcCol.implicitHeight > 230 ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
-
-                            ColumnLayout {
-                                id: svcCol
-                                width: 312
-                                spacing: 6
-
-                                Repeater {
-                                    model: root.taskbarState.tray_services || []
-
-                                    Rectangle {
-                                        Layout.fillWidth: true
-                                        Layout.preferredHeight: 38
-                                        radius: root.cardRadius
-                                        color: svcMouse.containsMouse ? root.colBgAlt : "#131c3188"
-                                        border.color: modelData.is_running ? root.colBorder : "transparent"
-                                        border.width: 1
-
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.leftMargin: 10
-                                            anchors.rightMargin: 10
-                                            spacing: 10
-
-                                            // Fixed Icon Container (prevents overlap)
-                                            Item {
-                                                Layout.preferredWidth: 22
-                                                Layout.preferredHeight: 22
-                                                Layout.alignment: Qt.AlignVCenter
-
-                                                Image {
-                                                    anchors.fill: parent
-                                                    source: Quickshell.iconPath(modelData.icon)
-                                                    fillMode: Image.PreserveAspectFit
-                                                    opacity: modelData.is_running ? 1.0 : 0.4
-                                                    visible: status === Image.Ready
-                                                }
-
-                                                Text {
-                                                    anchors.centerIn: parent
-                                                    visible: !parent.children[0].visible
-                                                    text: "󰖯"
-                                                    font.pixelSize: 16
-                                                    color: modelData.is_running ? root.colAccent : root.colFgMuted
-                                                }
-                                            }
-
-                                            ColumnLayout {
-                                                Layout.fillWidth: true
-                                                Layout.alignment: Qt.AlignVCenter
-                                                spacing: 1
-
-                                                Text {
-                                                    Layout.fillWidth: true
-                                                    text: modelData.name
-                                                    font.pixelSize: 11
-                                                    font.bold: true
-                                                    elide: Text.ElideRight
-                                                    color: modelData.is_running ? root.colFg : root.colFgMuted
-                                                }
-
-                                                Text {
-                                                    Layout.fillWidth: true
-                                                    text: modelData.status_text
-                                                    font.pixelSize: 10
-                                                    elide: Text.ElideRight
-                                                    color: modelData.is_running ? (modelData.is_minimized ? root.colGold : root.colAccent) : root.colFgMuted
-                                                }
-                                            }
-
-                                            // Action Button (Restore / Open / Launch)
-                                            Rectangle {
-                                                Layout.preferredWidth: 62
-                                                Layout.preferredHeight: 24
-                                                Layout.alignment: Qt.AlignVCenter
-                                                radius: root.buttonRadius
-                                                color: actArea.containsMouse ? root.colAccent : root.colBgAlt
-                                                border.color: root.colAccent
-                                                border.width: 1
-
-                                                Text {
-                                                    anchors.centerIn: parent
-                                                    text: modelData.has_window ? (modelData.is_minimized ? "Restore" : "Focus") : (modelData.is_running ? "Open" : "Launch")
-                                                    font.pixelSize: 10
-                                                    font.bold: true
-                                                    color: actArea.containsMouse ? "#0a0f1d" : root.colAccent
-                                                }
-
-                                                MouseArea {
-                                                    id: actArea
-                                                    anchors.fill: parent
-                                                    hoverEnabled: true
-                                                    onClicked: {
-                                                        if (modelData.has_window) {
-                                                            root.dispatchAction("toggle", modelData.address);
-                                                        } else {
-                                                            root.runCmd(["bash", "-c", modelData.cmd]);
-                                                        }
-                                                        trayMenuPopup.visible = false;
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        MouseArea {
-                                            id: svcMouse
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            onClicked: {
-                                                if (modelData.has_window) {
-                                                    root.dispatchAction("toggle", modelData.address);
-                                                } else {
-                                                    root.runCmd(["bash", "-c", modelData.cmd]);
-                                                }
-                                                trayMenuPopup.visible = false;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 1
-                            color: root.colBorder
-                            Layout.topMargin: 2
-                        }
-
-                        // 3. QUICK SYSTEM SHORTCUTS
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8
-
-                            // 🎮 GameMode
-                            Rectangle {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 30
-                                radius: root.buttonRadius
-                                color: gmMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt
-                                border.color: root.colBorder
-                                border.width: 1
-
-                                RowLayout {
-                                    anchors.centerIn: parent
-                                    spacing: 4
-
-                                    Text {
-                                        text: "🎮"
-                                        font.pixelSize: 11
-                                    }
-
-                                    Text {
-                                        text: "Gaming"
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        color: root.colFg
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: gmMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: {
-                                        root.runCmd(["bash", "-c", "garchy-game status"]);
-                                        trayMenuPopup.visible = false;
-                                    }
-                                }
-                            }
-
-                            // 🔊 Pavucontrol
-                            Rectangle {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 30
-                                radius: root.buttonRadius
-                                color: pavuMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt
-                                border.color: root.colBorder
-                                border.width: 1
-
-                                RowLayout {
-                                    anchors.centerIn: parent
-                                    spacing: 4
-
-                                    Text {
-                                        text: "󰕾"
-                                        font.pixelSize: 11
-                                        color: root.colAccent
-                                    }
-
-                                    Text {
-                                        text: "Mixer"
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        color: root.colFg
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: pavuMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: {
-                                        root.runCmd(["pavucontrol"]);
-                                        trayMenuPopup.visible = false;
-                                    }
-                                }
-                            }
-
-                            // 🎨 Themes
-                            Rectangle {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 30
-                                radius: root.buttonRadius
-                                color: thmQMouse.containsMouse ? root.withAlpha(root.colAccentAlt, 0.20) : root.colBgAlt
-                                border.color: root.colBorder
-                                border.width: 1
-
-                                RowLayout {
-                                    anchors.centerIn: parent
-                                    spacing: 4
-
-                                    Text {
-                                        text: "󰏘"
-                                        font.pixelSize: 11
-                                        color: root.colAccentAlt
-                                    }
-
-                                    Text {
-                                        text: "Theme"
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        color: root.colFg
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: thmQMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: {
-                                        root.runCmd(["bash", "-c", "~/.config/hypr/scripts/theme-switcher.sh"]);
-                                        trayMenuPopup.visible = false;
-                                    }
-                                }
-                            }
-                        }
-
-                        // 4. POWER & SESSION BAR
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 32
-                            radius: root.cardRadius
-                            color: root.colBgAlt
-                            border.color: root.colBorder
-                            border.width: 1
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 8
-                                anchors.rightMargin: 8
-
-                                // Lock
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    radius: root.buttonRadius
-                                    color: lckMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: " Lock"
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        color: root.colFg
-                                    }
-
-                                    MouseArea {
-                                        id: lckMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        onClicked: {
-                                            root.runCmd(["hyprlock"]);
-                                            trayMenuPopup.visible = false;
-                                        }
-                                    }
-                                }
-
-                                Rectangle {
-                                    width: 1
-                                    height: 16
-                                    color: root.colBorder
-                                }
-
-                                // Restart
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    radius: root.buttonRadius
-                                    color: rbtMouse.containsMouse ? root.withAlpha(root.colGold, 0.20) : "transparent"
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "󰜉 Reboot"
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        color: root.colGold
-                                    }
-
-                                    MouseArea {
-                                        id: rbtMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        onClicked: {
-                                            root.runCmd(["systemctl", "reboot"]);
-                                            trayMenuPopup.visible = false;
-                                        }
-                                    }
-                                }
-
-                                Rectangle {
-                                    width: 1
-                                    height: 16
-                                    color: root.colBorder
-                                }
-
-                                // Power Menu
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    radius: root.buttonRadius
-                                    color: pwrMenuMouse.containsMouse ? root.withAlpha(root.colRed, 0.20) : "transparent"
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: " Power"
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        color: root.colRed
-                                    }
-
-                                    MouseArea {
-                                        id: pwrMenuMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        onClicked: {
-                                            root.runCmd(["wlogout", "-b", "2", "-c", "20", "-r", "20"]);
-                                            trayMenuPopup.visible = false;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // ========================================================
-    // SECONDARY SCREEN (DP-1) - FULL SYNCED GARCHY SHELL
-    // ========================================================
-    PanelWindow {
-        id: winSec
-        screen: {
-            for (var i = 0; i < Quickshell.screens.length; i++) {
-                if (Quickshell.screens[i].name === "DP-1") return Quickshell.screens[i];
-            }
-            return Quickshell.screens.length > 1 ? Quickshell.screens[1] : Quickshell.screens[0];
-        }
-
-        anchors {
-            top: !root.isBottomBar
-            bottom: root.isBottomBar
-            left: true
-            right: true
-        }
-        implicitHeight: root.barHeight
-        color: "transparent"
-
-        WlrLayershell.layer: WlrLayer.Top
-        WlrLayershell.namespace: "garchy-shell"
-        WlrLayershell.keyboardFocus: (secStartMenuPopup.visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None)
-        exclusionMode: ExclusionMode.Auto
-
-        Item {
-            anchors.fill: parent
-            anchors.topMargin: root.isBottomBar ? 5 : 4
-            anchors.bottomMargin: root.isBottomBar ? 5 : 4
-            anchors.leftMargin: 10
-            anchors.rightMargin: 10
-
-            // 🌸 CYBER SAKURA CONTINUOUS FULL BAR CONTAINER
-            Rectangle {
-                id: fullSecSakuraBar
-                visible: root.isDockCentered || root.isRetroGaming
-                anchors.fill: parent
-                radius: 18
-                color: root.colBg
-                border.color: root.colBorder
-                border.width: 1.5
-            }
-
-            // 1. LEFT ISLAND: Launcher, Pinned Apps, Workspaces 1-4
-            Rectangle {
-                id: secLeftIsland
-                anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                width: secLeftLayout.implicitWidth + 20
-                color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBg
-                border.color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBorder
-                border.width: (root.isDockCentered || root.isRetroGaming) ? 0 : 1.5
-                radius: root.islandRadius
-
-                RowLayout {
-                    id: secLeftLayout
-                    anchors.centerIn: parent
-                    spacing: 8
-
-                    // 🍵 macOS Active App Name
-                    Text {
-                        visible: root.isMacBook
-                        text: root.activeTitle ? root.activeTitle : "Finder"
-                        font.pixelSize: 13
-                        font.bold: true
-                        color: root.colFg
-                        elide: Text.ElideRight
-                        Layout.maximumWidth: 150
-                    }
-
-                    // 🌌 / 🌸 Launcher Button
-                    Rectangle {
-                        width: 36
-                        height: 36
-                        radius: root.buttonRadius
-                        color: secLaunchArea.containsMouse ? root.withAlpha(root.colAccent, 0.20) : ((root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBgAlt)
-                        border.color: secLaunchArea.containsMouse ? root.colAccent : ((root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBorder)
-                        border.width: 1
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: root.isFullSakura ? "🌸" : (root.isWindows11 ? "󰍲" : (root.isMacBook ? "🍵" : (root.isRetroGaming ? "󰊴" : "󰣇")))
-                            font.pixelSize: root.isWindows11 ? 22 : (root.isFullSakura ? 19 : 20)
-                            color: root.colAccent
-                        }
-
-                        MouseArea {
-                            id: secLaunchArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            acceptedButtons: Qt.LeftButton | Qt.RightButton
-                            onClicked: mouse => {
-                                if (mouse.button === Qt.LeftButton) {
-                                    startMenuPopup.visible = !startMenuPopup.visible;
-                                } else {
-                                    root.runCmd(["bash", "-c", "~/.config/hypr/scripts/wallpaper-select.sh"]);
-                                }
-                            }
-                        }
-                    }
-
-                    // 🌸 CYBER SAKURA PINNED QUICK-LAUNCH DOCK (With Emoticon Placeholders for Unpinned Slots)
-                    Row {
-                        id: secPinnedRow
-                        visible: root.isDockCentered || root.isRetroGaming
-                        spacing: 5
-                        Layout.alignment: Qt.AlignVCenter
-
-                        Repeater {
-                            model: Math.max(root.pinnedDockCapacity, (root.pinnedApps ? root.pinnedApps.length : 0))
-
-                            Rectangle {
-                                id: secPinSlotItem
-                                property int slotIndex: index
-                                property bool isPinned: root.pinnedApps && slotIndex < root.pinnedApps.length
-                                property var appData: isPinned ? root.pinnedApps[slotIndex] : null
-
-                                property bool isRunning: {
-                                    if (!isPinned || !appData || !root.taskbarState || !root.taskbarState.groups) return false;
-                                    var pId = (appData.id || "").toLowerCase();
-                                    var pCmd = (appData.cmd || "").toLowerCase();
-                                    for (var i = 0; i < root.taskbarState.groups.length; i++) {
-                                        var g = root.taskbarState.groups[i];
-                                        var gId = (g.app_id || "").toLowerCase();
-                                        var gClass = (g.wm_class || "").toLowerCase();
-                                        if (gId.includes(pId) || gId.includes(pCmd) || gClass.includes(pId) || gClass.includes(pCmd)) return true;
-                                    }
-                                    return false;
-                                }
-
-                                width: 36
-                                height: 36
-                                radius: 10
-                                color: isPinned 
-                                    ? (secPinSlotMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : (isRunning ? (root.colBgAlt || "#281b36") : "transparent"))
-                                    : (secPinSlotMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.15)) : (root.withAlpha(root.colBgAlt, 0.27)))
-                                border.color: isPinned
-                                    ? (isRunning ? (root.colAccent || "#f472b6") : (secPinSlotMouse.containsMouse ? (root.colAccent || "#f472b6") : (root.withAlpha(root.colAccentAlt, 0.27))))
-                                    : (secPinSlotMouse.containsMouse ? (root.colAccent || "#f472b6") : (root.withAlpha(root.colBorder, 0.27)))
-                                border.width: isPinned ? (isRunning ? 1.5 : 1) : 1
-
-                                // 1. If Pinned: Application Desktop Icon
-                                Image {
-                                    id: secPinSlotIcon
-                                    visible: isPinned
-                                    anchors.centerIn: parent
-                                    width: 22
-                                    height: 22
-                                    source: isPinned && appData ? Quickshell.iconPath(appData.icon || appData.id) : ""
-                                    fillMode: Image.PreserveAspectFit
-                                }
-
-                                // 2. If Pinned but icon failed to load: Pin Glyph
-                                Text {
-                                    visible: isPinned && secPinSlotIcon.status !== Image.Ready
-                                    anchors.centerIn: parent
-                                    text: "󰤱"
-                                    font.pixelSize: 16
-                                    color: root.colAccent
-                                }
-
-                                // 3. If Unpinned Placeholder: Pastel Pin Glyph
-                                Text {
-                                    visible: !isPinned
-                                    anchors.centerIn: parent
-                                    text: "󰤱"
-                                    font.pixelSize: 16
-                                    color: root.colAccent
-                                    opacity: secPinSlotMouse.containsMouse ? 1.0 : 0.4
-                                }
-
-                                // Subtle Blossom Glow Dot when Running
-                                Rectangle {
-                                    visible: isPinned && isRunning
-                                    width: 4
-                                    height: 4
-                                    radius: 2
-                                    color: root.colAccent || "#f5bde6"
-                                    anchors.bottom: parent.bottom
-                                    anchors.bottomMargin: 2
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                }
-
-                                MouseArea {
-                                    id: secPinSlotMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
-                                    onClicked: mouse => {
-                                        if (isPinned) {
-                                            if (mouse.button === Qt.LeftButton) {
-                                                var foundAddr = "";
-                                                if (root.taskbarState && root.taskbarState.groups) {
-                                                    var pId = (appData.id || "").toLowerCase();
-                                                    var pCmd = (appData.cmd || "").toLowerCase();
-                                                    for (var i = 0; i < root.taskbarState.groups.length; i++) {
-                                                        var g = root.taskbarState.groups[i];
-                                                        var gId = (g.app_id || "").toLowerCase();
-                                                        var gClass = (g.wm_class || "").toLowerCase();
-                                                        if (gId.includes(pId) || gId.includes(pCmd) || gClass.includes(pId) || gClass.includes(pCmd)) {
-                                                            if (g.windows && g.windows.length > 0) {
-                                                                foundAddr = g.windows[0].address;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                                if (foundAddr) {
-                                                    root.dispatchAction("focus", foundAddr);
-                                                } else {
-                                                    root.runCmd(["bash", "-c", (appData.cmd || appData.id) + " & disown"]);
-                                                }
-                                            } else if (mouse.button === Qt.RightButton) {
-                                                secPinnedMenuPopup.targetApp = appData;
-                                                secPinnedMenuPopup.visible = true;
-                                            }
-                                        } else {
-                                            // Unpinned placeholder slot: Open Launchpad
-                                            startMenuPopup.visible = !startMenuPopup.visible;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Delicate Vertical Divider
-                    Rectangle {
-                        visible: root.isFullSakura
-                        width: 1
-                        height: 20
-                        color: root.withAlpha(root.colAccentAlt, 0.27)
-                        Layout.alignment: Qt.AlignVCenter
-                    }
-
-                    // 🔢 Workspaces (1 2 3 4) for Secondary Monitor
-                    Rectangle {
-                        height: 36
-                        width: secWsRow.implicitWidth + 10
-                        radius: root.cardRadius
-                        color: root.colBgAlt
-                        border.color: root.colBorder
-                        border.width: 1
-
-                        Row {
-                            id: secWsRow
-                            anchors.centerIn: parent
-                            spacing: 3
-
-                            Repeater {
-                                model: [1, 2, 3, 4]
-                                Rectangle {
-                                    property int wsNum: modelData
-                                    property bool isWsActive: {
-                                        var mons = root.taskbarState.monitors || [];
-                                        for (var i = 0; i < mons.length; i++) {
-                                            if (mons[i].name === "DP-1") {
-                                                var actId = mons[i].activeWorkspace ? mons[i].activeWorkspace.id : 2;
-                                                return (Math.ceil(actId / 2) === wsNum) || (actId === wsNum);
-                                            }
-                                        }
-                                        return wsNum === 1;
-                                    }
-
-                                    width: 26
-                                    height: 26
-                                    radius: root.buttonRadius
-                                    color: isWsActive ? root.colAccent : (secWsMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : "transparent")
-                                    border.color: isWsActive ? root.colAccent : (secWsMouse.containsMouse ? root.colAccent : "transparent")
-                                    border.width: 1
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: modelData
-                                        font.pixelSize: 13
-                                        font.bold: true
-                                        color: isWsActive ? "#181222" : (secWsMouse.containsMouse ? root.colAccent : root.colFgMuted)
-                                    }
-
-                                    MouseArea {
-                                        id: secWsMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        onClicked: root.runCmd(["bash", "-c", "~/.config/hypr/scripts/dual-desktop.sh switch " + modelData])
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Divider
-                    Rectangle {
-                        width: 1
-                        height: 18
-                        color: root.colBorder
-                    }
-
-                    // 💻 Icon-Only Grouped Taskbar for Secondary Monitor (When NOT Cyber Sakura)
-                    RowLayout {
-                        visible: !root.isDockCentered
-                        spacing: 4
-
-                        Repeater {
-                            id: secTaskbarRepeater
-                            model: root.taskbarState.groups || []
-
-                            Rectangle {
-                                id: secAppItem
-                                property var groupData: modelData
-
-                                Layout.preferredWidth: groupData.is_active ? 40 : 34
-                                Layout.preferredHeight: 32
-                                radius: root.buttonRadius
-                                color: groupData.is_active ? root.withAlpha(root.colAccent, 0.15) : (secAppMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.15)) : "transparent")
-                                border.color: groupData.is_active ? root.colAccent : (secAppMouse.containsMouse ? root.colAccent : "transparent")
-                                border.width: groupData.is_active ? 1.5 : 1
-
-                                Image {
-                                    id: secAppIcon
-                                    anchors.centerIn: parent
-                                    width: 22
-                                    height: 22
-                                    source: Quickshell.iconPath(groupData.icon)
-                                    fillMode: Image.PreserveAspectFit
-                                    opacity: groupData.is_minimized ? 0.5 : 1.0
-                                    visible: status === Image.Ready
-                                }
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    visible: secAppIcon.status !== Image.Ready
-                                    text: "󰖯"
-                                    font.pixelSize: 18
-                                    color: groupData.is_active ? root.colAccent : root.colFg
-                                }
-
-                                Rectangle {
-                                    anchors.bottom: parent.bottom
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    anchors.bottomMargin: 2
-                                    width: groupData.is_active ? 18 : 4
-                                    height: 2.5
-                                    radius: Math.max(1, root.buttonRadius / 4)
-                                    color: groupData.is_active ? root.colAccent : (groupData.is_minimized ? root.colGold : root.colFgMuted)
-                                    Behavior on width { NumberAnimation { duration: 150 } }
-                                }
-
-                                Rectangle {
-                                    visible: groupData.count > 1
-                                    anchors.top: parent.top
-                                    anchors.right: parent.right
-                                    anchors.topMargin: 2
-                                    anchors.rightMargin: 2
-                                    width: 14
-                                    height: 14
-                                    radius: Math.max(2, root.buttonRadius - 2)
-                                    color: root.colAccentAlt
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: groupData.count
-                                        font.pixelSize: 9
-                                        font.bold: true
-                                        color: "#ffffff"
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: secAppMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-
-                                    onClicked: mouse => {
-                                        if (mouse.button === Qt.RightButton || (mouse.button === Qt.LeftButton && groupData.windows.length > 1 && groupData.is_minimized)) {
-                                            secGroupMenuPopup.currentGroup = groupData;
-                                            var p = secAppItem.mapToItem(null, 0, 0);
-                                            secGroupMenuPopup.anchor.rect.x = Math.max(10, Math.min(winSec.width - 320, p.x - 20));
-                                            secGroupMenuPopup.visible = !secGroupMenuPopup.visible;
-                                        } else if (mouse.button === Qt.LeftButton) {
-                                            if (groupData.windows.length === 1) {
-                                                root.dispatchAction("toggle", groupData.windows[0].address);
-                                            } else {
-                                                var act = groupData.windows.find(w => w.is_active);
-                                                if (act) {
-                                                    root.dispatchAction("toggle", act.address);
-                                                } else {
-                                                    root.dispatchAction("focus", groupData.windows[0].address);
-                                                }
-                                            }
-                                        } else if (mouse.button === Qt.MiddleButton) {
-                                            if (groupData.windows.length === 1) {
-                                                root.dispatchAction("close", groupData.windows[0].address);
-                                            } else {
-                                                secGroupMenuPopup.currentGroup = groupData;
-                                                secGroupMenuPopup.visible = true;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-
-            // ========================================================
-            // 🪟 WINDOWS 10 STYLE START MENU POPUP (CYBER SAKURA)
-            // ========================================================
-            PopupWindow {
-                id: secStartMenuPopup
-                anchor.window: winSec
-                anchor.rect.x: 8
-                anchor.rect.y: root.isBottomBar ? 0 : 54
-                anchor.rect.width: 720
-                anchor.rect.height: 0
-                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
-                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
-                implicitWidth: 720
-                implicitHeight: 560
-                color: "transparent"
-                visible: false
-
-                Timer {
-                    id: secSearchFocusTimer
-                    interval: 60
-                    repeat: false
-                    onTriggered: {
-                        secSearchField.forceActiveFocus();
-                    }
-                }
-
-                onVisibleChanged: {
-                    if (visible) {
-                        secSearchField.text = "";
-                        secSearchFocusTimer.restart();
-                        Qt.callLater(function() { secSearchField.forceActiveFocus(); });
-                    }
-                }
-
-                Rectangle {
-                    focus: true
-                    Keys.onEscapePressed: { secStartMenuPopup.visible = false; event.accepted = true; }
-                    Keys.onPressed: event => { if (event.key === Qt.Key_Escape) { secStartMenuPopup.visible = false; event.accepted = true; } }
-                    scale: secStartMenuPopup.visible ? 1.0 : 0.94
-                    opacity: secStartMenuPopup.visible ? 1.0 : 0.0
-                    Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                    Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
-                    anchors.fill: parent
-                    radius: root.popupRadius
-                    color: root.colBg
-                    border.color: root.colAccent
-                    border.width: 1.5
-                    clip: true
-
-                    RowLayout {
-                        anchors.fill: parent
-                        spacing: 0
-
-                        // 1. LEFT NARROW RAIL (50px)
-                        Rectangle {
-                            Layout.fillHeight: true
-                            Layout.preferredWidth: 50
-                            color: root.withAlpha(root.colBgAlt, 0.4)
-                            border.color: root.withAlpha(root.colBorder, 0.2)
-                            border.width: 1
-
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 6
-                                spacing: 8
-
-                                // Top Hamburger Menu
-                                Rectangle {
-                                    Layout.preferredWidth: 38
-                                    Layout.preferredHeight: 38
-                                    radius: root.buttonRadius
-                                    color: secNavHamMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
-                                    border.color: secNavHamMouse.containsMouse ? root.colAccent : "transparent"
-                                    border.width: 1
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "󰍜"
-                                        font.pixelSize: 18
-                                        color: root.colAccent
-                                    }
-
-                                    MouseArea {
-                                        id: secNavHamMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                    }
-                                }
-
-                                Item { Layout.fillHeight: true }
-
-                                // User Avatar
-                                Rectangle {
-                                    Layout.preferredWidth: 38
-                                    Layout.preferredHeight: 38
-                                    radius: root.buttonRadius
-                                    color: secNavUserMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
-                                    border.color: secNavUserMouse.containsMouse ? root.colAccent : "transparent"
-                                    border.width: 1
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "󰀉"
-                                        font.pixelSize: 18
-                                        color: root.colFg
-                                    }
-
-                                    MouseArea {
-                                        id: secNavUserMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                    }
-                                }
-
-                                // Files Shortcut (Thunar)
-                                Rectangle {
-                                    Layout.preferredWidth: 38
-                                    Layout.preferredHeight: 38
-                                    radius: root.buttonRadius
-                                    color: secNavFilesMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
-                                    border.color: secNavFilesMouse.containsMouse ? root.colAccent : "transparent"
-                                    border.width: 1
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "󰉋"
-                                        font.pixelSize: 18
-                                        color: root.colAccentAlt
-                                    }
-
-                                    MouseArea {
-                                        id: secNavFilesMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            root.runCmd(["bash", "-c", "thunar & disown"]);
-                                            secStartMenuPopup.visible = false;
-                                        }
-                                    }
-                                }
-
-                                // Settings Shortcut
-                                Rectangle {
-                                    Layout.preferredWidth: 38
-                                    Layout.preferredHeight: 38
-                                    radius: root.buttonRadius
-                                    color: secNavSetMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
-                                    border.color: secNavSetMouse.containsMouse ? root.colAccent : "transparent"
-                                    border.width: 1
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "󰒓"
-                                        font.pixelSize: 18
-                                        color: root.colGold
-                                    }
-
-                                    MouseArea {
-                                        id: secNavSetMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            root.runCmd(["bash", "-c", "xfce4-settings-manager & disown"]);
-                                            secStartMenuPopup.visible = false;
-                                        }
-                                    }
-                                }
-
-                                // Lock Screen
-                                Rectangle {
-                                    Layout.preferredWidth: 38
-                                    Layout.preferredHeight: 38
-                                    radius: root.buttonRadius
-                                    color: secNavLockMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
-                                    border.color: secNavLockMouse.containsMouse ? root.colAccent : "transparent"
-                                    border.width: 1
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "󰌾"
-                                        font.pixelSize: 18
-                                        color: root.colAccent
-                                    }
-
-                                    MouseArea {
-                                        id: secNavLockMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            root.runCmd(["bash", "-c", "~/.config/hypr/scripts/dual-desktop.sh lock & disown"]);
-                                            secStartMenuPopup.visible = false;
-                                        }
-                                    }
-                                }
-
-                                // Power Button
-                                Rectangle {
-                                    Layout.preferredWidth: 38
-                                    Layout.preferredHeight: 38
-                                    radius: root.buttonRadius
-                                    color: secNavPwrMouse.containsMouse ? root.withAlpha(root.colRed, 0.25) : "transparent"
-                                    border.color: secNavPwrMouse.containsMouse ? root.colRed : "transparent"
-                                    border.width: 1
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "󰐥"
-                                        font.pixelSize: 18
-                                        color: secNavPwrMouse.containsMouse ? root.colRed : root.colFgMuted
-                                    }
-
-                                    MouseArea {
-                                        id: secNavPwrMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            root.runCmd(["bash", "-c", "wlogout & disown"]);
-                                            secStartMenuPopup.visible = false;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // 2. MIDDLE COLUMN: ALL APPS & REAL-TIME SEARCH (290px)
-                        Rectangle {
-                            Layout.fillHeight: true
-                            Layout.preferredWidth: 290
-                            color: "transparent"
-
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 14
-                                spacing: 10
-
-                                // Search Box
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 38
-                                    radius: 8
-                                    color: root.colBgAlt
-                                    border.color: secSearchField.activeFocus ? root.colAccent : root.withAlpha(root.colBorder, 0.4)
-                                    border.width: secSearchField.activeFocus ? 1.5 : 1
-
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: 8
-                                        spacing: 8
-
-                                        Text {
-                                            text: "🔍"
-                                            font.pixelSize: 13
-                                            color: root.colAccent
-                                        }
-
-                                        TextInput {
-                                            id: secSearchField
-                                            Layout.fillWidth: true
-                                            font.pixelSize: 12
-                                            color: root.colFg
-                                            clip: true
-                                            selectByMouse: true
-                                            focus: true
-                                            property string placeholder: "Type here to search apps..."
-
-                                            Keys.onEscapePressed: { secStartMenuPopup.visible = false; event.accepted = true; }
-                                            Keys.onPressed: event => {
-                                                if (event.key === Qt.Key_Escape) {
-                                                    secStartMenuPopup.visible = false;
-                                                    event.accepted = true;
-                                                }
-                                            }
-                                            onAccepted: {
-                                                if (secAppListView.count > 0 && secAppListView.model.length > 0) {
-                                                    var topApp = secAppListView.model[0];
-                                                    if (topApp && topApp.exec) {
-                                                        root.runCmd(["bash", "-c", topApp.exec + " & disown"]);
-                                                        secStartMenuPopup.visible = false;
-                                                    }
-                                                }
-                                            }
-
-                                            Text {
-                                                visible: secSearchField.text === "" && !secSearchField.activeFocus
-                                                text: secSearchField.placeholder
-                                                font.pixelSize: 12
-                                                color: root.colFgMuted
-                                                anchors.fill: parent
-                                                verticalAlignment: Text.AlignVCenter
-                                            }
-                                        }
-
-                                        // Clear button
-                                        Text {
-                                            visible: secSearchField.text !== ""
-                                            text: "✕"
-                                            font.pixelSize: 11
-                                            font.bold: true
-                                            color: secClearSearchMouse.containsMouse ? root.colRed : root.colFgMuted
-
-                                            MouseArea {
-                                                id: secClearSearchMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: {
-                                                    secSearchField.text = "";
-                                                    secSearchField.forceActiveFocus();
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // Apps Header
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Text {
-                                        text: secSearchField.text === "" ? "All Applications" : "Search Results"
-                                        font.pixelSize: 11
-                                        font.bold: true
-                                        color: root.colAccent
-                                    }
-                                    Item { Layout.fillWidth: true }
-                                    Text {
-                                        text: secAppListView.count + " apps"
-                                        font.pixelSize: 10
-                                        color: root.colFgMuted
-                                    }
-                                }
-
-                                // Scrollable App List
-                                ListView {
-                                    id: secAppListView
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    clip: true
-                                    spacing: 4
-                                    boundsBehavior: Flickable.StopAtBounds
-
-                                    model: {
-                                        var q = secSearchField.text.trim().toLowerCase();
-                                        if (!q || q === "") return root.allAppsList;
-                                        return (root.allAppsList || []).filter(function(a) {
-                                            return (a.name && a.name.toLowerCase().includes(q)) ||
-                                                   (a.comment && a.comment.toLowerCase().includes(q)) ||
-                                                   (a.exec && a.exec.toLowerCase().includes(q));
-                                        });
-                                    }
-
-                                    delegate: Rectangle {
-                                        width: secAppListView.width
-                                        height: 38
-                                        radius: 6
-                                        color: secAppItemMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
-                                        border.color: secAppItemMouse.containsMouse ? root.colAccent : "transparent"
-                                        border.width: 1
-
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.margins: 6
-                                            spacing: 10
-
-                                            Image {
-                                                id: secAppImg
-                                                Layout.preferredWidth: 24
-                                                Layout.preferredHeight: 24
-                                                source: modelData.icon_path ? ("file://" + modelData.icon_path) : (Quickshell.iconPath(modelData.icon) || "")
-                                                fillMode: Image.PreserveAspectFit
-                                                visible: status === Image.Ready
-                                            }
-
-                                            Text {
-                                                visible: !secAppImg.visible
-                                                Layout.preferredWidth: 24
-                                                Layout.preferredHeight: 24
-                                                horizontalAlignment: Text.AlignHCenter
-                                                verticalAlignment: Text.AlignVCenter
-                                                text: modelData.glyph || "󰀻"
-                                                font.pixelSize: 18
-                                                color: root.colAccent
-                                            }
-
-                                            ColumnLayout {
-                                                Layout.fillWidth: true
-                                                spacing: 1
-
-                                                Text {
-                                                    Layout.fillWidth: true
-                                                    text: modelData.name
-                                                    font.pixelSize: 12
-                                                    font.bold: true
-                                                    color: root.colFg
-                                                    elide: Text.ElideRight
-                                                }
-
-                                                Text {
-                                                    visible: modelData.comment !== ""
-                                                    Layout.fillWidth: true
-                                                    text: modelData.comment || modelData.exec || ""
-                                                    font.pixelSize: 9
-                                                    color: root.colFgMuted
-                                                    elide: Text.ElideRight
-                                                }
-                                            }
-                                        }
-
-                                        MouseArea {
-                                            id: secAppItemMouse
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            acceptedButtons: Qt.LeftButton | Qt.RightButton
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: mouse => {
-                                                if (mouse.button === Qt.LeftButton) {
-                                                    root.runCmd(["bash", "-c", modelData.exec + " & disown"]);
-                                                    secStartMenuPopup.visible = false;
-                                                } else {
-                                                    root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "add", modelData.exec, modelData.name, modelData.icon]);
-                                                    secStartMenuPopup.visible = false;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
                         }
 
                         // Divider
                         Rectangle {
-                            Layout.fillHeight: true
-                            Layout.preferredWidth: 1
-                            color: root.withAlpha(root.colBorder, 0.3)
+                            width: 1
+                            height: 16
+                            color: root.withAlpha(root.colBorder, 0.4)
                         }
 
-                        // 3. RIGHT COLUMN: WINDOWS 10 LIVE TILES / PINNED MATRIX (370px)
-                        Rectangle {
-                            Layout.fillHeight: true
-                            Layout.fillWidth: true
-                            color: "transparent"
-
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 14
-                                spacing: 12
-
-                                // Header with Live CAVA Audio Spectrum
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 8
-
-                                    Text {
-                                        text: root.isFullSakura ? "🌸 Cyber Sakura Hub" : (root.isWindows11 ? "🪟 Windows 11 Fluent Hub" : (root.isMacBook ? "🍵 Neo-Tokyo Matcha Hub" : (root.isRetroGaming ? "🕹️ Sunset Arcade Hub" : "󰣇 Life at a glance")))
-                                        font.pixelSize: 14
-                                        font.bold: true
-                                        color: root.colFg
-                                    }
-
-                                    Item { Layout.fillWidth: true }
-
-                                    // Live CAVA Visualizer in Start Menu (Bottom-Anchored Spectrum)
-                                    Row {
-                                        spacing: 2.5
-                                        Layout.alignment: Qt.AlignVCenter
-                                        Repeater {
-                                            model: 12
-                                            Item {
-                                                width: 3.5
-                                                height: 18
-
-                                                Rectangle {
-                                                    anchors.fill: parent
-                                                    radius: 1.75
-                                                    color: root.withAlpha(root.colBorder, 0.18)
-                                                }
-
-                                                Rectangle {
-                                                    anchors.bottom: parent.bottom
-                                                    anchors.horizontalCenter: parent.horizontalCenter
-                                                    width: parent.width
-                                                    height: (root.cavaBars && root.cavaBars[index] !== undefined) ? Math.max(3, Math.min(18, root.cavaBars[index])) : 3
-                                                    radius: 1.75
-                                                    color: height > 13 ? root.colGold : (height > 7 ? root.colAccent : root.colAccentAlt)
-                                                    opacity: Math.max(0.7, Math.min(1.0, height / 14.0))
-
-                                                    Behavior on height { NumberAnimation { duration: 45; easing.type: Easing.OutQuad } }
-                                                    Behavior on color { ColorAnimation { duration: 60 } }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    Text {
-                                        text: "Pinned"
-                                        font.pixelSize: 11
-                                        font.bold: true
-                                        color: root.colAccent
-                                    }
-                                }
-
-                                // 2x5 Grid of Windows 10 Live Tiles
-                                GridLayout {
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    columns: 2
-                                    rowSpacing: 10
-                                    columnSpacing: 10
-
-                                    Repeater {
-                                        model: [
-                                            { name: "Brave Browser", sub: "Web Explorer", icon: "brave", icon_path: "/home/gallo/.local/share/icons/Papirus/24x24/apps/brave.svg", glyph: "󰖟", cmd: "brave", accent: root.colAccent },
-                                            { name: "Kitty Terminal", sub: "144Hz CLI", icon: "kitty", icon_path: "/usr/share/icons/hicolor/scalable/apps/kitty.svg", glyph: "󰄛", cmd: "kitty", accent: root.colAccentAlt },
-                                            { name: "Visual Studio Code", sub: "Code Editor", icon: "code", icon_path: "/home/gallo/.local/share/icons/Papirus/24x24/apps/code.svg", glyph: "󰨞", cmd: "code", accent: root.colAccent },
-                                            { name: "Thunar Files", sub: "File System", icon: "thunar", icon_path: "/home/gallo/.local/share/icons/Papirus/24x24/apps/thunar.svg", glyph: "󰉋", cmd: "thunar", accent: root.colGold },
-                                            { name: "Steam Games", sub: "Gaming Hub", icon: "steam", icon_path: "/usr/share/icons/hicolor/48x48/apps/steam.png", glyph: "󰓓", cmd: "steam", accent: root.colAccentAlt },
-                                            { name: "Spotify Music", sub: "Audio Stream", icon: "spotify", icon_path: "/home/gallo/.local/share/icons/Papirus/24x24/apps/spotify.svg", glyph: "󰓇", cmd: "spotify", accent: root.colAccent },
-                                            { name: "Gally AI Copilot", sub: "AI Assistant", icon: "help-browser", icon_path: "/usr/share/icons/AdwaitaLegacy/48x48/legacy/help-browser.png", glyph: "󰚩", cmd: "python3 ~/.config/hypr/scripts/gally-ai-hud.py", accent: root.colGold },
-                                            { name: "Theme Gallery", sub: "Style Switcher", icon: "preferences-desktop-theme", icon_path: "/usr/share/icons/AdwaitaLegacy/48x48/legacy/preferences-desktop-theme.png", glyph: "󰏘", cmd: "~/.config/hypr/scripts/theme-switcher.sh", accent: root.colAccentAlt },
-                                            { name: "Wallpapers", sub: "Backgrounds", icon: "preferences-desktop-wallpaper", icon_path: "/usr/share/icons/AdwaitaLegacy/48x48/legacy/preferences-desktop-wallpaper.png", glyph: "󰸉", cmd: "~/.config/hypr/scripts/wallpaper-select.sh", accent: root.colAccent },
-                                            { name: "System Monitor", sub: "Hardware & BTOP", icon: "btop", icon_path: "/usr/share/icons/hicolor/scalable/apps/btop.svg", glyph: "󰍛", cmd: "kitty -e btop", accent: root.colAccentAlt }
-                                        ]
-
-                                        Rectangle {
-                                            Layout.fillWidth: true
-                                            Layout.fillHeight: true
-                                            radius: 8
-                                            color: secTileMouse.containsMouse ? root.withAlpha(modelData.accent, 0.22) : root.colBgAlt
-                                            border.color: secTileMouse.containsMouse ? modelData.accent : root.withAlpha(root.colBorder, 0.35)
-                                            border.width: secTileMouse.containsMouse ? 1.5 : 1
-
-                                            RowLayout {
-                                                anchors.fill: parent
-                                                anchors.margins: 10
-                                                spacing: 10
-
-                                                Image {
-                                                    id: secTileImg
-                                                    Layout.preferredWidth: 32
-                                                    Layout.preferredHeight: 32
-                                                    source: modelData.icon_path ? ("file://" + modelData.icon_path) : (Quickshell.iconPath(modelData.icon) || "")
-                                                    fillMode: Image.PreserveAspectFit
-                                                    visible: status === Image.Ready
-                                                }
-
-                                                Text {
-                                                    visible: !secTileImg.visible
-                                                    Layout.preferredWidth: 32
-                                                    Layout.preferredHeight: 32
-                                                    horizontalAlignment: Text.AlignHCenter
-                                                    verticalAlignment: Text.AlignVCenter
-                                                    text: modelData.glyph || "󰀻"
-                                                    font.pixelSize: 24
-                                                    color: modelData.accent
-                                                }
-
-                                                ColumnLayout {
-                                                    Layout.fillWidth: true
-                                                    spacing: 2
-
-                                                    Text {
-                                                        Layout.fillWidth: true
-                                                        text: modelData.name
-                                                        font.pixelSize: 11
-                                                        font.bold: true
-                                                        color: root.colFg
-                                                        elide: Text.ElideRight
-                                                    }
-
-                                                    Text {
-                                                        Layout.fillWidth: true
-                                                        text: modelData.sub
-                                                        font.pixelSize: 9
-                                                        color: modelData.accent
-                                                        elide: Text.ElideRight
-                                                    }
-                                                }
-                                            }
-
-                                            MouseArea {
-                                                id: secTileMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: {
-                                                    root.runCmd(["bash", "-c", modelData.cmd + " & disown"]);
-                                                    secStartMenuPopup.visible = false;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 📂 Secondary Screen Multi-Window Popup (Right-Click Selection)
-            PopupWindow {
-                id: secGroupMenuPopup
-                property var currentGroup: null
-
-                anchor.window: winSec
-                anchor.rect.x: 120
-                anchor.rect.y: root.isBottomBar ? 0 : 46
-                anchor.rect.width: 320
-                anchor.rect.height: 0
-                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
-                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
-                implicitWidth: 320
-                implicitHeight: Math.min(380, secMenuCol.implicitHeight + 24)
-                color: "transparent"
-                visible: false
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: root.popupRadius
-                    color: "#0a0f1d"
-                    border.color: root.colAccent
-                    border.width: 1.5
-
-                    ColumnLayout {
-                        id: secMenuCol
-                        anchors.fill: parent
-                        anchors.margins: 12
-                        spacing: 8
-
-                        // Header: Icon + Title + Window Count
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8
-
-                            Item {
-                                width: 22
-                                height: 22
-                                Layout.alignment: Qt.AlignVCenter
-
-                                Image {
-                                    anchors.fill: parent
-                                    source: Quickshell.iconPath(secGroupMenuPopup.currentGroup ? secGroupMenuPopup.currentGroup.icon : "")
-                                    fillMode: Image.PreserveAspectFit
-                                    visible: status === Image.Ready
-                                }
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    visible: !parent.children[0].visible
-                                    text: "󰖯"
-                                    font.pixelSize: 16
-                                    color: root.colAccent
-                                }
-                            }
-
-                            Text {
-                                text: (secGroupMenuPopup.currentGroup ? secGroupMenuPopup.currentGroup.class : "App") + " (" + (secGroupMenuPopup.currentGroup ? secGroupMenuPopup.currentGroup.count : 0) + " open)"
-                                font.pixelSize: 12
-                                font.bold: true
-                                color: root.colFg
-                            }
-
-                            Item { Layout.fillWidth: true }
-
-                            Rectangle {
-                                width: 20
-                                height: 20
-                                radius: root.buttonRadius
-                                color: secCloseGrpMouse.containsMouse ? root.colRed : root.colBgAlt
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "✕"
-                                    font.pixelSize: 9
-                                    color: secCloseGrpMouse.containsMouse ? "#ffffff" : root.colFgMuted
-                                }
-
-                                MouseArea {
-                                    id: secCloseGrpMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: secGroupMenuPopup.visible = false
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 1
-                            color: root.colBorder
-                        }
-
-                        // Window List (Scrollable if more than 5 windows)
-                        ScrollView {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: Math.min(260, secWinListCol.implicitHeight)
-                            clip: true
-                            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                            ScrollBar.vertical.policy: secWinListCol.implicitHeight > 260 ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
-
-                            ColumnLayout {
-                                id: secWinListCol
-                                width: 296
-                                spacing: 6
-
-                                Repeater {
-                                    model: secGroupMenuPopup.currentGroup ? secGroupMenuPopup.currentGroup.windows : []
-
-                                    Rectangle {
-                                        Layout.fillWidth: true
-                                        Layout.preferredHeight: 38
-                                        radius: root.cardRadius
-                                        color: secItemMouse.containsMouse ? root.colBgAlt : (modelData.is_active ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt)
-                                        border.color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.withAlpha(root.colGold, 0.55) : root.colBorder)
-                                        border.width: 1
-
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.leftMargin: 10
-                                            anchors.rightMargin: 8
-                                            spacing: 8
-
-                                            // Left area: Focus / Restore Window
-                                            Item {
-                                                Layout.fillWidth: true
-                                                Layout.fillHeight: true
-
-                                                RowLayout {
-                                                    anchors.fill: parent
-                                                    spacing: 8
-
-                                                    Rectangle {
-                                                        width: 8
-                                                        height: 8
-                                                        radius: 4
-                                                        color: modelData.is_active ? root.colAccent : (modelData.is_minimized ? root.colGold : root.colFgMuted)
-                                                    }
-
-                                                    ColumnLayout {
-                                                        Layout.fillWidth: true
-                                                        spacing: 1
-
-                                                        Text {
-                                                            Layout.fillWidth: true
-                                                            text: modelData.title || "Window"
-                                                            font.pixelSize: 11
-                                                            font.bold: modelData.is_active
-                                                            elide: Text.ElideRight
-                                                            color: modelData.is_active ? root.colAccent : root.colFg
-                                                        }
-
-                                                        Text {
-                                                            Layout.fillWidth: true
-                                                            text: modelData.is_minimized ? "🗕 Minimized (Click to Restore)" : (modelData.is_active ? "● Active Window" : "Workspace " + (modelData.workspace_name || modelData.workspace_id))
-                                                            font.pixelSize: 9
-                                                            color: modelData.is_minimized ? root.colGold : root.colFgMuted
-                                                        }
-                                                    }
-                                                }
-
-                                                MouseArea {
-                                                    id: secItemMouse
-                                                    anchors.fill: parent
-                                                    hoverEnabled: true
-                                                    cursorShape: Qt.PointingHandCursor
-                                                    onClicked: {
-                                                        root.dispatchAction("focus", modelData.address);
-                                                        secGroupMenuPopup.visible = false;
-                                                    }
-                                                }
-                                            }
-
-                                            // Right area: Close Specific Window
-                                            Rectangle {
-                                                width: 24
-                                                height: 24
-                                                radius: root.buttonRadius
-                                                color: secWinCloseMouse.containsMouse ? root.colRed : root.colBgAlt
-                                                border.color: secWinCloseMouse.containsMouse ? root.colRed : root.colBorder
-                                                border.width: 1
-
-                                                Text {
-                                                    anchors.centerIn: parent
-                                                    text: "✕"
-                                                    font.pixelSize: 10
-                                                    font.bold: true
-                                                    color: secWinCloseMouse.containsMouse ? "#ffffff" : root.colFgMuted
-                                                }
-
-                                                MouseArea {
-                                                    id: secWinCloseMouse
-                                                    anchors.fill: parent
-                                                    hoverEnabled: true
-                                                    cursorShape: Qt.PointingHandCursor
-                                                    onClicked: {
-                                                        root.dispatchAction("close", modelData.address);
-                                                        secGroupMenuPopup.visible = false;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        // Pin/Unpin option for Cyber Sakura
-                        Rectangle {
-                            property bool isGroupPinned: {
-                                if (!secGroupMenuPopup.currentGroup || !root.pinnedApps) return false;
-                                var cls = (secGroupMenuPopup.currentGroup.class || "").toLowerCase();
-                                return root.pinnedApps.some(p => p.id === cls || p.cmd === cls || (p.name && p.name.toLowerCase() === cls));
-                            }
-
-                            visible: root.isDockCentered || root.isRetroGaming && secGroupMenuPopup.currentGroup
-                            Layout.fillWidth: true
-                            height: 28
-                            radius: root.buttonRadius
-                            color: secPinToggleMouse.containsMouse ? (isGroupPinned ? (root.withAlpha(root.colRed, 0.20)) : (root.withAlpha(root.colAccent, 0.20))) : root.colBgAlt
-                            border.color: secPinToggleMouse.containsMouse ? (isGroupPinned ? root.colRed : root.colAccent) : root.colBorder
-                            border.width: 1
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.margins: 6
-                                spacing: 8
-
-                                Text {
-                                    text: parent.parent.isGroupPinned ? "󰤲" : "󰤱"
-                                    font.pixelSize: 14
-                                    color: parent.parent.isGroupPinned ? root.colRed : root.colAccent
-                                }
-
-                                Text {
-                                    text: (parent.parent.isGroupPinned ? "Unpin " : "Pin ") + (secGroupMenuPopup.currentGroup ? secGroupMenuPopup.currentGroup.class : "App") + (parent.parent.isGroupPinned ? " from Sakura Dock" : " to Sakura Dock")
-                                    font.pixelSize: 10
-                                    font.bold: true
-                                    color: parent.parent.isGroupPinned && secPinToggleMouse.containsMouse ? root.colRed : root.colFg
-                                }
-                            }
-
-                            MouseArea {
-                                id: secPinToggleMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (secGroupMenuPopup.currentGroup) {
-                                        var g = secGroupMenuPopup.currentGroup;
-                                        if (parent.isGroupPinned) {
-                                            root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "remove", g.class.toLowerCase()]);
-                                        } else {
-                                            root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "add", g.class.toLowerCase(), g.class, g.icon || g.class.toLowerCase(), g.class.toLowerCase()]);
-                                        }
-                                    }
-                                    secGroupMenuPopup.visible = false;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 📌 Secondary Screen Pinned App Context Menu
-            PopupWindow {
-                id: secPinnedMenuPopup
-                property var targetApp: null
-
-                anchor.window: winSec
-                anchor.rect.x: 80
-                anchor.rect.y: root.isBottomBar ? 0 : 46
-                anchor.rect.width: 220
-                anchor.rect.height: 0
-                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
-                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
-                implicitWidth: 220
-                implicitHeight: secPinMenuCol.implicitHeight + 20
-                color: "transparent"
-                visible: false
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: root.popupRadius
-                    color: root.colBgAlt
-                    border.color: root.colAccent
-                    border.width: 1.5
-
-                    ColumnLayout {
-                        id: secPinMenuCol
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 6
-
-                        // Header
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8
-
-                            Image {
-                                width: 18
-                                height: 18
-                                source: Quickshell.iconPath(secPinnedMenuPopup.targetApp ? (secPinnedMenuPopup.targetApp.icon || secPinnedMenuPopup.targetApp.id) : "application-x-executable")
-                                fillMode: Image.PreserveAspectFit
-                            }
-
-                            Text {
-                                text: secPinnedMenuPopup.targetApp ? secPinnedMenuPopup.targetApp.name : "Pinned App"
-                                font.pixelSize: 12
-                                font.bold: true
-                                color: root.colFg
-                            }
-                        }
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 1
-                            color: root.colBorder
-                        }
-
-                        // Launch
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 28
-                            radius: 6
-                            color: secLaunchPinMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : "transparent"
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 8
-                                spacing: 6
-
-                                Text { text: "🚀"; font.pixelSize: 12 }
-                                Text { text: "Launch Application"; font.pixelSize: 11; color: root.colFg }
-                            }
-
-                            MouseArea {
-                                id: secLaunchPinMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (secPinnedMenuPopup.targetApp) {
-                                        root.runCmd(["bash", "-c", (secPinnedMenuPopup.targetApp.cmd || secPinnedMenuPopup.targetApp.id) + " & disown"]);
-                                    }
-                                    secPinnedMenuPopup.visible = false;
-                                }
-                            }
-                        }
-
-                        // Unpin
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 28
-                            radius: 6
-                            color: secUnpinMouse.containsMouse ? (root.withAlpha(root.colRed, 0.20)) : "transparent"
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 8
-                                spacing: 6
-
-                                Text { text: "󰤲"; font.pixelSize: 14; color: secUnpinMouse.containsMouse ? root.colRed : root.colAccent }
-                                Text { text: "Unpin from Dock"; font.pixelSize: 11; color: secUnpinMouse.containsMouse ? root.colRed : root.colFg }
-                            }
-
-                            MouseArea {
-                                id: secUnpinMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (secPinnedMenuPopup.targetApp) {
-                                        root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/pin_app.py", "remove", secPinnedMenuPopup.targetApp.id]);
-                                    }
-                                    secPinnedMenuPopup.visible = false;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 2. CENTER ISLAND: Centered Taskbar in Cyber Sakura, or Digital Clock in Garchy Signature
-            Rectangle {
-                id: secCenterIsland
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                width: root.isDockCentered ? (secCenterTaskRow.implicitWidth + 24) : (secClockLayout.implicitWidth + 36)
-                color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBg
-                border.color: root.isFullSakura ? "transparent" : (secClockArea.containsMouse ? root.colAccent : root.colBorder)
-                border.width: (root.isDockCentered || root.isRetroGaming) ? 0 : 1.5
-                radius: root.islandRadius
-
-                // A. Centered Taskbar for Secondary Monitor (When Cyber Sakura is active)
-                Row {
-                    id: secCenterTaskRow
-                    visible: root.isDockCentered || root.isRetroGaming
-                    anchors.centerIn: parent
-                    spacing: 8
-
-                    Repeater {
-                        model: root.taskbarState.groups || []
-
-                        Item {
-                            id: secCenterAppItem
-                            property var groupData: modelData
-                            width: 42
-                            height: 36
-
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: root.buttonRadius
-                                color: groupData.is_active ? root.withAlpha(root.colAccent, 0.20) : (secCenterAppMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.15)) : "transparent")
-                                border.color: groupData.is_active ? root.colAccent : (secCenterAppMouse.containsMouse ? root.colAccent : "transparent")
-                                border.width: groupData.is_active ? 1.5 : 1
-
-                                Image {
-                                    id: secCenterAppIcon
-                                    anchors.centerIn: parent
-                                    width: 24
-                                    height: 24
-                                    source: Quickshell.iconPath(groupData.icon)
-                                    fillMode: Image.PreserveAspectFit
-                                    opacity: groupData.is_minimized ? 0.5 : 1.0
-                                    visible: status === Image.Ready
-                                }
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    visible: secCenterAppIcon.status !== Image.Ready
-                                    text: "󰖯"
-                                    font.pixelSize: 20
-                                    color: groupData.is_active ? root.colAccent : root.colFg
-                                }
-
-                                // Active underline indicator
-                                Rectangle {
-                                    anchors.bottom: parent.bottom
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    anchors.bottomMargin: 2
-                                    width: groupData.is_active ? 20 : 5
-                                    height: 3
-                                    radius: Math.max(1.5, root.buttonRadius / 4)
-                                    color: groupData.is_active ? root.colAccent : (groupData.is_minimized ? root.colGold : root.colFgMuted)
-                                    Behavior on width { NumberAnimation { duration: 150 } }
-                                }
-
-                                // Multi-window count badge (e.g. 2, 3)
-                                Rectangle {
-                                    visible: groupData.count > 1
-                                    anchors.top: parent.top
-                                    anchors.right: parent.right
-                                    anchors.topMargin: 2
-                                    anchors.rightMargin: 2
-                                    width: 14
-                                    height: 14
-                                    radius: Math.max(2, root.buttonRadius - 2)
-                                    color: root.colAccentAlt
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: groupData.count
-                                        font.pixelSize: 9
-                                        font.bold: true
-                                        color: "#ffffff"
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: secCenterAppMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-
-                                    onClicked: mouse => {
-                                        if (mouse.button === Qt.RightButton || (mouse.button === Qt.LeftButton && groupData.windows.length > 1 && groupData.is_minimized)) {
-                                            secGroupMenuPopup.currentGroup = groupData;
-                                            var p = secCenterAppItem.mapToItem(null, 0, 0);
-                                            secGroupMenuPopup.anchor.rect.x = Math.max(10, Math.min(winSec.width - 320, p.x - 20));
-                                            secGroupMenuPopup.visible = !secGroupMenuPopup.visible;
-                                        } else if (mouse.button === Qt.LeftButton) {
-                                            if (groupData.windows.length === 1) {
-                                                root.dispatchAction("toggle", groupData.windows[0].address);
-                                            } else {
-                                                var act = groupData.windows.find(w => w.is_active);
-                                                if (act) {
-                                                    root.dispatchAction("toggle", act.address);
-                                                } else {
-                                                    root.dispatchAction("focus", groupData.windows[0].address);
-                                                }
-                                            }
-                                        } else if (mouse.button === Qt.MiddleButton) {
-                                            if (groupData.windows.length === 1) {
-                                                root.dispatchAction("close", groupData.windows[0].address);
-                                            } else {
-                                                secGroupMenuPopup.currentGroup = groupData;
-                                                secGroupMenuPopup.visible = true;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // B. Digital Clock (When NOT in Cyber Sakura / Garchy Signature)
-                RowLayout {
-                    id: secClockLayout
-                    visible: !root.isDockCentered
-                    anchors.centerIn: parent
-
-                    Text {
-                        text: root.timeStr
-                        font.family: "Orbitron"
-                        font.pixelSize: 14
-                        font.bold: true
-                        color: root.colAccent
-                    }
-                }
-
-                MouseArea {
-                    id: secClockArea
-                    visible: !root.isDockCentered
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: secDatePopup.visible = !secDatePopup.visible
-                }
-            }
-
-            // 📅 Secondary Center Clock Dropdown: Date & Calendar Menu
-            PopupWindow {
-                id: secDatePopup
-                anchor.window: winSec
-                anchor.rect.x: root.isDockCentered ? (winSec.width - 320) : Math.round((winSec.width - 280) / 2)
-                anchor.rect.y: root.isBottomBar ? 0 : 46
-                anchor.rect.width: 280
-                anchor.rect.height: 0
-                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
-                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
-                implicitWidth: 280
-                implicitHeight: secDateCol.implicitHeight + 28
-                color: "transparent"
-                visible: false
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: root.popupRadius
-                    color: root.colBg
-                    border.color: root.colAccent
-                    border.width: 1.5
-
-                    ColumnLayout {
-                        id: secDateCol
-                        anchors.fill: parent
-                        anchors.margins: 14
-                        spacing: 10
-
+                        // Date
                         Text {
-                            text: root.timeStr
-                            font.pixelSize: 22
+                            text: root.dateShortStr
+                            font.family: "Orbitron"
+                            font.pixelSize: 12
                             font.bold: true
                             color: root.colFg
-                            Layout.alignment: Qt.AlignHCenter
                         }
 
+                        // Divider
+                        Rectangle {
+                            width: 1
+                            height: 16
+                            color: root.withAlpha(root.colBorder, 0.4)
+                        }
+
+                        // Weather
                         Text {
-                            text: root.fullDateStr
-                            font.pixelSize: 13
+                            text: root.hubState && root.hubState.weather ? root.hubState.weather.temp : "+17°C"
+                            font.family: "Orbitron"
+                            font.pixelSize: 12
                             font.bold: true
-                            color: root.colAccent
-                            Layout.alignment: Qt.AlignHCenter
+                            color: root.colGold
                         }
+                    }
+                }
+                // -------------------------------------------------------------
+                // 3. RIGHT ISLAND: Hardware Matrix + CAVA Spectrum + Control Center + Actions (Equal Size)
+                // -------------------------------------------------------------
+                Rectangle {
+                    id: rightIsland
+                    anchors.right: parent.right
+                    anchors.rightMargin: 20
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 42
+                    width: root.islandWidth
+                    radius: root.islandRadius
+                    color: root.colBg
+                    border.color: root.colBorder
+                    border.width: 1.0
 
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 1
-                            color: root.colBorder
-                        }
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 6
+                        spacing: 6
 
+                        // Hardware Telemetry Matrix
                         Rectangle {
+                            visible: barWin.isPrimary
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 32
+                            height: 30
                             radius: root.buttonRadius
-                            color: secCalBtnArea.containsMouse ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt
-                            border.color: secCalBtnArea.containsMouse ? root.colAccent : root.colBorder
-                            border.width: 1
+                            color: bentoOverlayPopup.visible ? root.colAccent : (hwM.containsMouse ? root.withAlpha(root.colAccent, 0.22) : root.colBgAlt)
+                            border.color: bentoOverlayPopup.visible ? root.colAccent : (hwM.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.35))
+                            border.width: 1.0
 
                             RowLayout {
                                 anchors.centerIn: parent
                                 spacing: 8
 
-                                Text {
-                                    text: "󰸗"
-                                    font.pixelSize: 14
-                                    color: root.colAccent
+                                RowLayout {
+                                    spacing: 3
+                                    Text { text: "󰻠"; font.pixelSize: 13; color: bentoOverlayPopup.visible ? "#080c16" : root.colAccent }
+                                    Text { text: root.cpuUsage; font.family: "Orbitron"; font.pixelSize: 11; font.bold: true; color: bentoOverlayPopup.visible ? "#080c16" : root.colFg }
                                 }
-
-                                Text {
-                                    text: "Open Calendar"
-                                    font.pixelSize: 12
-                                    font.bold: true
-                                    color: root.colFg
+                                RowLayout {
+                                    spacing: 3
+                                    Text { text: "󰢮"; font.pixelSize: 13; color: bentoOverlayPopup.visible ? "#080c16" : root.colGold }
+                                    Text { text: root.gpuUsage + " " + root.gpuTemp; font.family: "Orbitron"; font.pixelSize: 11; font.bold: true; color: bentoOverlayPopup.visible ? "#080c16" : root.colFg }
+                                }
+                                RowLayout {
+                                    spacing: 3
+                                    Text { text: "󰍛"; font.pixelSize: 13; color: bentoOverlayPopup.visible ? "#080c16" : root.colAccentAlt }
+                                    Text { text: root.ramUsage; font.family: "Orbitron"; font.pixelSize: 11; font.bold: true; color: bentoOverlayPopup.visible ? "#080c16" : root.colFg }
                                 }
                             }
 
                             MouseArea {
-                                id: secCalBtnArea
+                                id: hwM
                                 anchors.fill: parent
                                 hoverEnabled: true
-                                onClicked: {
-                                    root.runCmd(["bash", "-c", "gnome-calendar || korganizer || xfce4-calendar"]);
-                                    secDatePopup.visible = false;
+                                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: mouse => {
+                                    if (mouse.button === Qt.RightButton) {
+                                        root.runCmd(["bash", "/home/gallo/.config/hypr/scripts/garchy-toggle.sh", "btop"]);
+                                    } else {
+                                        barWin.toggleFlyout(bentoOverlayPopup);
+                                    }
                                 }
                             }
                         }
-                    }
-                }
-            }
 
-            // 3. RIGHT ISLAND: Volume, Gally AI, Theme, Clock (in Cyber Sakura), Down Arrow Menu
-            Rectangle {
-                id: secRightIsland
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                width: secRightLayout.implicitWidth + 24
-                color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBg
-                border.color: (root.isDockCentered || root.isRetroGaming) ? "transparent" : root.colBorder
-                border.width: (root.isDockCentered || root.isRetroGaming) ? 0 : 1.5
-                radius: root.islandRadius
+                        // PipeWire Audio Spectrum (CAVA Visualizer)
+                        Rectangle {
+                            visible: barWin.isPrimary
+                            width: 80
+                            height: 30
+                            radius: root.buttonRadius
+                            color: cavaM.containsMouse ? root.withAlpha(root.colAccentAlt, 0.25) : root.colBgAlt
+                            border.color: cavaM.containsMouse ? root.colAccentAlt : root.withAlpha(root.colBorder, 0.3)
+                            border.width: 1
 
-                RowLayout {
-                    id: secRightLayout
-                    anchors.centerIn: parent
-                    spacing: 8
+                            Row {
+                                id: cavaRow
+                                anchors.centerIn: parent
+                                spacing: 2
 
-                    // 🔊 Volume Pill
-                    Rectangle {
-                        height: 34
-                        width: secVolRow.implicitWidth + 16
-                        radius: root.buttonRadius
-                        color: root.colBgAlt
+                                Repeater {
+                                    model: 10
+                                    Item {
+                                        width: 3.5
+                                        height: 18
 
-                        RowLayout {
-                            id: secVolRow
-                            anchors.centerIn: parent
-                            spacing: 6
+                                        Rectangle {
+                                            anchors.fill: parent
+                                            radius: 1
+                                            color: root.withAlpha(root.colBorder, 0.15)
+                                        }
 
-                            Text {
-                                text: root.isMuted ? "󰝟" : (root.volPercent > 50 ? "󰕾" : "󰖀")
-                                font.pixelSize: 15
-                                color: root.isMuted ? root.colRed : root.colAccent
+                                        Rectangle {
+                                            anchors.bottom: parent.bottom
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                            width: parent.width
+                                            height: (root.cavaBars && root.cavaBars[index] !== undefined) ? Math.max(3, Math.min(18, root.cavaBars[index])) : 3
+                                            radius: 1
+                                            color: height > 13 ? root.colGold : (height > 7 ? root.colAccent : root.colAccentAlt)
+                                            opacity: Math.max(0.7, Math.min(1.0, height / 14.0))
+
+                                            Behavior on height { NumberAnimation { duration: 40; easing.type: Easing.OutQuad } }
+                                            Behavior on color { ColorAnimation { duration: 60 } }
+                                        }
+                                    }
+                                }
                             }
 
-                            Text {
-                                text: root.volPercent + "%"
-                                font.pixelSize: 13
-                                font.bold: true
-                                color: root.colFg
+                            MouseArea {
+                                id: cavaM
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.runCmd(["bash", "/home/gallo/.config/hypr/scripts/garchy-toggle.sh", "pavucontrol"])
                             }
                         }
 
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: root.runCmd(["pavucontrol"])
-                        }
-                    }
+                        // Control Center Status Capsule
+                        Rectangle {
+                            visible: barWin.isPrimary
+                            width: 90
+                            height: 30
+                            radius: root.buttonRadius
+                            color: quickSettingsPopup.visible ? root.colAccent : (ctrlM.containsMouse ? root.withAlpha(root.colAccent, 0.25) : root.colBgAlt)
+                            border.color: quickSettingsPopup.visible ? root.colAccent : (ctrlM.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.4))
+                            border.width: 1
 
-                    // 🎮 Hardware Telemetry Badges (CPU & RAM for Retro Gaming)
-                    Rectangle {
-                        visible: root.isRetroGaming
-                        height: 34
-                        width: secHwRow.implicitWidth + 14
-                        radius: root.buttonRadius
-                        color: root.withAlpha(root.colBgAlt, 0.75)
-                        border.color: root.withAlpha(root.colAccentAlt, 0.4)
-                        border.width: 1
+                            RowLayout {
+                                id: ctrlRow
+                                anchors.centerIn: parent
+                                spacing: 5
 
-                        Row {
-                            id: secHwRow
-                            anchors.centerIn: parent
-                            spacing: 8
+                                Text {
+                                    text: root.hubState && root.hubState.network ? root.hubState.network.icon : "󰈀"
+                                    font.pixelSize: 13
+                                    color: quickSettingsPopup.visible ? "#080c16" : (root.hubState && root.hubState.network && root.hubState.network.connected ? root.colAccent : root.colFgMuted)
+                                }
 
-                            Text {
-                                text: "󰻠 " + root.cpuUsage
-                                font.family: "Orbitron"
-                                font.pixelSize: 11
-                                font.bold: true
-                                color: root.colAccent
+                                Text {
+                                    text: root.hubState && root.hubState.audio && root.hubState.audio.muted ? "󰝟" : "󰕾"
+                                    font.pixelSize: 13
+                                    color: quickSettingsPopup.visible ? "#080c16" : (root.hubState && root.hubState.audio && root.hubState.audio.muted ? root.colRed : root.colAccent)
+                                }
+
+                                Text {
+                                    text: (root.hubState && root.hubState.audio ? root.hubState.audio.volume : 50) + "%"
+                                    font.family: "Orbitron"
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                    color: quickSettingsPopup.visible ? "#080c16" : root.colFg
+                                }
                             }
 
+                            MouseArea {
+                                id: ctrlM
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: barWin.toggleFlyout(quickSettingsPopup)
+                            }
+                        }
+
+                        // Notification Bell
+                        Rectangle {
+                            visible: barWin.isPrimary
+                            width: 30
+                            height: 30
+                            radius: root.buttonRadius
+                            color: notifDrawerPopup.visible ? root.colAccent : (notifM.containsMouse ? root.withAlpha(root.colAccent, 0.25) : root.colBgAlt)
+                            border.color: notifDrawerPopup.visible ? root.colAccent : (notifM.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.3))
+                            border.width: 1.0
+
                             Text {
-                                text: "󰍛 " + root.ramUsage
-                                font.family: "Orbitron"
-                                font.pixelSize: 11
-                                font.bold: true
+                                anchors.centerIn: parent
+                                text: "󰂚"
+                                font.pixelSize: 14
+                                color: notifDrawerPopup.visible ? "#080c16" : root.colAccent
+                            }
+
+                            MouseArea {
+                                id: notifM
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: barWin.toggleFlyout(notifDrawerPopup)
+                            }
+                        }
+
+                        // Gally AI Copilot (Toggles Gally AI Studio Flyout)
+                        Rectangle {
+                            visible: barWin.isPrimary
+                            width: 30
+                            height: 30
+                            radius: root.buttonRadius
+                            color: (typeof gallyAiPopup !== "undefined" && gallyAiPopup.visible) ? root.colAccent : (aiM.containsMouse ? root.withAlpha(root.colAccent, 0.25) : root.colBgAlt)
+                            border.color: (typeof gallyAiPopup !== "undefined" && gallyAiPopup.visible) ? root.colAccent : (aiM.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.3))
+                            border.width: 1
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "󰚩"
+                                font.pixelSize: 14
+                                color: (typeof gallyAiPopup !== "undefined" && gallyAiPopup.visible) ? "#080c16" : root.colAccent
+                            }
+
+                            MouseArea {
+                                id: aiM
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (barWin.isPrimary) barWin.toggleFlyout(gallyAiPopup);
+                                }
+                            }
+                        }
+
+                        // Theme Switcher
+                        Rectangle {
+                            visible: barWin.isPrimary
+                            width: 30
+                            height: 30
+                            radius: root.buttonRadius
+                            color: thmM.containsMouse ? root.withAlpha(root.colAccentAlt, 0.25) : root.colBgAlt
+                            border.color: thmM.containsMouse ? root.colAccentAlt : root.withAlpha(root.colBorder, 0.3)
+                            border.width: 1
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "󰏘"
+                                font.pixelSize: 14
                                 color: root.colAccentAlt
                             }
-                        }
-                    }
 
-                    // 🎵 Live Taskbar CAVA Visualizer Pill (Bottom-Anchored Chill Audio Equalizer)
-                    Rectangle {
-                        id: secCavaTaskbarPill
-                        visible: !root.isRetroGaming
-                        height: 34
-                        width: secCavaTaskbarRow.implicitWidth + 18
-                        radius: root.buttonRadius
-                        color: secCavaPillMouse.containsMouse ? root.withAlpha(root.colAccent, 0.18) : root.withAlpha(root.colBgAlt, 0.75)
-                        border.color: secCavaPillMouse.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.35)
-                        border.width: 1
-
-                        Row {
-                            id: secCavaTaskbarRow
-                            anchors.centerIn: parent
-                            spacing: 3
-
-                            Repeater {
-                                model: 10
-                                Item {
-                                    width: 3.5
-                                    height: 20
-
-                                    // Subtle background track
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        radius: 1.75
-                                        color: root.withAlpha(root.colBorder, 0.18)
-                                    }
-
-                                    // Real-Time Audio Bar (Anchored to Bottom)
-                                    Rectangle {
-                                        id: barItem
-                                        anchors.bottom: parent.bottom
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                        width: parent.width
-                                        height: (root.cavaBars && root.cavaBars[index] !== undefined) ? Math.max(3, Math.min(20, root.cavaBars[index])) : 3
-                                        radius: 1.75
-                                        color: height > 14 ? root.colGold : (height > 8 ? root.colAccent : root.colAccentAlt)
-                                        opacity: Math.max(0.65, Math.min(1.0, height / 16.0))
-
-                                        Behavior on height { NumberAnimation { duration: 45; easing.type: Easing.OutQuad } }
-                                        Behavior on color { ColorAnimation { duration: 60 } }
-                                    }
-                                }
+                            MouseArea {
+                                id: thmM
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.runCmd(["bash", "/home/gallo/.config/hypr/scripts/garchy-toggle.sh", "theme"])
                             }
                         }
 
-                        MouseArea {
-                            id: secCavaPillMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.runCmd(["pavucontrol"])
-                        }
-                    }
-
-                    // ⚠️ Critical Low Disk Space Warning Badge (< 5GB)
-                    Rectangle {
-                        visible: root.diskStatus && root.diskStatus.warning
-                        height: 34
-                        width: secDiskWarnRow.implicitWidth + 16
-                        radius: root.buttonRadius
-                        color: "#ef4444"
-                        border.color: "#fca5a5"
-                        border.width: 1.5
-
-                        Row {
-                            id: secDiskWarnRow
-                            anchors.centerIn: parent
-                            spacing: 6
+                        // Power Button
+                        Rectangle {
+                            width: 30
+                            height: 30
+                            radius: root.buttonRadius
+                            color: pwrM.containsMouse ? root.withAlpha(root.colRed, 0.25) : root.colBgAlt
+                            border.color: pwrM.containsMouse ? root.colRed : root.withAlpha(root.colBorder, 0.3)
+                            border.width: 1
 
                             Text {
-                                text: "⚠️ " + (root.diskStatus ? root.diskStatus.avail_gb : "4.9") + " GB LEFT"
-                                font.family: "Orbitron"
-                                font.pixelSize: 11
-                                font.bold: true
-                                color: "#ffffff"
-                            }
-                        }
-                    }
-
-
-
-                    // 🧠 Gally AI Hub
-                    Rectangle {
-                        width: 34
-                        height: 34
-                        radius: root.buttonRadius
-                        color: secAiMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: root.isFullSakura ? "✨" : "󰚩"
-                            font.pixelSize: 18
-                            color: root.colAccent
-                        }
-
-                        MouseArea {
-                            id: secAiMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: root.runCmd(["bash", "-c", "python3 ~/.config/hypr/scripts/gally-ai-hud.py"])
-                        }
-                    }
-
-                    // 🎨 Wallust Theme Switcher
-                    Rectangle {
-                        width: 34
-                        height: 34
-                        radius: root.buttonRadius
-                        color: secThmMouse.containsMouse ? root.withAlpha(root.colAccentAlt, 0.20) : "transparent"
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "󰏘"
-                            font.pixelSize: 18
-                            color: root.colAccentAlt
-                        }
-
-                        MouseArea {
-                            id: secThmMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: root.runCmd(["bash", "-c", "~/.config/hypr/scripts/theme-switcher.sh"])
-                        }
-                    }
-
-                    // 👾 Pixel Digital Clock (Clean Time Only)
-                    Rectangle {
-                        id: secSakuraClockBtn
-                        visible: root.isDockCentered || root.isRetroGaming
-                        height: 34
-                        width: secSakuraClockRow.implicitWidth + 20
-                        radius: root.buttonRadius
-                        color: secSakuraClockMouse.containsMouse ? (root.withAlpha(root.colAccent, 0.20)) : root.colBgAlt
-                        border.color: secSakuraClockMouse.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.3)
-                        border.width: 1
-
-                        RowLayout {
-                            id: secSakuraClockRow
-                            anchors.centerIn: parent
-                            spacing: 6
-
-                            Text {
-                                text: root.timeStr
-                                font.family: "Orbitron"
+                                anchors.centerIn: parent
+                                text: "󰐥"
                                 font.pixelSize: 14
-                                font.bold: true
-                                color: root.colAccent
+                                color: root.colRed
                             }
-                        }
 
-                        MouseArea {
-                            id: secSakuraClockMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: secDatePopup.visible = !secDatePopup.visible
-                        }
-                    }
-
-                    // 󰅀 Down Arrow / Minimized Tray Menu
-                    Rectangle {
-                        id: secTrayBtn
-                        width: 34
-                        height: 34
-                        radius: root.buttonRadius
-                        color: secTrayArea.containsMouse || secTrayMenuPopup.visible ? (root.withAlpha(root.colAccent, 0.20)) : "transparent"
-                        border.color: secTrayArea.containsMouse || secTrayMenuPopup.visible ? root.colAccent : "transparent"
-                        border.width: 1
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "󰅀"
-                            font.pixelSize: 16
-                            color: root.taskbarState.minimized_windows && root.taskbarState.minimized_windows.length > 0 ? root.colGold : root.colFgMuted
-                        }
-
-                        MouseArea {
-                            id: secTrayArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: secTrayMenuPopup.visible = !secTrayMenuPopup.visible
+                            MouseArea {
+                                id: pwrM
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.runCmd(["bash", "-c", "wlogout & disown"])
+                            }
                         }
                     }
                 }
-            }
+                // =============================================================
+                // 🎛️ POPUPS & FLYOUTS (Caelestia Bento Grid & Spring Animations)
+                // =============================================================
 
-            // 🗕 Secondary Screen Luxury Tray & System Hub
-            PopupWindow {
-                id: secTrayMenuPopup
-                anchor.window: winSec
-                anchor.rect.x: winSec.width - 364
-                anchor.rect.y: root.isBottomBar ? 0 : 46
-                anchor.rect.width: 350
-                anchor.rect.height: 0
-                anchor.edges: root.isBottomBar ? Edges.Top : Edges.Bottom
-                anchor.gravity: root.isBottomBar ? Edges.Top : Edges.Bottom
-                implicitWidth: 350
-                implicitHeight: secHubCol.implicitHeight + 28
-                color: "transparent"
-                visible: false
+                // 1. 🌌 Caelestia Bento Grid Start Menu
+                PopupWindow {
+                    id: startMenuPopup
+                    visible: false
+                    anchor.window: barWin
+                    anchor.rect.x: 8
+                    anchor.rect.y: 52
+                    anchor.rect.width: 480
+                    anchor.rect.height: 0
+                    implicitWidth: 480
+                    implicitHeight: 580
+                    color: "transparent"
 
-                Rectangle {
-                    anchors.fill: parent
-                    radius: root.popupRadius
-                    color: root.colBg
-                    border.color: root.colAccent
-                    border.width: 1.5
+                    property string selectedCategory: "All"
 
-                    ColumnLayout {
-                        id: secHubCol
+                    Rectangle {
                         anchors.fill: parent
-                        anchors.margins: 14
-                        spacing: 10
+                        radius: root.popupRadius
+                        color: root.colBg
+                        border.color: root.colAccent
+                        border.width: 1.0
 
-                        // 1. TOP HEADER
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8
+                        scale: startMenuPopup.visible ? 1.0 : 0.94
+                        opacity: startMenuPopup.visible ? 1.0 : 0.0
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
+                        Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
 
-                            Text {
-                                text: "󰣇"
-                                font.pixelSize: 18
-                                color: root.colAccent
-                            }
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 16
+                            spacing: 12
 
-                            Text {
-                                text: "Garchy Shell Hub"
-                                font.pixelSize: 13
-                                font.bold: true
-                                color: root.colFg
-                            }
-
-                            Item { Layout.fillWidth: true }
-
+                            // 1. Profile & OS Banner Header
                             Rectangle {
-                                width: secStatusRow.implicitWidth + 10
-                                height: 20
+                                Layout.fillWidth: true
+                                height: 54
                                 radius: root.buttonRadius
-                                color: root.withAlpha(root.colGreen, 0.15)
-                                border.color: root.colGreen
-                                border.width: 1
+                                color: root.colBgAlt
+                                border.color: root.withAlpha(root.colBorder, 0.35)
+                                border.width: 1.0
 
                                 RowLayout {
-                                    id: secStatusRow
-                                    anchors.centerIn: parent
-                                    spacing: 4
+                                    anchors.fill: parent
+                                    anchors.margins: 8
+                                    spacing: 12
 
+                                    // Avatar Badge
                                     Rectangle {
-                                        width: 6
-                                        height: 6
-                                        radius: Math.max(1, root.buttonRadius / 2)
-                                        color: root.colGreen
+                                        width: 38
+                                        height: 38
+                                        radius: root.buttonRadius
+                                        color: root.withAlpha(root.colAccent, 0.20)
+                                        border.color: root.colAccent
+                                        border.width: 1.0
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "󰣇"
+                                            font.pixelSize: 22
+                                            color: root.colAccent
+                                        }
+                                    }
+
+                                    // User & OS Info
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 2
+
+                                        Text {
+                                            text: "gallo"
+                                            font.family: "Orbitron"
+                                            font.pixelSize: 14
+                                            font.bold: true
+                                            color: root.colFg
+                                        }
+
+                                        Text {
+                                            text: "Garchy OS • Arch Linux (144Hz Gaming Pipeline)"
+                                            font.pixelSize: 10
+                                            color: root.colFgMuted
+                                        }
+                                    }
+
+                                    // Quick Terminal Launcher
+                                    Rectangle {
+                                        width: 32
+                                        height: 32
+                                        radius: root.buttonRadius
+                                        color: termBtnM.containsMouse ? root.withAlpha(root.colAccent, 0.25) : root.colCard
+                                        border.color: root.colBorder
+                                        border.width: 1.0
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "󰞷"
+                                            font.pixelSize: 16
+                                            color: root.colAccent
+                                        }
+
+                                        MouseArea {
+                                            id: termBtnM
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                root.runCmd(["kitty"]);
+                                                startMenuPopup.visible = false;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 2. Dynamic Search Bar
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 38
+                                radius: root.buttonRadius
+                                color: root.colBgAlt
+                                border.color: searchInput.activeFocus ? root.colAccent : root.withAlpha(root.colBorder, 0.4)
+                                border.width: searchInput.activeFocus ? 1.5 : 1.0
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 8
+                                    spacing: 8
+
+                                    Text {
+                                        text: "🔍"
+                                        font.pixelSize: 13
+                                        color: root.colAccent
+                                    }
+
+                                    TextInput {
+                                        id: searchInput
+                                        Layout.fillWidth: true
+                                        color: root.colFg
+                                        font.pixelSize: 12
+                                        focus: startMenuPopup.visible
+                                        Keys.onEscapePressed: startMenuPopup.visible = false
                                     }
 
                                     Text {
-                                        text: "Active"
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        color: root.colGreen
+                                        visible: !searchInput.text
+                                        text: "Search apps, games & commands..."
+                                        font.pixelSize: 11
+                                        color: root.colFgMuted
+                                    }
+
+                                    Text {
+                                        visible: !!searchInput.text
+                                        text: "✕"
+                                        font.pixelSize: 12
+                                        color: root.colFgMuted
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: searchInput.text = ""
+                                        }
                                     }
                                 }
                             }
 
-                            Rectangle {
-                                width: 22
-                                height: 22
-                                radius: root.buttonRadius
-                                color: secCloseHubMouse.containsMouse ? root.colRed : root.colBgAlt
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "✕"
-                                    font.pixelSize: 10
-                                    color: secCloseHubMouse.containsMouse ? "#ffffff" : root.colFgMuted
-                                }
-
-                                MouseArea {
-                                    id: secCloseHubMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: secTrayMenuPopup.visible = false
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 1
-                            color: root.colBorder
-                        }
-
-                        // 2. BACKGROUND & TRAY SERVICES
-                        Text {
-                            text: "BACKGROUND & TRAY SERVICES"
-                            font.pixelSize: 9
-                            font.bold: true
-                            color: root.colAccent
-                            Layout.topMargin: 2
-                        }
-
-                        ScrollView {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: Math.min(230, secSvcCol.implicitHeight)
-                            clip: true
-                            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                            ScrollBar.vertical.policy: secSvcCol.implicitHeight > 230 ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
-
-                            ColumnLayout {
-                                id: secSvcCol
-                                width: 312
+                            // 3. Category Bento Filter Pills
+                            Row {
+                                Layout.fillWidth: true
                                 spacing: 6
 
                                 Repeater {
-                                    model: root.taskbarState.tray_services || []
-
+                                    model: ["All", "Games", "Dev", "Web", "System"]
                                     Rectangle {
-                                        Layout.fillWidth: true
-                                        Layout.preferredHeight: 38
-                                        radius: root.cardRadius
-                                        color: secSvcMouse.containsMouse ? root.colBgAlt : "#131c3188"
-                                        border.color: modelData.is_running ? root.colBorder : "transparent"
-                                        border.width: 1
+                                        property bool isSel: startMenuPopup.selectedCategory === modelData
+                                        height: 32
+                                        width: catTxt.implicitWidth + 18
+                                        radius: root.buttonRadius
+                                        color: isSel ? (modelData === "Games" ? root.colGold : root.colAccent) : (catM.containsMouse ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt)
+                                        border.color: isSel ? (modelData === "Games" ? root.colGold : root.colAccent) : root.withAlpha(root.colBorder, 0.3)
+                                        border.width: 1.0
 
                                         RowLayout {
-                                            anchors.fill: parent
-                                            anchors.leftMargin: 10
-                                            anchors.rightMargin: 10
-                                            spacing: 10
-
-                                            Item {
-                                                Layout.preferredWidth: 22
-                                                Layout.preferredHeight: 22
-                                                Layout.alignment: Qt.AlignVCenter
-
-                                                Image {
-                                                    anchors.fill: parent
-                                                    source: Quickshell.iconPath(modelData.icon)
-                                                    fillMode: Image.PreserveAspectFit
-                                                    opacity: modelData.is_running ? 1.0 : 0.4
-                                                    visible: status === Image.Ready
-                                                }
-
-                                                Text {
-                                                    anchors.centerIn: parent
-                                                    visible: !parent.children[0].visible
-                                                    text: "󰖯"
-                                                    font.pixelSize: 16
-                                                    color: modelData.is_running ? root.colAccent : root.colFgMuted
-                                                }
+                                            id: catTxt
+                                            anchors.centerIn: parent
+                                            spacing: 5
+                                            Text {
+                                                text: modelData === "Games" ? "🎮" : (modelData === "Dev" ? "💻" : (modelData === "Web" ? "🌐" : (modelData === "System" ? "⚙️" : "✦")))
+                                                font.pixelSize: 12
                                             }
-
-                                            ColumnLayout {
-                                                Layout.fillWidth: true
-                                                Layout.alignment: Qt.AlignVCenter
-                                                spacing: 1
-
-                                                Text {
-                                                    Layout.fillWidth: true
-                                                    text: modelData.name
-                                                    font.pixelSize: 11
-                                                    font.bold: true
-                                                    elide: Text.ElideRight
-                                                    color: modelData.is_running ? root.colFg : root.colFgMuted
-                                                }
-
-                                                Text {
-                                                    Layout.fillWidth: true
-                                                    text: modelData.status_text
-                                                    font.pixelSize: 10
-                                                    elide: Text.ElideRight
-                                                    color: modelData.is_running ? (modelData.is_minimized ? root.colGold : root.colAccent) : root.colFgMuted
-                                                }
-                                            }
-
-                                            Rectangle {
-                                                Layout.preferredWidth: 62
-                                                Layout.preferredHeight: 24
-                                                Layout.alignment: Qt.AlignVCenter
-                                                radius: root.buttonRadius
-                                                color: secActArea.containsMouse ? root.colAccent : root.colBgAlt
-                                                border.color: root.colAccent
-                                                border.width: 1
-
-                                                Text {
-                                                    anchors.centerIn: parent
-                                                    text: modelData.has_window ? (modelData.is_minimized ? "Restore" : "Focus") : (modelData.is_running ? "Open" : "Launch")
-                                                    font.pixelSize: 10
-                                                    font.bold: true
-                                                    color: secActArea.containsMouse ? "#0a0f1d" : root.colAccent
-                                                }
-
-                                                MouseArea {
-                                                    id: secActArea
-                                                    anchors.fill: parent
-                                                    hoverEnabled: true
-                                                    onClicked: {
-                                                        if (modelData.has_window) {
-                                                            root.dispatchAction("toggle", modelData.address);
-                                                        } else {
-                                                            root.runCmd(["bash", "-c", modelData.cmd]);
-                                                        }
-                                                        secTrayMenuPopup.visible = false;
-                                                    }
-                                                }
+                                            Text {
+                                                text: modelData
+                                                font.pixelSize: 13
+                                                font.bold: isSel
+                                                color: isSel ? "#080c16" : (catM.containsMouse ? root.colAccent : root.colFg)
                                             }
                                         }
 
                                         MouseArea {
-                                            id: secSvcMouse
+                                            id: catM
                                             anchors.fill: parent
                                             hoverEnabled: true
-                                            onClicked: {
-                                                if (modelData.has_window) {
-                                                    root.dispatchAction("toggle", modelData.address);
-                                                } else {
-                                                    root.runCmd(["bash", "-c", modelData.cmd]);
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: startMenuPopup.selectedCategory = modelData
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 4A. GAMING PROFILE & FALLOUT 4 MODDING BENTO (When Games is active)
+                            ScrollView {
+                                visible: startMenuPopup.selectedCategory === "Games"
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                clip: true
+
+                                ColumnLayout {
+                                    width: 448
+                                    spacing: 10
+
+                                    // Fallout 4 GOTY Hero Bento Card
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        height: 116
+                                        radius: root.cardRadius
+                                        color: root.colBgAlt
+                                        border.color: root.colGold
+                                        border.width: 1.0
+
+                                        ColumnLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 10
+                                            spacing: 6
+
+                                            RowLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 8
+
+                                                Rectangle {
+                                                    width: 32
+                                                    height: 32
+                                                    radius: 4
+                                                    color: root.withAlpha(root.colGold, 0.25)
+                                                    border.color: root.colGold
+                                                    border.width: 1
+                                                    Text { anchors.centerIn: parent; text: "☢️"; font.pixelSize: 18 }
                                                 }
-                                                secTrayMenuPopup.visible = false;
+
+                                                ColumnLayout {
+                                                    Layout.fillWidth: true
+                                                    spacing: 1
+                                                    Text { text: "Fallout 4 GOTY (144Hz F4SE)"; font.family: "Orbitron"; font.pixelSize: 14; font.bold: true; color: root.colGold }
+                                                    Text { text: "v1.10.163 Pre-Next-Gen • Dynamic Physics 144Hz • RTX 3080 Ti"; font.pixelSize: 11; color: root.colFgMuted }
+                                                }
+                                            }
+
+                                            RowLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 8
+
+                                                Rectangle {
+                                                    Layout.fillWidth: true
+                                                    height: 34
+                                                    radius: root.buttonRadius
+                                                    color: fo4PlayM.containsMouse ? root.colGold : root.withAlpha(root.colGold, 0.25)
+                                                    border.color: root.colGold
+                                                    border.width: 1.0
+
+                                                    RowLayout {
+                                                        anchors.centerIn: parent
+                                                        spacing: 6
+                                                        Text { text: "🚀"; font.pixelSize: 13 }
+                                                        Text { text: "Launch Fallout 4"; font.pixelSize: 13; font.bold: true; color: fo4PlayM.containsMouse ? "#080c16" : root.colFg }
+                                                    }
+                                                    MouseArea {
+                                                        id: fo4PlayM
+                                                        anchors.fill: parent
+                                                        hoverEnabled: true
+                                                        cursorShape: Qt.PointingHandCursor
+                                                        onClicked: {
+                                                            root.runCmd(["bash", "/home/gallo/launch_fallout4.sh"]);
+                                                            startMenuPopup.visible = false;
+                                                        }
+                                                    }
+                                                }
+
+                                                Rectangle {
+                                                    width: 110
+                                                    height: 34
+                                                    radius: root.buttonRadius
+                                                    color: hudBtnM.containsMouse ? root.colAccent : root.colBgAlt
+                                                    border.color: root.colAccent
+                                                    border.width: 1.0
+
+                                                    RowLayout {
+                                                        anchors.centerIn: parent
+                                                        spacing: 4
+                                                        Text { text: "󰍹"; font.pixelSize: 13; color: hudBtnM.containsMouse ? "#080c16" : root.colAccent }
+                                                        Text { text: "MangoHud"; font.pixelSize: 12; font.bold: true; color: hudBtnM.containsMouse ? "#080c16" : root.colFg }
+                                                    }
+                                                    MouseArea {
+                                                        id: hudBtnM
+                                                        anchors.fill: parent
+                                                        hoverEnabled: true
+                                                        cursorShape: Qt.PointingHandCursor
+                                                        onClicked: {
+                                                            root.runCmd(["bash", "/home/gallo/launch_fallout4.sh", "--hud"]);
+                                                            startMenuPopup.visible = false;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Modding Suite 2x2 Bento Grid
+                                    Text { text: "🛠️ Fallout 4 Modding Suite"; font.family: "Orbitron"; font.pixelSize: 13; font.bold: true; color: root.colAccent }
+
+                                    GridLayout {
+                                        Layout.fillWidth: true
+                                        columns: 2
+                                        columnSpacing: 8
+                                        rowSpacing: 8
+
+                                        // Mod Organizer 2
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 44
+                                            radius: root.buttonRadius
+                                            color: mo2M.containsMouse ? root.withAlpha(root.colAccent, 0.25) : root.colBgAlt
+                                            border.color: mo2M.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.35)
+                                            border.width: 1.0
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.margins: 8
+                                                spacing: 8
+                                                Text { text: "󰒓"; font.pixelSize: 16; color: root.colAccent }
+                                                ColumnLayout {
+                                                    spacing: 1
+                                                    Text { text: "Mod Organizer 2"; font.pixelSize: 12; font.bold: true; color: root.colFg }
+                                                    Text { text: "Mod Deployment"; font.pixelSize: 10; color: root.colFgMuted }
+                                                }
+                                            }
+                                            MouseArea {
+                                                id: mo2M
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    root.runCmd(["bash", "-c", "heroic || steam & disown"]);
+                                                    startMenuPopup.visible = false;
+                                                }
+                                            }
+                                        }
+
+                                        // FO4Edit
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 44
+                                            radius: root.buttonRadius
+                                            color: xeditM.containsMouse ? root.withAlpha(root.colAccentAlt, 0.25) : root.colBgAlt
+                                            border.color: xeditM.containsMouse ? root.colAccentAlt : root.withAlpha(root.colBorder, 0.35)
+                                            border.width: 1.0
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.margins: 8
+                                                spacing: 8
+                                                Text { text: "󰅩"; font.pixelSize: 16; color: root.colAccentAlt }
+                                                ColumnLayout {
+                                                    spacing: 1
+                                                    Text { text: "FO4Edit (xEdit)"; font.pixelSize: 12; font.bold: true; color: root.colFg }
+                                                    Text { text: "Plugin Conflict Resolver"; font.pixelSize: 10; color: root.colFgMuted }
+                                                }
+                                            }
+                                            MouseArea {
+                                                id: xeditM
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    root.runCmd(["bash", "-c", "notify-send FO4Edit Ready"]);
+                                                    startMenuPopup.visible = false;
+                                                }
+                                            }
+                                        }
+
+                                        // LOOT Sorter
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 44
+                                            radius: root.buttonRadius
+                                            color: lootM.containsMouse ? root.withAlpha(root.colGreen, 0.25) : root.colBgAlt
+                                            border.color: lootM.containsMouse ? root.colGreen : root.withAlpha(root.colBorder, 0.35)
+                                            border.width: 1.0
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.margins: 8
+                                                spacing: 8
+                                                Text { text: "󰑮"; font.pixelSize: 16; color: root.colGreen }
+                                                ColumnLayout {
+                                                    spacing: 1
+                                                    Text { text: "LOOT Sorter"; font.pixelSize: 12; font.bold: true; color: root.colFg }
+                                                    Text { text: "Load Order Optimizer"; font.pixelSize: 10; color: root.colFgMuted }
+                                                }
+                                            }
+                                            MouseArea {
+                                                id: lootM
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    root.runCmd(["loot"]);
+                                                    startMenuPopup.visible = false;
+                                                }
+                                            }
+                                        }
+
+                                        // BodySlide Studio
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 44
+                                            radius: root.buttonRadius
+                                            color: bsM.containsMouse ? root.withAlpha(root.colGold, 0.25) : root.colBgAlt
+                                            border.color: bsM.containsMouse ? root.colGold : root.withAlpha(root.colBorder, 0.35)
+                                            border.width: 1.0
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.margins: 8
+                                                spacing: 8
+                                                Text { text: "󰏘"; font.pixelSize: 16; color: root.colGold }
+                                                ColumnLayout {
+                                                    spacing: 1
+                                                    Text { text: "BodySlide Studio"; font.pixelSize: 12; font.bold: true; color: root.colFg }
+                                                    Text { text: "Mesh & Physics Generator"; font.pixelSize: 10; color: root.colFgMuted }
+                                                }
+                                            }
+                                            MouseArea {
+                                                id: bsM
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    root.runCmd(["bash", "-c", "notify-send BodySlide Ready"]);
+                                                    startMenuPopup.visible = false;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Platform Launchers
+                                    Text { text: "🎮 Platforms & Launchers"; font.family: "Orbitron"; font.pixelSize: 13; font.bold: true; color: root.colAccent }
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 8
+
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 36
+                                            radius: root.buttonRadius
+                                            color: stmM.containsMouse ? root.withAlpha(root.colAccent, 0.25) : root.colBgAlt
+                                            border.color: root.colAccent
+                                            border.width: 1.0
+                                            RowLayout {
+                                                anchors.centerIn: parent
+                                                spacing: 6
+                                                Text { text: "󰓓"; font.pixelSize: 14; color: root.colAccent }
+                                                Text { text: "Steam (Native)"; font.pixelSize: 12; font.bold: true; color: root.colFg }
+                                            }
+                                            MouseArea {
+                                                id: stmM
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: { root.runCmd(["steam"]); startMenuPopup.visible = false; }
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 36
+                                            radius: root.buttonRadius
+                                            color: hrcM.containsMouse ? root.withAlpha(root.colAccentAlt, 0.25) : root.colBgAlt
+                                            border.color: root.colAccentAlt
+                                            border.width: 1.0
+                                            RowLayout {
+                                                anchors.centerIn: parent
+                                                spacing: 6
+                                                Text { text: "󰊴"; font.pixelSize: 14; color: root.colAccentAlt }
+                                                Text { text: "Heroic Games"; font.pixelSize: 12; font.bold: true; color: root.colFg }
+                                            }
+                                            MouseArea {
+                                                id: hrcM
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: { root.runCmd(["heroic"]); startMenuPopup.visible = false; }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 4B. Standard Applications List View (When not in Games)
+                            ListView {
+                                id: appListView
+                                visible: startMenuPopup.selectedCategory !== "Games"
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                clip: true
+                                spacing: 4
+
+                                model: {
+                                    var q = searchInput.text.toLowerCase().trim();
+                                    var cat = startMenuPopup.selectedCategory;
+                                    var list = root.allAppsList || [];
+
+                                    if (cat !== "All") {
+                                        list = list.filter(a => {
+                                            var n = (a.name || "").toLowerCase();
+                                            var c = (a.cmd || "").toLowerCase();
+                                            if (cat === "Dev") return n.includes("code") || n.includes("terminal") || n.includes("kitty") || n.includes("git") || n.includes("gemini");
+                                            if (cat === "Web") return n.includes("brave") || n.includes("firefox") || n.includes("browser") || n.includes("discord");
+                                            if (cat === "System") return n.includes("setting") || n.includes("monitor") || n.includes("btop") || n.includes("thunar");
+                                            return true;
+                                        });
+                                    }
+
+                                    if (!q) return list.slice(0, 25);
+                                    return list.filter(a => (a.name && a.name.toLowerCase().includes(q)) || (a.cmd && a.cmd.toLowerCase().includes(q))).slice(0, 25);
+                                }
+
+                                delegate: Rectangle {
+                                    width: ListView.view.width
+                                    height: 38
+                                    radius: root.buttonRadius
+                                    color: appItemM.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
+                                    border.color: appItemM.containsMouse ? root.colAccent : "transparent"
+                                    border.width: 1.0
+
+                                    scale: appItemM.containsMouse ? 1.01 : 1.0
+                                    Behavior on scale { NumberAnimation { duration: 80 } }
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 8
+                                        spacing: 10
+
+                                        Image {
+                                            Layout.preferredWidth: 20
+                                            Layout.preferredHeight: 20
+                                            sourceSize: Qt.size(20, 20)
+                                            width: 20
+                                            height: 20
+                                            source: Quickshell.iconPath(modelData.icon || modelData.id)
+                                            fillMode: Image.PreserveAspectFit
+                                            visible: status === Image.Ready
+                                        }
+
+                                        Text {
+                                            visible: !parent.children[0].visible
+                                            text: "󰖯"
+                                            font.pixelSize: 16
+                                            color: root.colAccent
+                                        }
+
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 1
+
+                                            Text {
+                                                Layout.fillWidth: true
+                                                text: modelData.name
+                                                font.pixelSize: 11
+                                                font.bold: true
+                                                color: root.colFg
+                                                elide: Text.ElideRight
+                                            }
+
+                                            Text {
+                                                Layout.fillWidth: true
+                                                text: modelData.cmd || ""
+                                                font.pixelSize: 8
+                                                color: root.colFgMuted
+                                                elide: Text.ElideRight
+                                            }
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        id: appItemM
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.runCmd(["bash", "-c", modelData.cmd + " & disown"]);
+                                            startMenuPopup.visible = false;
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 5. Footer Quick Power Controls
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 38
+                                radius: root.buttonRadius
+                                color: root.colBgAlt
+                                border.color: root.withAlpha(root.colBorder, 0.3)
+                                border.width: 1.0
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 8
+                                    spacing: 14
+
+                                    Item { Layout.fillWidth: true }
+
+                                    Text {
+                                        text: "󰌾 Lock"
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                        color: lkM.containsMouse ? root.colAccent : root.colFgMuted
+                                        MouseArea { id: lkM; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd(["bash", "-c", "hyprlock || swaylock"]) }
+                                    }
+
+                                    Text {
+                                        text: "󰍃 Logout"
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                        color: loM.containsMouse ? root.colGold : root.colFgMuted
+                                        MouseArea { id: loM; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd(["hyprctl", "dispatch", "exit"]) }
+                                    }
+
+                                    Text {
+                                        text: "󰜉 Reboot"
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                        color: rbM.containsMouse ? root.colAccentAlt : root.colFgMuted
+                                        MouseArea { id: rbM; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd(["systemctl", "reboot"]) }
+                                    }
+
+                                    Text {
+                                        text: "󰐥 Shutdown"
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                        color: sdM.containsMouse ? root.colRed : root.colRed
+                                        MouseArea { id: sdM; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd(["systemctl", "poweroff"]) }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                // 2. Control Center Popup
+                PopupWindow {
+                    id: quickSettingsPopup
+                    visible: false
+                    anchor.window: barWin
+                    anchor.rect.x: Math.max(10, barWin.width - 380)
+                    anchor.rect.y: 52
+                    anchor.rect.width: 360
+                    anchor.rect.height: 0
+                    implicitWidth: 360
+                    implicitHeight: qsCol.implicitHeight + 28
+                    color: "transparent"
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: root.popupRadius
+                        color: root.colBg
+                        border.color: root.colAccent
+                        border.width: 1.0
+
+                        ColumnLayout {
+                            id: qsCol
+                            anchors.fill: parent
+                            anchors.margins: 14
+                            spacing: 12
+
+                            // Header
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+                                Text {
+                                    text: "🎛️ Control Center"
+                                    font.family: "Orbitron"
+                                    font.pixelSize: 13
+                                    font.bold: true
+                                    color: root.colAccent
+                                }
+                                Item { Layout.fillWidth: true }
+                                Text {
+                                    text: root.hubState && root.hubState.weather ? root.hubState.weather.display : "🌤️ +17°C"
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                    color: root.colGold
+                                }
+                            }
+
+                            // Quick Tiles Grid (2x3)
+                            GridLayout {
+                                Layout.fillWidth: true
+                                columns: 3
+                                columnSpacing: 8
+                                rowSpacing: 8
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 40
+                                    radius: root.buttonRadius
+                                    color: root.hubState && root.hubState.network && root.hubState.network.connected ? root.withAlpha(root.colAccent, 0.25) : root.colBgAlt
+                                    border.color: root.hubState && root.hubState.network && root.hubState.network.connected ? root.colAccent : root.colBorder
+                                    border.width: 1
+                                    RowLayout {
+                                        anchors.centerIn: parent
+                                        spacing: 6
+                                        Text { text: "󰤨"; font.pixelSize: 15; color: root.colAccent }
+                                        Text { text: "Network"; font.pixelSize: 10; font.bold: true; color: root.colFg }
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "toggle-wifi"])
+                                    }
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 40
+                                    radius: root.buttonRadius
+                                    color: root.hubState && root.hubState.bluetooth && root.hubState.bluetooth.powered ? root.withAlpha(root.colAccentAlt, 0.25) : root.colBgAlt
+                                    border.color: root.hubState && root.hubState.bluetooth && root.hubState.bluetooth.powered ? root.colAccentAlt : root.colBorder
+                                    border.width: 1
+                                    RowLayout {
+                                        anchors.centerIn: parent
+                                        spacing: 6
+                                        Text { text: "󰂯"; font.pixelSize: 15; color: root.colAccentAlt }
+                                        Text { text: "Bluetooth"; font.pixelSize: 10; font.bold: true; color: root.colFg }
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "toggle-bt"])
+                                    }
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 40
+                                    radius: root.buttonRadius
+                                    color: root.hubState && root.hubState.toggles && root.hubState.toggles.night_light ? root.withAlpha(root.colGold, 0.25) : root.colBgAlt
+                                    border.color: root.hubState && root.hubState.toggles && root.hubState.toggles.night_light ? root.colGold : root.colBorder
+                                    border.width: 1
+                                    RowLayout {
+                                        anchors.centerIn: parent
+                                        spacing: 6
+                                        Text { text: "🌙"; font.pixelSize: 13 }
+                                        Text { text: "Night Light"; font.pixelSize: 10; font.bold: true; color: root.colFg }
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "toggle-nightlight"])
+                                    }
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 40
+                                    radius: root.buttonRadius
+                                    color: root.hubState && root.hubState.toggles && root.hubState.toggles.gamemode ? root.withAlpha(root.colAccent, 0.25) : root.colBgAlt
+                                    border.color: root.hubState && root.hubState.toggles && root.hubState.toggles.gamemode ? root.colAccent : root.colBorder
+                                    border.width: 1
+                                    RowLayout {
+                                        anchors.centerIn: parent
+                                        spacing: 6
+                                        Text { text: "🎮"; font.pixelSize: 13 }
+                                        Text { text: "GameMode"; font.pixelSize: 10; font.bold: true; color: root.colFg }
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "toggle-gamemode"])
+                                    }
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 40
+                                    radius: root.buttonRadius
+                                    color: root.hubState && root.hubState.audio && root.hubState.audio.mic_muted ? root.withAlpha(root.colRed, 0.25) : root.colBgAlt
+                                    border.color: root.hubState && root.hubState.audio && root.hubState.audio.mic_muted ? root.colRed : root.colBorder
+                                    border.width: 1
+                                    RowLayout {
+                                        anchors.centerIn: parent
+                                        spacing: 6
+                                        Text { text: root.hubState && root.hubState.audio && root.hubState.audio.mic_muted ? "󰍭" : "󰍬"; font.pixelSize: 15; color: root.hubState && root.hubState.audio && root.hubState.audio.mic_muted ? root.colRed : root.colAccent }
+                                        Text { text: "Microphone"; font.pixelSize: 10; font.bold: true; color: root.colFg }
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "toggle-mic"])
+                                    }
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 40
+                                    radius: root.buttonRadius
+                                    color: root.colBgAlt
+                                    border.color: root.colBorder
+                                    border.width: 1
+                                    RowLayout {
+                                        anchors.centerIn: parent
+                                        spacing: 6
+                                        Text { text: "󰂛"; font.pixelSize: 15; color: root.colAccent }
+                                        Text { text: "DND"; font.pixelSize: 10; font.bold: true; color: root.colFg }
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.runCmd(["dunstctl", "set-paused", "toggle"])
+                                    }
+                                }
+                            }
+
+                            // Master Volume Slider
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 36
+                                radius: root.buttonRadius
+                                color: root.colBgAlt
+                                border.color: root.colBorder
+                                border.width: 1
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 8
+                                    spacing: 10
+                                    Text { text: "󰕾"; font.pixelSize: 15; color: root.colAccent }
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        height: 6
+                                        radius: root.buttonRadius
+                                        color: root.withAlpha(root.colBorder, 0.4)
+                                        Rectangle {
+                                            anchors.left: parent.left
+                                            anchors.top: parent.top
+                                            anchors.bottom: parent.bottom
+                                            width: parent.width * ((root.hubState && root.hubState.audio ? root.hubState.audio.volume : 50) / 100.0)
+                                            radius: root.buttonRadius
+                                            color: root.colAccent
+                                        }
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: mouse => {
+                                                var pct = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)));
+                                                root.runCmd(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", (pct / 100.0).toFixed(2)]);
+                                            }
+                                        }
+                                    }
+                                    Text {
+                                        text: (root.hubState && root.hubState.audio ? root.hubState.audio.volume : 50) + "%"
+                                        font.family: "Orbitron"
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        color: root.colFg
+                                    }
+                                }
+                            }
+
+                            // Audio Sinks Selector
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+                                Text { text: "🔊 Audio Output"; font.pixelSize: 10; font.bold: true; color: root.colFgMuted }
+                                Repeater {
+                                    model: root.hubState && root.hubState.audio && root.hubState.audio.sinks ? root.hubState.audio.sinks : []
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        height: 26
+                                        radius: root.buttonRadius
+                                        color: modelData.is_default ? root.withAlpha(root.colAccent, 0.20) : "transparent"
+                                        border.color: modelData.is_default ? root.colAccent : "transparent"
+                                        border.width: 1
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 6
+                                            spacing: 8
+                                            Text { text: modelData.is_default ? "●" : "○"; font.pixelSize: 9; color: modelData.is_default ? root.colAccent : root.colFgMuted }
+                                            Text { Layout.fillWidth: true; text: modelData.desc; font.pixelSize: 10; font.bold: modelData.is_default; color: modelData.is_default ? root.colAccent : root.colFg; elide: Text.ElideRight }
+                                        }
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "set-sink", modelData.name])
+                                        }
+                                    }
+                                }
+                            }
+
+                            // MPRIS Media Card
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 88
+                                radius: root.cardRadius
+                                color: root.colBgAlt
+                                border.color: root.hubState && root.hubState.media && root.hubState.media.available ? root.colAccentAlt : root.colBorder
+                                border.width: 1
+
+                                ColumnLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 8
+                                    spacing: 4
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 6
+                                        Text { text: "🎵"; font.pixelSize: 14 }
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 1
+                                            Text { Layout.fillWidth: true; text: root.hubState && root.hubState.media ? root.hubState.media.title : "No Media Playing"; font.pixelSize: 10; font.bold: true; color: root.colFg; elide: Text.ElideRight }
+                                            Text { Layout.fillWidth: true; text: root.hubState && root.hubState.media ? root.hubState.media.artist : "Offline"; font.pixelSize: 8; color: root.colFgMuted; elide: Text.ElideRight }
+                                        }
+                                    }
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 6
+                                        Text { text: root.hubState && root.hubState.media ? root.hubState.media.position_str : "0:00"; font.family: "Orbitron"; font.pixelSize: 8; color: root.colFgMuted }
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 5
+                                            radius: root.buttonRadius
+                                            color: root.withAlpha(root.colBorder, 0.4)
+                                            Rectangle {
+                                                anchors.left: parent.left
+                                                anchors.top: parent.top
+                                                anchors.bottom: parent.bottom
+                                                width: parent.width * (root.hubState && root.hubState.media ? root.hubState.media.progress : 0.0)
+                                                radius: root.buttonRadius
+                                                color: root.colGold
+                                            }
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: mouse => {
+                                                    if (root.hubState && root.hubState.media && root.hubState.media.length > 0) {
+                                                        var pos = Math.round((mouse.x / width) * root.hubState.media.length);
+                                                        root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "media-seek", String(pos)]);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Text { text: root.hubState && root.hubState.media ? root.hubState.media.length_str : "0:00"; font.family: "Orbitron"; font.pixelSize: 8; color: root.colFgMuted }
+                                    }
+
+                                    RowLayout {
+                                        Layout.alignment: Qt.AlignHCenter
+                                        spacing: 20
+                                        Text {
+                                            text: "󰒮"
+                                            font.pixelSize: 16
+                                            color: root.colFg
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "media-prev"])
+                                            }
+                                        }
+                                        Rectangle {
+                                            width: 24
+                                            height: 24
+                                            radius: root.buttonRadius
+                                            color: root.withAlpha(root.colAccent, 0.25)
+                                            border.color: root.colAccent
+                                            border.width: 1
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: root.hubState && root.hubState.media && root.hubState.media.status === "Playing" ? "󰏤" : "󰐊"
+                                                font.pixelSize: 12
+                                                color: root.colAccent
+                                            }
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "media-play-pause"])
+                                            }
+                                        }
+                                        Text {
+                                            text: "󰒭"
+                                            font.pixelSize: 16
+                                            color: root.colFg
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "media-next"])
                                             }
                                         }
                                     }
                                 }
                             }
                         }
+                    }
+                }
 
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 1
-                            color: root.colBorder
-                            Layout.topMargin: 2
-                        }
+                // 3. 🌌 DYNAMIC NOTCH / ISLAND MORPHING FLYOUT (Dedicated Media & Gaming Turbo Hub)
+                PopupWindow {
+                    id: datePopup
+                    visible: false
+                    anchor.window: barWin
+                    anchor.rect.x: Math.round((barWin.width - 380) / 2)
+                    anchor.rect.y: 52
+                    anchor.rect.width: 380
+                    anchor.rect.height: 0
+                    implicitWidth: 380
+                    implicitHeight: notchFlyoutCol.implicitHeight + 28
+                    color: "transparent"
 
-                        // 3. QUICK SYSTEM SHORTCUTS
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: root.popupRadius
+                        color: root.colBg
+                        border.color: root.hubState && root.hubState.toggles && root.hubState.toggles.gamemode ? root.colGold : root.colAccent
+                        border.width: 1.0
 
+                        scale: datePopup.visible ? 1.0 : 0.95
+                        opacity: datePopup.visible ? 1.0 : 0.0
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
+                        Behavior on opacity { NumberAnimation { duration: 150 } }
+
+                        ColumnLayout {
+                            id: notchFlyoutCol
+                            anchors.fill: parent
+                            anchors.margins: 14
+                            spacing: 12
+
+                            // 1. Dynamic Media Hub Hero Card
                             Rectangle {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 30
-                                radius: root.buttonRadius
-                                color: secGmMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt
-                                border.color: root.colBorder
-                                border.width: 1
+                                height: 114
+                                radius: root.cardRadius
+                                color: root.colBgAlt
+                                border.color: root.withAlpha(root.colAccentAlt, 0.4)
+                                border.width: 1.0
 
-                                RowLayout {
-                                    anchors.centerIn: parent
-                                    spacing: 4
-
-                                    Text {
-                                        text: "🎮"
-                                        font.pixelSize: 11
-                                    }
-
-                                    Text {
-                                        text: "Gaming"
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        color: root.colFg
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: secGmMouse
+                                ColumnLayout {
                                     anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: {
-                                        root.runCmd(["bash", "-c", "garchy-game status"]);
-                                        secTrayMenuPopup.visible = false;
+                                    anchors.margins: 10
+                                    spacing: 8
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 10
+
+                                        // 3D Spinning Vinyl Album Core
+                                        Rectangle {
+                                            width: 42
+                                            height: 42
+                                            radius: 21
+                                            color: "#000000"
+                                            border.color: root.colGold
+                                            border.width: 1.5
+
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: "💿"
+                                                font.pixelSize: 24
+                                                transformOrigin: Item.Center
+                                                RotationAnimation on rotation {
+                                                    from: 0
+                                                    to: 360
+                                                    duration: 3000
+                                                    loops: Animation.Infinite
+                                                    running: root.hubState && root.hubState.media && root.hubState.media.status === "Playing"
+                                                }
+                                            }
+                                        }
+
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 2
+                                            Text {
+                                                Layout.fillWidth: true
+                                                text: root.hubState && root.hubState.media && root.hubState.media.title ? root.hubState.media.title : "No Media Playing"
+                                                font.family: "Orbitron"
+                                                font.pixelSize: 12
+                                                font.bold: true
+                                                color: root.colFg
+                                                elide: Text.ElideRight
+                                            }
+                                            Text {
+                                                Layout.fillWidth: true
+                                                text: root.hubState && root.hubState.media && root.hubState.media.artist ? (root.hubState.media.artist + " • " + (root.hubState.media.player || "MPRIS")) : "Media Control Ready"
+                                                font.pixelSize: 10
+                                                color: root.colAccentAlt
+                                                elide: Text.ElideRight
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            height: 20
+                                            width: statusTxt.implicitWidth + 10
+                                            radius: 3
+                                            color: root.hubState && root.hubState.media && root.hubState.media.status === "Playing" ? root.withAlpha(root.colGreen, 0.2) : root.withAlpha(root.colFgMuted, 0.15)
+                                            border.color: root.hubState && root.hubState.media && root.hubState.media.status === "Playing" ? root.colGreen : root.colFgMuted
+                                            border.width: 1
+
+                                            Text {
+                                                id: statusTxt
+                                                anchors.centerIn: parent
+                                                text: root.hubState && root.hubState.media && root.hubState.media.status === "Playing" ? "● LIVE" : "○ IDLE"
+                                                font.family: "Orbitron"
+                                                font.pixelSize: 8
+                                                font.bold: true
+                                                color: root.hubState && root.hubState.media && root.hubState.media.status === "Playing" ? root.colGreen : root.colFgMuted
+                                            }
+                                        }
+                                    }
+
+                                    // Interactive Seek Bar
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 8
+                                        Text { text: root.hubState && root.hubState.media ? root.hubState.media.position_str : "0:00"; font.family: "Orbitron"; font.pixelSize: 9; color: root.colFgMuted }
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 6
+                                            radius: 3
+                                            color: root.withAlpha(root.colBorder, 0.3)
+                                            Rectangle {
+                                                anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
+                                                width: parent.width * (root.hubState && root.hubState.media ? root.hubState.media.progress : 0.0)
+                                                radius: 3
+                                                color: root.colGold
+                                            }
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: mouse => {
+                                                    if (root.hubState && root.hubState.media && root.hubState.media.length > 0) {
+                                                        var pos = Math.round((mouse.x / width) * root.hubState.media.length);
+                                                        root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "media-seek", String(pos)]);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Text { text: root.hubState && root.hubState.media ? root.hubState.media.length_str : "0:00"; font.family: "Orbitron"; font.pixelSize: 9; color: root.colFgMuted }
+                                    }
+
+                                    // Media Playback Action Buttons (Prev / Play-Pause / Next)
+                                    RowLayout {
+                                        Layout.alignment: Qt.AlignHCenter
+                                        spacing: 20
+
+                                        Rectangle {
+                                            width: 32
+                                            height: 32
+                                            radius: root.buttonRadius
+                                            color: prevBigM.containsMouse ? root.withAlpha(root.colAccent, 0.25) : root.colCard
+                                            border.color: root.withAlpha(root.colBorder, 0.3)
+                                            border.width: 1
+                                            Text { anchors.centerIn: parent; text: "󰒮"; font.pixelSize: 16; color: prevBigM.containsMouse ? root.colAccent : root.colFg }
+                                            MouseArea {
+                                                id: prevBigM
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "media-prev"])
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            width: 36
+                                            height: 36
+                                            radius: root.buttonRadius
+                                            color: root.colAccentAlt
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: root.hubState && root.hubState.media && root.hubState.media.status === "Playing" ? "󰏤" : "󰐊"
+                                                font.pixelSize: 16
+                                                color: "#ffffff"
+                                            }
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "media-play-pause"])
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            width: 32
+                                            height: 32
+                                            radius: root.buttonRadius
+                                            color: nextBigM.containsMouse ? root.withAlpha(root.colAccent, 0.25) : root.colCard
+                                            border.color: root.withAlpha(root.colBorder, 0.3)
+                                            border.width: 1
+                                            Text { anchors.centerIn: parent; text: "󰒭"; font.pixelSize: 16; color: nextBigM.containsMouse ? root.colAccent : root.colFg }
+                                            MouseArea {
+                                                id: nextBigM
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "media-next"])
+                                            }
+                                        }
                                     }
                                 }
                             }
 
+                            // 2. Gaming Turbo & Hardware Performance Switcher (Click toggles ON/OFF)
                             Rectangle {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 30
-                                radius: root.buttonRadius
-                                color: secPavuMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt
-                                border.color: root.colBorder
-                                border.width: 1
+                                height: 46
+                                radius: root.cardRadius
+                                color: root.hubState && root.hubState.toggles && root.hubState.toggles.gamemode ? root.withAlpha(root.colGold, 0.25) : root.colBgAlt
+                                border.color: root.hubState && root.hubState.toggles && root.hubState.toggles.gamemode ? root.colGold : root.withAlpha(root.colBorder, 0.3)
+                                border.width: 1.0
 
                                 RowLayout {
-                                    anchors.centerIn: parent
-                                    spacing: 4
+                                    anchors.fill: parent
+                                    anchors.margins: 10
+                                    spacing: 10
+
+                                    Rectangle {
+                                        width: 28
+                                        height: 28
+                                        radius: 4
+                                        color: root.hubState && root.hubState.toggles && root.hubState.toggles.gamemode ? root.colGold : root.withAlpha(root.colAccent, 0.20)
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "🎮"
+                                            font.pixelSize: 14
+                                        }
+                                    }
+
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 1
+
+                                        Text {
+                                            text: "GameMode Turbo (144Hz)"
+                                            font.family: "Orbitron"
+                                            font.pixelSize: 11
+                                            font.bold: true
+                                            color: root.hubState && root.hubState.toggles && root.hubState.toggles.gamemode ? root.colGold : root.colFg
+                                        }
+
+                                        Text {
+                                            text: root.hubState && root.hubState.toggles && root.hubState.toggles.gamemode ? "RTX 3080 Ti Maximum Performance Active" : "Click to activate high performance governor"
+                                            font.pixelSize: 9
+                                            color: root.colFgMuted
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        height: 24
+                                        width: 48
+                                        radius: 12
+                                        color: root.hubState && root.hubState.toggles && root.hubState.toggles.gamemode ? root.colGold : root.colCard
+                                        border.color: root.hubState && root.hubState.toggles && root.hubState.toggles.gamemode ? root.colGold : root.colBorder
+                                        border.width: 1
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: root.hubState && root.hubState.toggles && root.hubState.toggles.gamemode ? "ON" : "OFF"
+                                            font.family: "Orbitron"
+                                            font.pixelSize: 9
+                                            font.bold: true
+                                            color: root.hubState && root.hubState.toggles && root.hubState.toggles.gamemode ? "#080c16" : root.colFgMuted
+                                        }
+                                    }
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.runCmd(["python3", "/home/gallo/.config/hypr/scripts/garchy_hub_service.py", "toggle-gamemode"])
+                                }
+                            }
+                        }
+                    }
+                }
+                // 4. Window Group Popup
+                PopupWindow {
+                    id: groupMenuPopup
+                    property var currentGroup: null
+                    visible: false
+                    anchor.window: barWin
+                    anchor.rect.x: 80
+                    anchor.rect.y: 52
+                    anchor.rect.width: 260
+                    anchor.rect.height: 0
+                    implicitWidth: 260
+                    implicitHeight: Math.min(300, (currentGroup ? currentGroup.windows.length * 36 : 0) + 40)
+                    color: "transparent"
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: root.popupRadius
+                        color: root.colBg
+                        border.color: root.colAccent
+                        border.width: 1.0
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 8
+                            spacing: 4
+
+                            Text {
+                                text: (groupMenuPopup.currentGroup ? groupMenuPopup.currentGroup.class : "Windows") + " (" + (groupMenuPopup.currentGroup ? groupMenuPopup.currentGroup.count : 0) + ")"
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: root.colAccent
+                            }
+
+                            ListView {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                clip: true
+                                model: groupMenuPopup.currentGroup ? groupMenuPopup.currentGroup.windows : []
+                                delegate: Rectangle {
+                                    width: ListView.view.width
+                                    height: 32
+                                    radius: root.buttonRadius
+                                    color: winItemMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : root.colBgAlt
+                                    border.color: modelData.is_active ? root.colAccent : "transparent"
+                                    border.width: 1
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        spacing: 6
+
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: modelData.title || "Window"
+                                            font.pixelSize: 10
+                                            color: modelData.is_active ? root.colAccent : root.colFg
+                                            elide: Text.ElideRight
+                                        }
+
+                                        Text {
+                                            text: "✕"
+                                            font.pixelSize: 10
+                                            color: winCloseMouse.containsMouse ? root.colRed : root.colFgMuted
+                                            MouseArea {
+                                                id: winCloseMouse
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: { root.dispatchAction("close", modelData.address); groupMenuPopup.visible = false; }
+                                            }
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        id: winItemMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: { root.dispatchAction("focus", modelData.address); groupMenuPopup.visible = false; }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+// 5. 📊 BENTO HARDWARE MONITOR OVERLAY (Sci-Fi Glass Dashboard)
+                PopupWindow {
+                    id: bentoOverlayPopup
+                    visible: false
+                    anchor.window: barWin
+                    anchor.rect.x: Math.max(10, barWin.width - 560)
+                    anchor.rect.y: 52
+                    anchor.rect.width: 540
+                    anchor.rect.height: 0
+                    implicitWidth: 540
+                    implicitHeight: bentoCol.implicitHeight + 28
+                    color: "transparent"
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: root.popupRadius
+                        color: root.colBg
+                        border.color: root.colAccent
+                        border.width: 1.0
+
+                        scale: bentoOverlayPopup.visible ? 1.0 : 0.95
+                        opacity: bentoOverlayPopup.visible ? 1.0 : 0.0
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
+                        Behavior on opacity { NumberAnimation { duration: 150 } }
+
+                        ColumnLayout {
+                            id: bentoCol
+                            anchors.fill: parent
+                            anchors.margins: 14
+                            spacing: 12
+
+                            // Header
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+
+                                Text {
+                                    text: "📊 Garchy Bento System Telemetry"
+                                    font.family: "Orbitron"
+                                    font.pixelSize: 13
+                                    font.bold: true
+                                    color: root.colAccent
+                                }
+
+                                Item { Layout.fillWidth: true }
+
+                                Rectangle {
+                                    height: 24
+                                    width: btopBtnTxt.implicitWidth + 14
+                                    radius: root.buttonRadius
+                                    color: root.colBgAlt
+                                    border.color: root.colAccent
+                                    border.width: 1.0
 
                                     Text {
-                                        text: "󰕾"
-                                        font.pixelSize: 11
+                                        id: btopBtnTxt
+                                        anchors.centerIn: parent
+                                        text: "󰞷 Open btop"
+                                        font.pixelSize: 10
+                                        font.bold: true
                                         color: root.colAccent
                                     }
 
-                                    Text {
-                                        text: "Mixer"
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        color: root.colFg
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: secPavuMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: {
-                                        root.runCmd(["pavucontrol"]);
-                                        secTrayMenuPopup.visible = false;
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.runCmd(["bash", "/home/gallo/.config/hypr/scripts/garchy-toggle.sh", "btop"]);
+                                            bentoOverlayPopup.visible = false;
+                                        }
                                     }
                                 }
                             }
 
-                            Rectangle {
+                            // 2x2 Bento Box Metrics Grid
+                            GridLayout {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 30
-                                radius: root.buttonRadius
-                                color: secThmQMouse.containsMouse ? root.withAlpha(root.colAccentAlt, 0.20) : root.colBgAlt
-                                border.color: root.colBorder
-                                border.width: 1
+                                columns: 2
+                                columnSpacing: 10
+                                rowSpacing: 10
 
-                                RowLayout {
-                                    anchors.centerIn: parent
-                                    spacing: 4
+                                // 1. CPU Box: AMD Ryzen 9 5900X (12C/24T)
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 90
+                                    radius: root.cardRadius
+                                    color: root.colBgAlt
+                                    border.color: root.withAlpha(root.colAccent, 0.4)
+                                    border.width: 1.0
 
-                                    Text {
-                                        text: "󰏘"
-                                        font.pixelSize: 11
-                                        color: root.colAccentAlt
-                                    }
+                                    ColumnLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 10
+                                        spacing: 4
 
-                                    Text {
-                                        text: "Theme"
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        color: root.colFg
+                                        RowLayout {
+                                            Text { text: "󰻠 CPU LOAD"; font.family: "Orbitron"; font.pixelSize: 12; font.bold: true; color: root.colAccent }
+                                            Item { Layout.fillWidth: true }
+                                            Text { text: root.cpuUsage; font.family: "Orbitron"; font.pixelSize: 15; font.bold: true; color: root.colFg }
+                                        }
+
+                                        Text { text: "AMD Ryzen 9 5900X (12 Cores / 24 Threads)"; font.pixelSize: 11; color: root.colFgMuted }
+
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 6
+                                            radius: root.buttonRadius
+                                            color: root.withAlpha(root.colBorder, 0.3)
+                                            Rectangle {
+                                                anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
+                                                width: parent.width * (parseFloat(root.cpuUsage.replace("%", "")) / 100.0)
+                                                radius: root.buttonRadius
+                                                color: root.colAccent
+                                            }
+                                        }
                                     }
                                 }
 
-                                MouseArea {
-                                    id: secThmQMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: {
-                                        root.runCmd(["bash", "-c", "~/.config/hypr/scripts/theme-switcher.sh"]);
-                                        secTrayMenuPopup.visible = false;
+                                // 2. GPU Box: NVIDIA GeForce RTX 3080 Ti
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 90
+                                    radius: root.cardRadius
+                                    color: root.colBgAlt
+                                    border.color: root.withAlpha(root.colGold, 0.4)
+                                    border.width: 1.0
+
+                                    ColumnLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 10
+                                        spacing: 4
+
+                                        RowLayout {
+                                            Text { text: "󰢮 GPU & THERMALS"; font.family: "Orbitron"; font.pixelSize: 12; font.bold: true; color: root.colGold }
+                                            Item { Layout.fillWidth: true }
+                                            Text { text: root.gpuUsage + " • " + root.gpuTemp; font.family: "Orbitron"; font.pixelSize: 14; font.bold: true; color: root.colFg }
+                                        }
+
+                                        Text { text: "NVIDIA GeForce RTX 3080 Ti (12GB GDDR6X)"; font.pixelSize: 11; color: root.colFgMuted }
+
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 6
+                                            radius: root.buttonRadius
+                                            color: root.withAlpha(root.colBorder, 0.3)
+                                            Rectangle {
+                                                anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
+                                                width: parent.width * (parseFloat(root.gpuUsage.replace("%", "")) / 100.0)
+                                                radius: root.buttonRadius
+                                                color: root.colGold
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // 3. RAM Box: 32GB High-Speed Allocation
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 90
+                                    radius: root.cardRadius
+                                    color: root.colBgAlt
+                                    border.color: root.withAlpha(root.colAccentAlt, 0.4)
+                                    border.width: 1.0
+
+                                    ColumnLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 10
+                                        spacing: 4
+
+                                        RowLayout {
+                                            Text { text: "󰍛 MEMORY ALLOCATION"; font.family: "Orbitron"; font.pixelSize: 12; font.bold: true; color: root.colAccentAlt }
+                                            Item { Layout.fillWidth: true }
+                                            Text { text: root.ramUsage; font.family: "Orbitron"; font.pixelSize: 15; font.bold: true; color: root.colFg }
+                                        }
+
+                                        Text { text: "32GB High-Speed DDR4 Memory Pool"; font.pixelSize: 11; color: root.colFgMuted }
+
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 6
+                                            radius: root.buttonRadius
+                                            color: root.withAlpha(root.colBorder, 0.3)
+                                            Rectangle {
+                                                anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
+                                                width: parent.width * (parseFloat(root.ramUsage.replace("%", "")) / 100.0)
+                                                radius: root.buttonRadius
+                                                color: root.colAccentAlt
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // 4. Storage Box: NVMe & Disk Health
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 90
+                                    radius: root.cardRadius
+                                    color: root.colBgAlt
+                                    border.color: root.withAlpha(root.colBorder, 0.4)
+                                    border.width: 1.0
+
+                                    ColumnLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 10
+                                        spacing: 4
+
+                                        RowLayout {
+                                            Text { text: "󰋊 NVMe STORAGE"; font.family: "Orbitron"; font.pixelSize: 10; font.bold: true; color: root.colFg }
+                                            Item { Layout.fillWidth: true }
+                                            Text { text: (root.diskStatus ? root.diskStatus.avail_gb : "85") + " GB FREE"; font.family: "Orbitron"; font.pixelSize: 11; font.bold: true; color: root.colGreen }
+                                        }
+
+                                        Text { text: "Samsung NVMe System Root (/)"; font.pixelSize: 9; color: root.colFgMuted }
+
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 6
+                                            radius: root.buttonRadius
+                                            color: root.withAlpha(root.colBorder, 0.3)
+                                            Rectangle {
+                                                anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
+                                                width: parent.width * 0.82
+                                                radius: root.buttonRadius
+                                                color: root.colGreen
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
+                    }
+                }
 
-                        // 4. POWER & SESSION BAR
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 32
-                            radius: root.cardRadius
-                            color: root.colBgAlt
-                            border.color: root.colBorder
-                            border.width: 1
+                // 6. 🔔 NOTIFICATION HISTORY GLASS DRAWER
+                PopupWindow {
+                    id: notifDrawerPopup
+                    visible: false
+                    anchor.window: barWin
+                    anchor.rect.x: Math.max(10, barWin.width - 380)
+                    anchor.rect.y: 52
+                    anchor.rect.width: 360
+                    anchor.rect.height: 0
+                    implicitWidth: 360
+                    implicitHeight: 460
+                    color: "transparent"
 
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: root.popupRadius
+                        color: root.colBg
+                        border.color: root.colAccent
+                        border.width: 1.0
+
+                        scale: notifDrawerPopup.visible ? 1.0 : 0.95
+                        opacity: notifDrawerPopup.visible ? 1.0 : 0.0
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
+                        Behavior on opacity { NumberAnimation { duration: 150 } }
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 14
+                            spacing: 10
+
+                            // Header: Title & Clear History Button
                             RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 8
-                                anchors.rightMargin: 8
+                                Layout.fillWidth: true
+                                spacing: 8
+
+                                Text {
+                                    text: "🔔 Notification History"
+                                    font.family: "Orbitron"
+                                    font.pixelSize: 13
+                                    font.bold: true
+                                    color: root.colAccent
+                                }
+
+                                Item { Layout.fillWidth: true }
 
                                 Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
+                                    height: 24
+                                    width: clearTxt.implicitWidth + 14
                                     radius: root.buttonRadius
-                                    color: secLckMouse.containsMouse ? root.withAlpha(root.colAccent, 0.20) : "transparent"
+                                    color: root.colBgAlt
+                                    border.color: root.colRed
+                                    border.width: 1.0
 
                                     Text {
+                                        id: clearTxt
                                         anchors.centerIn: parent
-                                        text: " Lock"
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        color: root.colFg
-                                    }
-
-                                    MouseArea {
-                                        id: secLckMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        onClicked: {
-                                            root.runCmd(["hyprlock"]);
-                                            secTrayMenuPopup.visible = false;
-                                        }
-                                    }
-                                }
-
-                                Rectangle {
-                                    width: 1
-                                    height: 16
-                                    color: root.colBorder
-                                }
-
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    radius: root.buttonRadius
-                                    color: secRbtMouse.containsMouse ? root.withAlpha(root.colGold, 0.20) : "transparent"
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "󰜉 Reboot"
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        color: root.colGold
-                                    }
-
-                                    MouseArea {
-                                        id: secRbtMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        onClicked: {
-                                            root.runCmd(["systemctl", "reboot"]);
-                                            secTrayMenuPopup.visible = false;
-                                        }
-                                    }
-                                }
-
-                                Rectangle {
-                                    width: 1
-                                    height: 16
-                                    color: root.colBorder
-                                }
-
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    radius: root.buttonRadius
-                                    color: secPwrMenuMouse.containsMouse ? root.withAlpha(root.colRed, 0.20) : "transparent"
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: " Power"
-                                        font.pixelSize: 10
+                                        text: "✕ Clear All"
+                                        font.pixelSize: 9
                                         font.bold: true
                                         color: root.colRed
                                     }
 
                                     MouseArea {
-                                        id: secPwrMenuMouse
                                         anchors.fill: parent
-                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
                                         onClicked: {
-                                            root.runCmd(["wlogout", "-b", "2", "-c", "20", "-r", "20"]);
-                                            secTrayMenuPopup.visible = false;
+                                            root.runCmd(["dunstctl", "history-clear"]);
+                                            root.notifHistory = [];
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Notification List View
+                            ListView {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                clip: true
+                                spacing: 6
+
+                                model: root.notifHistory && root.notifHistory.length > 0 ? root.notifHistory : []
+
+                                delegate: Rectangle {
+                                    width: ListView.view.width
+                                    height: notifCardCol.implicitHeight + 16
+                                    radius: root.cardRadius
+                                    color: root.colBgAlt
+                                    border.color: root.withAlpha(root.colBorder, 0.35)
+                                    border.width: 1.0
+
+                                    ColumnLayout {
+                                        id: notifCardCol
+                                        anchors.fill: parent
+                                        anchors.margins: 8
+                                        spacing: 3
+
+                                        RowLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 6
+
+                                            Text {
+                                                text: modelData.app || "System"
+                                                font.pixelSize: 10
+                                                font.bold: true
+                                                color: root.colAccent
+                                            }
+
+                                            Item { Layout.fillWidth: true }
+
+                                            Text {
+                                                text: "✕"
+                                                font.pixelSize: 10
+                                                color: root.colFgMuted
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    onClicked: root.runCmd(["dunstctl", "history-rm", String(modelData.id)])
+                                                }
+                                            }
+                                        }
+
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: modelData.summary || ""
+                                            font.pixelSize: 11
+                                            font.bold: true
+                                            color: root.colFg
+                                            elide: Text.ElideRight
+                                        }
+
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: modelData.body || ""
+                                            font.pixelSize: 10
+                                            color: root.colFgMuted
+                                            wrapMode: Text.WordWrap
+                                            maximumLineCount: 3
+                                            elide: Text.ElideRight
+                                        }
+                                    }
+                                }
+
+                                                                // Empty State Placeholder
+                                Item {
+                                    anchors.centerIn: parent
+                                    visible: !root.notifHistory || root.notifHistory.length === 0
+                                    ColumnLayout {
+                                        anchors.centerIn: parent
+                                        spacing: 6
+                                        Text { text: "󰂛"; font.pixelSize: 32; color: root.colFgMuted; Layout.alignment: Qt.AlignHCenter }
+                                        Text { text: "No Notifications Yet"; font.pixelSize: 11; color: root.colFgMuted; Layout.alignment: Qt.AlignHCenter }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 7. 🧠 GALLY AI NEURAL STUDIO POPUP FLYOUT
+                // -------------------------------------------------------------
+                PopupWindow {
+                    id: gallyAiPopup
+                    visible: false
+                    anchor.window: barWin
+                    anchor.rect.x: Math.max(10, barWin.width - 560)
+                    anchor.rect.y: 52
+                    anchor.rect.width: 540
+                    anchor.rect.height: 0
+                    implicitWidth: 540
+                    implicitHeight: 640
+                    color: "transparent"
+
+                    // Wire hotkey toggle trigger
+                    Connections {
+                        target: root
+                        function onAiToggleCountChanged() {
+                            if (barWin.isPrimary) barWin.toggleFlyout(gallyAiPopup);
+                        }
+                        function onChatHistoryChanged() {
+                            if (chatView && chatView.count > 0) chatView.positionViewAtEnd();
+                        }
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: root.popupRadius
+                        color: root.colBg
+                        border.color: root.colAccent
+                        border.width: 1.0
+
+                        scale: gallyAiPopup.visible ? 1.0 : 0.95
+                        opacity: gallyAiPopup.visible ? 1.0 : 0.0
+                        Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutBack } }
+                        Behavior on opacity { NumberAnimation { duration: 130 } }
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 14
+                            spacing: 10
+
+                            // 1. Header (Emblem, Model Selector, Voice Toggle, Clear, Close)
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+
+                                Rectangle {
+                                    width: 34
+                                    height: 34
+                                    radius: 5
+                                    color: root.withAlpha(root.colAccent, 0.22)
+                                    border.color: root.colAccent
+                                    border.width: 1.0
+                                    Text { anchors.centerIn: parent; text: "󰚩"; font.pixelSize: 18; color: root.colAccent }
+                                }
+
+                                ColumnLayout {
+                                    spacing: 1
+                                    Text {
+                                        text: "Gally AI Neural Studio"
+                                        font.family: "Orbitron"
+                                        font.pixelSize: 14
+                                        font.bold: true
+                                        color: root.colFg
+                                    }
+                                    Text {
+                                        text: "Cephalon 3-Tier Multi-Provider Pipeline"
+                                        font.pixelSize: 10
+                                        color: root.colFgMuted
+                                    }
+                                }
+
+                                Item { Layout.fillWidth: true }
+
+                                // Voice Toggle
+                                Rectangle {
+                                    height: 28
+                                    width: vTxt.implicitWidth + 14
+                                    radius: 4
+                                    color: root.isAiVoiceEnabled ? root.withAlpha(root.colAccent, 0.25) : root.colBgAlt
+                                    border.color: root.isAiVoiceEnabled ? root.colAccent : root.withAlpha(root.colBorder, 0.35)
+                                    border.width: 1.0
+                                    RowLayout { id: vTxt; anchors.centerIn: parent; spacing: 4; Text { text: root.isAiVoiceEnabled ? "🔊" : "🔇"; font.pixelSize: 11 } Text { text: root.isAiVoiceEnabled ? "Voice ON" : "Mute"; font.pixelSize: 11; font.bold: true; color: root.isAiVoiceEnabled ? root.colAccent : root.colFgMuted } }
+                                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.toggleAiVoice() }
+                                }
+
+                                // Clear Chat
+                                Rectangle {
+                                    height: 28
+                                    width: 28
+                                    radius: 4
+                                    color: clrM.containsMouse ? root.withAlpha(root.colRed, 0.3) : root.colBgAlt
+                                    border.color: clrM.containsMouse ? root.colRed : root.withAlpha(root.colBorder, 0.35)
+                                    border.width: 1.0
+                                    Text { anchors.centerIn: parent; text: "🗑️"; font.pixelSize: 12 }
+                                    MouseArea { id: clrM; anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.clearAiChat() }
+                                }
+
+                                // Close Button
+                                Rectangle {
+                                    width: 28
+                                    height: 28
+                                    radius: 4
+                                    color: clsM.containsMouse ? root.withAlpha(root.colRed, 0.3) : root.colBgAlt
+                                    border.color: clsM.containsMouse ? root.colRed : root.withAlpha(root.colBorder, 0.35)
+                                    border.width: 1.0
+                                    Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: 12; font.bold: true; color: clsM.containsMouse ? root.colRed : root.colFgMuted }
+                                    MouseArea { id: clsM; anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: gallyAiPopup.visible = false }
+                                }
+                            }
+
+                            // 2. 3-Tier Neural Model Chips
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 5
+
+                                Repeater {
+                                    model: [
+                                        { id: "qwen2.5:0.5b", label: "⚡ Qwen (T1)" },
+                                        { id: "gally-cephalon-ai", label: "🌌 Cephalon (T2)" },
+                                        { id: "hermes3:8b", label: "🚀 Hermes (T3)" },
+                                        { id: "gemini-1.5-flash", label: "✨ Gemini" }
+                                    ]
+
+                                    Rectangle {
+                                        property bool isSel: root.activeAiModel === modelData.id
+                                        Layout.fillWidth: true
+                                        height: 26
+                                        radius: 4
+                                        color: isSel ? root.colGold : (mChipM.containsMouse ? root.withAlpha(root.colGold, 0.22) : root.colBgAlt)
+                                        border.color: isSel ? root.colGold : root.withAlpha(root.colBorder, 0.3)
+                                        border.width: 1.0
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: modelData.label
+                                            font.pixelSize: 10
+                                            font.bold: isSel
+                                            color: isSel ? "#080c16" : (mChipM.containsMouse ? root.colGold : root.colFg)
+                                        }
+
+                                        MouseArea {
+                                            id: mChipM
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: root.setAiModel(modelData.id)
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 3. Live Chat History Viewport
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                radius: 6
+                                color: root.colBgAlt
+                                border.color: root.withAlpha(root.colBorder, 0.25)
+                                border.width: 1.0
+                                clip: true
+
+                                ListView {
+                                    id: chatView
+                                    anchors.fill: parent
+                                    anchors.margins: 10
+                                    spacing: 8
+                                    clip: true
+                                    model: root.chatHistory || []
+
+                                    ScrollBar.vertical: ScrollBar {
+                                        policy: ScrollBar.AsNeeded
+                                        contentItem: Rectangle { implicitWidth: 6; radius: 3; color: root.withAlpha(root.colAccent, 0.5) }
+                                    }
+
+                                    delegate: Item {
+                                        width: chatView.width - 12
+                                        height: bubbleCard.implicitHeight + 6
+                                        property bool isUser: modelData.role === "user"
+
+                                        Rectangle {
+                                            id: bubbleCard
+                                            anchors.right: isUser ? parent.right : undefined
+                                            anchors.left: isUser ? undefined : parent.left
+                                            width: Math.min(parent.width * 0.88, bubbleCol.implicitWidth + 20)
+                                            height: bubbleCol.implicitHeight + 14
+                                            radius: 6
+                                            color: isUser ? root.withAlpha(root.colAccentAlt, 0.25) : root.colCard
+                                            border.color: isUser ? root.colAccent : root.withAlpha(root.colGold, 0.35)
+                                            border.width: 1.0
+
+                                            ColumnLayout {
+                                                id: bubbleCol
+                                                anchors.fill: parent
+                                                anchors.margins: 8
+                                                spacing: 4
+
+                                                RowLayout {
+                                                    Layout.fillWidth: true
+                                                    spacing: 6
+                                                    Text { text: isUser ? "󰣇 gallo" : "󰚩 Cephalon Gally"; font.family: "Orbitron"; font.pixelSize: 10; font.bold: true; color: isUser ? root.colAccent : root.colGold }
+                                                    Item { Layout.fillWidth: true }
+                                                    Text { text: modelData.timestamp || ""; font.pixelSize: 9; color: root.colFgMuted }
+                                                }
+
+                                                TextEdit {
+                                                    Layout.fillWidth: true
+                                                    text: modelData.text || ""
+                                                    font.pixelSize: 11
+                                                    color: root.colFg
+                                                    wrapMode: TextEdit.Wrap
+                                                    readOnly: true
+                                                    selectByMouse: true
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 4. Quick Action Chips
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 5
+
+                                Repeater {
+                                    model: [
+                                        "🎮 144Hz Gaming Mode",
+                                        "📊 System Diagnostics",
+                                        "☢️ Fallout 4 Health"
+                                    ]
+
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        height: 24
+                                        radius: 4
+                                        color: qM.containsMouse ? root.withAlpha(root.colAccent, 0.22) : root.colBgAlt
+                                        border.color: qM.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.3)
+                                        border.width: 1.0
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: modelData
+                                            font.pixelSize: 9
+                                            font.bold: true
+                                            color: qM.containsMouse ? root.colAccent : root.colFgMuted
+                                        }
+
+                                        MouseArea {
+                                            id: qM
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: root.sendAiPrompt(modelData)
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 5. Prompt Input Bar
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 40
+                                radius: 5
+                                color: root.colBgAlt
+                                border.color: flyoutPromptInput.activeFocus ? root.colAccent : root.withAlpha(root.colBorder, 0.35)
+                                border.width: flyoutPromptInput.activeFocus ? 1.5 : 1.0
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 6
+                                    spacing: 8
+
+                                    Text { text: "💬"; font.pixelSize: 13 }
+
+                                    TextInput {
+                                        id: flyoutPromptInput
+                                        Layout.fillWidth: true
+                                        color: root.colFg
+                                        font.pixelSize: 12
+                                        selectByMouse: true
+
+                                        Keys.onReturnPressed: {
+                                            if (text.trim()) {
+                                                root.sendAiPrompt(text.trim());
+                                                text = "";
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        visible: !flyoutPromptInput.text
+                                        text: "Ask Gally AI or type system command..."
+                                        font.pixelSize: 11
+                                        color: root.colFgMuted
+                                    }
+
+                                    Rectangle {
+                                        height: 28
+                                        width: sndTxt.implicitWidth + 14
+                                        radius: 4
+                                        color: sndM.containsMouse ? root.colAccent : root.withAlpha(root.colAccent, 0.3)
+                                        border.color: root.colAccent
+                                        border.width: 1.0
+
+                                        RowLayout {
+                                            id: sndTxt
+                                            anchors.centerIn: parent
+                                            spacing: 4
+                                            Text { text: "🚀"; font.pixelSize: 11 }
+                                            Text { text: "Send"; font.pixelSize: 11; font.bold: true; color: sndM.containsMouse ? "#080c16" : root.colFg }
+                                        }
+
+                                        MouseArea {
+                                            id: sndM
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                if (flyoutPromptInput.text.trim()) {
+                                                    root.sendAiPrompt(flyoutPromptInput.text.trim());
+                                                    flyoutPromptInput.text = "";
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -5166,18 +3109,17 @@ ShellRoot {
                         }
                     }
                 }
+
             }
         }
     }
-}
 
-
-    // ========================================================
-    // 🕹️ RETRO GAMING BOTTOM CENTERED BOUNCY DOCK (DP-2)
-    // ========================================================
+    // =========================================================================
+    // 🔊 FLOATING ON-SCREEN DISPLAY (OSD) OVERLAY
+    // =========================================================================
     PanelWindow {
-        id: winMainBottom
-        visible: root.isRetroGaming
+        id: winOSD
+        visible: root.osdVisible
         screen: {
             for (var i = 0; i < Quickshell.screens.length; i++) {
                 if (Quickshell.screens[i].name === "DP-2") return Quickshell.screens[i];
@@ -5186,325 +3128,59 @@ ShellRoot {
         }
         anchors {
             bottom: true
-            left: true
-            right: true
         }
-        implicitHeight: 68
+        implicitWidth: 260
+        implicitHeight: 100
         color: "transparent"
-        WlrLayershell.layer: WlrLayer.Top
-        WlrLayershell.namespace: "garchy-dock"
-        exclusionMode: ExclusionMode.Auto
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.namespace: "garchy-osd"
 
-        // Floating Centered Obsidian Retro Dock
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 8
-            height: 52
-            width: mainDockLayout.implicitWidth + 24
-            radius: 18
+            anchors.bottomMargin: 30
+            width: 260
+            height: 48
+            radius: root.buttonRadius
             color: root.colBg
             border.color: root.colAccent
-            border.width: 1.5
+            border.width: 1.0
 
             RowLayout {
-                id: mainDockLayout
-                anchors.centerIn: parent
-                spacing: 8
+                anchors.fill: parent
+                anchors.margins: 10
+                spacing: 10
 
-                // 📌 Pinned Apps with Bouncy Hover Animation
-                Row {
-                    spacing: 6
-                    Repeater {
-                        model: root.pinnedApps || []
-                        Rectangle {
-                            id: pinnedDockItem
-                            width: 38
-                            height: 38
-                            radius: 12
-                            color: dockPinMouse.containsMouse ? root.withAlpha(root.colAccent, 0.28) : root.colBgAlt
-                            border.color: dockPinMouse.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.3)
-                            border.width: 1
-                            scale: dockPinMouse.containsMouse ? 1.25 : 1.0
-                            y: dockPinMouse.containsMouse ? -6 : 0
-
-                            Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutBack } }
-                            Behavior on y { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
-
-                            Image {
-                                anchors.centerIn: parent
-                                width: 24
-                                height: 24
-                                source: modelData.icon_path ? ("file://" + modelData.icon_path) : (Quickshell.iconPath(modelData.icon || modelData.id))
-                                fillMode: Image.PreserveAspectFit
-                            }
-
-                            MouseArea {
-                                id: dockPinMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.runCmd(["bash", "-c", modelData.cmd + " & disown"])
-                            }
-                        }
-                    }
+                Text {
+                    text: root.osdEvent && root.osdEvent.muted ? "󰝟" : (root.osdEvent && root.osdEvent.volume > 50 ? "󰕾" : "󰖀")
+                    font.pixelSize: 18
+                    color: root.osdEvent && root.osdEvent.muted ? root.colRed : root.colAccent
                 }
 
-                // Vertical Divider
                 Rectangle {
-                    visible: (root.pinnedApps && root.pinnedApps.length > 0) && (root.taskbarState && root.taskbarState.groups && root.taskbarState.groups.length > 0)
-                    width: 1.5
-                    height: 26
+                    Layout.fillWidth: true
+                    height: 6
+                    radius: root.buttonRadius
                     color: root.withAlpha(root.colBorder, 0.4)
+
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: parent.width * ((root.osdEvent ? root.osdEvent.volume : 50) / 100.0)
+                        radius: root.buttonRadius
+                        color: root.osdEvent && root.osdEvent.muted ? root.colRed : root.colAccent
+                    }
                 }
 
-                // 🪟 Running & Minimized Windows with Bouncy Hover Animation
-                Row {
-                    spacing: 6
-                    Repeater {
-                        model: (root.taskbarState && root.taskbarState.groups) ? root.taskbarState.groups : []
-                        Rectangle {
-                            id: runningDockItem
-                            property var groupData: modelData
-                            property bool isGroupActive: groupData.windows && groupData.windows.some(w => w.address === root.taskbarState.active_addr)
-                            property bool isGroupMinimized: groupData.windows && groupData.windows.every(w => (root.taskbarState.minimized_windows || []).indexOf(w.address) !== -1)
-
-                            width: 38
-                            height: 38
-                            radius: 12
-                            color: dockTaskMouse.containsMouse ? root.withAlpha(root.colAccentAlt, 0.28) : (isGroupActive ? root.withAlpha(root.colAccent, 0.22) : root.colBgAlt)
-                            border.color: isGroupActive ? root.colAccent : (dockTaskMouse.containsMouse ? root.colAccentAlt : root.withAlpha(root.colBorder, 0.3))
-                            border.width: isGroupActive ? 1.5 : 1
-                            scale: dockTaskMouse.containsMouse ? 1.25 : 1.0
-                            y: dockTaskMouse.containsMouse ? -6 : 0
-
-                            Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutBack } }
-                            Behavior on y { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
-
-                            Image {
-                                anchors.centerIn: parent
-                                width: 24
-                                height: 24
-                                source: groupData.icon_path ? ("file://" + groupData.icon_path) : (Quickshell.iconPath(groupData.icon || groupData.app_id || groupData.wm_class))
-                                fillMode: Image.PreserveAspectFit
-                            }
-
-                            // Active / Running Indicator Dot
-                            Rectangle {
-                                anchors.bottom: parent.bottom
-                                anchors.bottomMargin: 3
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                width: isGroupActive ? 12 : 5
-                                height: 3
-                                radius: 1.5
-                                color: isGroupActive ? root.colAccent : root.colAccentAlt
-                                opacity: isGroupMinimized ? 0.4 : 1.0
-                                Behavior on width { NumberAnimation { duration: 100 } }
-                            }
-
-                            MouseArea {
-                                id: dockTaskMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                acceptedButtons: Qt.LeftButton | Qt.RightButton
-                                onClicked: mouse => {
-                                    if (mouse.button === Qt.LeftButton) {
-                                        if (groupData.windows.length === 1) {
-                                            var w = groupData.windows[0];
-                                            if (w.address === root.taskbarState.active_addr) {
-                                                root.dispatchAction("minimize", w.address);
-                                            } else {
-                                                root.dispatchAction("activate", w.address);
-                                            }
-                                        } else {
-                                            groupMenuPopup.currentGroup = groupData;
-                                            groupMenuPopup.visible = true;
-                                        }
-                                    } else {
-                                        if (groupData.windows.length === 1) {
-                                            root.dispatchAction("close", groupData.windows[0].address);
-                                        } else {
-                                            groupMenuPopup.currentGroup = groupData;
-                                            groupMenuPopup.visible = true;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                Text {
+                    text: (root.osdEvent ? root.osdEvent.volume : 50) + "%"
+                    font.family: "Orbitron"
+                    font.pixelSize: 11
+                    font.bold: true
+                    color: root.colFg
                 }
             }
         }
     }
-
-
-    // ========================================================
-    // 🕹️ RETRO GAMING BOTTOM CENTERED BOUNCY DOCK (DP-1)
-    // ========================================================
-    PanelWindow {
-        id: winSecBottom
-        visible: root.isRetroGaming
-        screen: {
-            for (var i = 0; i < Quickshell.screens.length; i++) {
-                if (Quickshell.screens[i].name === "DP-1") return Quickshell.screens[i];
-            }
-            return (Quickshell.screens.length > 1 ? Quickshell.screens[1] : Quickshell.screens[0]);
-        }
-        anchors {
-            bottom: true
-            left: true
-            right: true
-        }
-        implicitHeight: 68
-        color: "transparent"
-        WlrLayershell.layer: WlrLayer.Top
-        WlrLayershell.namespace: "garchy-dock-sec"
-        exclusionMode: ExclusionMode.Auto
-
-        // Floating Centered Obsidian Retro Dock
-        Rectangle {
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 8
-            height: 52
-            width: secMainDockLayout.implicitWidth + 24
-            radius: 18
-            color: root.colBg
-            border.color: root.colAccent
-            border.width: 1.5
-
-            RowLayout {
-                id: secMainDockLayout
-                anchors.centerIn: parent
-                spacing: 8
-
-                // 📌 Pinned Apps with Bouncy Hover Animation
-                Row {
-                    spacing: 6
-                    Repeater {
-                        model: root.pinnedApps || []
-                        Rectangle {
-                            id: secPinnedDockItem
-                            width: 38
-                            height: 38
-                            radius: 12
-                            color: secDockPinMouse.containsMouse ? root.withAlpha(root.colAccent, 0.28) : root.colBgAlt
-                            border.color: secDockPinMouse.containsMouse ? root.colAccent : root.withAlpha(root.colBorder, 0.3)
-                            border.width: 1
-                            scale: secDockPinMouse.containsMouse ? 1.25 : 1.0
-                            y: secDockPinMouse.containsMouse ? -6 : 0
-
-                            Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutBack } }
-                            Behavior on y { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
-
-                            Image {
-                                anchors.centerIn: parent
-                                width: 24
-                                height: 24
-                                source: modelData.icon_path ? ("file://" + modelData.icon_path) : (Quickshell.iconPath(modelData.icon || modelData.id))
-                                fillMode: Image.PreserveAspectFit
-                            }
-
-                            MouseArea {
-                                id: secDockPinMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.runCmd(["bash", "-c", modelData.cmd + " & disown"])
-                            }
-                        }
-                    }
-                }
-
-                // Vertical Divider
-                Rectangle {
-                    visible: (root.pinnedApps && root.pinnedApps.length > 0) && (root.taskbarState && root.taskbarState.groups && root.taskbarState.groups.length > 0)
-                    width: 1.5
-                    height: 26
-                    color: root.withAlpha(root.colBorder, 0.4)
-                }
-
-                // 🪟 Running & Minimized Windows with Bouncy Hover Animation
-                Row {
-                    spacing: 6
-                    Repeater {
-                        model: (root.taskbarState && root.taskbarState.groups) ? root.taskbarState.groups : []
-                        Rectangle {
-                            id: secRunningDockItem
-                            property var groupData: modelData
-                            property bool isGroupActive: groupData.windows && groupData.windows.some(w => w.address === root.taskbarState.active_addr)
-                            property bool isGroupMinimized: groupData.windows && groupData.windows.every(w => (root.taskbarState.minimized_windows || []).indexOf(w.address) !== -1)
-
-                            width: 38
-                            height: 38
-                            radius: 12
-                            color: secDockTaskMouse.containsMouse ? root.withAlpha(root.colAccentAlt, 0.28) : (isGroupActive ? root.withAlpha(root.colAccent, 0.22) : root.colBgAlt)
-                            border.color: isGroupActive ? root.colAccent : (secDockTaskMouse.containsMouse ? root.colAccentAlt : root.withAlpha(root.colBorder, 0.3))
-                            border.width: isGroupActive ? 1.5 : 1
-                            scale: secDockTaskMouse.containsMouse ? 1.25 : 1.0
-                            y: secDockTaskMouse.containsMouse ? -6 : 0
-
-                            Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutBack } }
-                            Behavior on y { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
-
-                            Image {
-                                anchors.centerIn: parent
-                                width: 24
-                                height: 24
-                                source: groupData.icon_path ? ("file://" + groupData.icon_path) : (Quickshell.iconPath(groupData.icon || groupData.app_id || groupData.wm_class))
-                                fillMode: Image.PreserveAspectFit
-                            }
-
-                            // Active / Running Indicator Dot
-                            Rectangle {
-                                anchors.bottom: parent.bottom
-                                anchors.bottomMargin: 3
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                width: isGroupActive ? 12 : 5
-                                height: 3
-                                radius: 1.5
-                                color: isGroupActive ? root.colAccent : root.colAccentAlt
-                                opacity: isGroupMinimized ? 0.4 : 1.0
-                                Behavior on width { NumberAnimation { duration: 100 } }
-                            }
-
-                            MouseArea {
-                                id: secDockTaskMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                acceptedButtons: Qt.LeftButton | Qt.RightButton
-                                onClicked: mouse => {
-                                    if (mouse.button === Qt.LeftButton) {
-                                        if (groupData.windows.length === 1) {
-                                            var w = groupData.windows[0];
-                                            if (w.address === root.taskbarState.active_addr) {
-                                                root.dispatchAction("minimize", w.address);
-                                            } else {
-                                                root.dispatchAction("activate", w.address);
-                                            }
-                                        } else {
-                                            secGroupMenuPopup.currentGroup = groupData;
-                                            secGroupMenuPopup.visible = true;
-                                        }
-                                    } else {
-                                        if (groupData.windows.length === 1) {
-                                            root.dispatchAction("close", groupData.windows[0].address);
-                                        } else {
-                                            secGroupMenuPopup.currentGroup = groupData;
-                                            secGroupMenuPopup.visible = true;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
 }
-
-

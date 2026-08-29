@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Garchy OS — Quickshell Bar Daemon Launcher
+killall quickshell 2>/dev/null || true
+pkill -f "taskbar_service.py" 2>/dev/null || true
+pkill -f "garchy_cava_service.py" 2>/dev/null || true
+pkill -f "garchy_telemetry_service.py" 2>/dev/null || true
+pkill -f "garchy_hub_service.py" 2>/dev/null || true
+sleep 0.2
+
+# Start background hardware telemetry, CAVA & unified Hub services
+python3 "$HOME/.config/hypr/scripts/garchy_telemetry_service.py" &
+python3 "$HOME/.config/hypr/scripts/garchy_hub_service.py" &
+
+# Detached background launch for Quickshell
+nohup quickshell -p "$HOME/.config/quickshell/garchy-bar/" -d > /tmp/quickshell_bar.log 2>&1 &
+disown

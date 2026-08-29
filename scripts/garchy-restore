@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# 🌌 Garchy OS — System Rollback & Snapshot Restore Utility
+# ==============================================================================
+
+echo "🛡️ [Garchy OS] System Snapshot & Rollback Manager"
+echo "========================================================="
+
+if which snapper >/dev/null 2>&1; then
+    echo "📋 Available Snapper Snapshots:"
+    sudo snapper -c root list
+    echo ""
+    read -p "Enter Snapshot Number to Roll Back to (or press Ctrl+C to cancel): " SNAP_NUM
+    if [ -n "$SNAP_NUM" ]; then
+        echo "Rolling back system to snapshot #$SNAP_NUM..."
+        sudo snapper --ambit classic rollback "$SNAP_NUM"
+        echo "✔ Rollback prepared. Please reboot your system to apply changes."
+    fi
+elif which timeshift >/dev/null 2>&1; then
+    echo "📋 Available Timeshift Snapshots:"
+    sudo timeshift --list
+    echo ""
+    echo "To restore with GUI, run: sudo timeshift-gtk"
+    echo "To restore via CLI, run: sudo timeshift --restore"
+    read -p "Launch Timeshift restore wizard? [Y/n]: " CONFIRM
+    if [[ "$CONFIRM" =~ ^[Yy]$ || -z "$CONFIRM" ]]; then
+        sudo timeshift --restore
+    fi
+else
+    echo "ℹ Snapper or Timeshift not yet initialized on this drive."
+    echo "You can view bootloader snapshots directly in your GRUB / Limine boot menu during startup."
+fi

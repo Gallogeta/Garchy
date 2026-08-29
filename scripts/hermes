@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+#
+# hermes - Local & Secure Hermes AI Terminal Wrapper
+#
+
+set -e
+
+# Configuration
+OLLAMA_CONTAINER="ollama"
+HERMES_IMAGE="nousresearch/hermes-agent:latest"
+OLLAMA_IMAGE="ollama/ollama:latest"
+
+# Colors for terminal output
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Check if docker daemon is running
+if ! docker ps >/dev/null 2>&1; then
+    echo -e "${YELLOW}Error: Docker is not running or you do not have permissions to run it.${NC}"
+    echo -e "Please start the Docker service (e.g., 'systemctl start docker') and try again."
+    exit 1
+fi
+
+# Determine if Ollama container is already running
+OLLAMA_WAS_RUNNING=true
+if ! docker ps --filter "name=^${OLLAMA_CONTAINER}$" --format '{{.Names}}' | grep -q "^${OLLAMA_CONTAINER}$"; then
+    OLLAMA_WAS_RUNNING=false
+    echo -e "${BLUE}Starting local Ollama container (GPU-accelerated)...${NC}"
+    
+    # Check if container exists (stopped)
+    if docker ps -a --filter "name=^${OLLAMA_CONTAINER}$" --format '{{.Names}}' | grep -q "^${OLLAMA_CONTAINER}$"; then
+        docker start "${OLLAMA_CONTAINER}" >/dev/null
+    else
+        # Create and start Ollama container with NVIDIA GPU support
+        docker run -d \
+            --gpus all \
+            -v ollama_data:/root/.ollama \
+            -p 127.0.0.1:11434:11434 \
+            --name "${OLLAMA_CONTAINER}" \
+            "${OLLAMA_IMAGE}" >/dev/null
+    fi
+fi
+
+# Wait for Ollama API to respond
+if [ "$OLLAMA_WAS_RUNNING" = false ]; then
+    echo -n "Waiting for Ollama API to respond..."
+    OLLAMA_READY=false
+    for i in {1..30}; do
+        if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:11434/ | grep -E "200|404" >/dev/null; then
+            OLLAMA_READY=true
+            echo " Ready!"
+            break
+        fi
+        echo -n "."
+        sleep 1
+    done
+    if [ "$OLLAMA_READY" = false ]; then
+        echo -e "\n${YELLOW}Error: Failed to connect to local Ollama API.${NC}"
+        # Stop ollama if we started it
+        docker stop "${OLLAMA_CONTAINER}" >/dev/null
+        exit 1
+    fi
+fi
+
+# Ensure the hermes3 model is pulled locally
+if ! docker exec "${OLLAMA_CONTAINER}" ollama list | grep -q -E '^hermes3'; then
+    echo -e "${YELLOW}Downloading Nous Hermes 3 model (approx 4.7 GB)...${NC}"
+    if [ -t 0 ]; then
+        docker exec -it "${OLLAMA_CONTAINER}" ollama pull hermes3
+    else
+        docker exec "${OLLAMA_CONTAINER}" ollama pull hermes3
+    fi
+fi
+
+# Run Hermes Agent interactive CLI
+echo -e "${GREEN}Activating Hermes AI...${NC}"
+docker run -it --rm \
+    --network host \
+    -e HERMES_UID=$(id -u) \
+    -e HERMES_GID=$(id -g) \
+    -v /home/gallo/.hermes:/opt/data \
+    -e TERM="$TERM" \
+    --name hermes-agent-cli \
+    "${HERMES_IMAGE}" "$@"
+
+# If we started Ollama, stop it to keep it offline when not in use
+if [ "$OLLAMA_WAS_RUNNING" = false ]; then
+    echo -e "${BLUE}Deactivating Hermes AI (stopping local Ollama)...${NC}"
+    docker stop "${OLLAMA_CONTAINER}" >/dev/null
+    echo -e "${GREEN}Hermes AI is offline.${NC}"
+fi

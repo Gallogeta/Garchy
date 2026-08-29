@@ -117,6 +117,7 @@ def update_hyprland_look_lua(theme_dict):
             f.write(content)
 
         subprocess.run(["hyprctl", "reload"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["hyprctl", "keyword", "decoration:rounding", str(rounding)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception as err:
         print(f"Error updating look.lua: {err}", file=sys.stderr)
 

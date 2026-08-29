@@ -1,0 +1,56 @@
+[
+  {
+    "name": "Home",
+    "icon": "󰋜",
+    "command": "thunar /home/gallo",
+    "description": "File Manager"
+  },
+  {
+    "name": "Terminal",
+    "icon": "",
+    "command": "kitty",
+    "description": "Kitty Terminal"
+  },
+  {
+    "name": "Brave",
+    "icon": "󰖟",
+    "command": "brave",
+    "description": "Web Browser"
+  },
+  {
+    "name": "Firefox",
+    "icon": "󰈹",
+    "command": "firefox",
+    "description": "Mozilla Firefox"
+  },
+  {
+    "name": "Steam",
+    "icon": "󰓓",
+    "command": "steam",
+    "description": "Gaming Platform"
+  },
+  {
+    "name": "Heroic",
+    "icon": "󰊴",
+    "command": "heroic",
+    "description": "Heroic Games Launcher"
+  },
+  {
+    "name": "Kdenlive",
+    "icon": "󰕼",
+    "command": "kdenlive",
+    "description": "Video Editor"
+  },
+  {
+    "name": "CODE",
+    "icon": "󰨞",
+    "command": "code",
+    "description": "VS Code Editor"
+  },
+  {
+    "name": "EasyEffects",
+    "icon": "󰓃",
+    "command": "easyeffects",
+    "description": "Audio Equalizer"
+  }
+]

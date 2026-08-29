@@ -1,0 +1,79 @@
+#!/bin/bash
+# ==============================================================================
+# Garchy OS — Universal Gaming Accelerator & GameMode Orchestrator
+# Hardware: AMD Ryzen 9 5900X | NVIDIA RTX 3080 Ti | Dual 144Hz Displays
+# ==============================================================================
+
+show_help() {
+    echo "🎮 Garchy OS Game Launcher & Compatibility Tool"
+    echo "Usage:"
+    echo "  garchy-game run <executable> [args...]   Launch any game with GameMode & RTX optimizations"
+    echo "  garchy-game fallout4 [--hud]             Launch Fallout 4 GOTY with F4SE, 144Hz & GameMode"
+    echo "  garchy-game status                       Check GameMode, GPU governor, and display refresh rates"
+    echo "  garchy-game hud [on|off]                 Toggle MangoHud overlay"
+    echo ""
+}
+
+case "$1" in
+    fallout4)
+        shift
+        exec /home/gallo/launch_fallout4.sh "$@"
+        ;;
+    run)
+        shift
+        if [ -z "$1" ]; then
+            echo "❌ Please specify an executable to run."
+            exit 1
+        fi
+        export DXVK_ASYNC=1
+        export DXVK_STATE_CACHE=1
+        export PROTON_ENABLE_NVAPI=1
+        export PROTON_HIDE_NVIDIA_GPU=0
+        export __GL_SHADER_DISK_CACHE=1
+        export __GL_SHADER_DISK_CACHE_SKIP_CLEANUP=1
+        
+        if command -v gamemoderun >/dev/null 2>&1; then
+            exec gamemoderun "$@"
+        else
+            exec "$@"
+        fi
+        ;;
+    status)
+        echo "=================================================="
+        echo "🎮 Garchy OS Gaming Telemetry & Hardware Status"
+        echo "=================================================="
+        echo -n "⚡ GameMode Daemon: "
+        if gamemoded -s 2>/dev/null | grep -q "active"; then
+            echo "🟢 ACTIVE (In Game)"
+        else
+            echo "⚪ IDLE / READY"
+        fi
+        
+        echo -n "🖥️  Displays: "
+        xrandr 2>/dev/null | grep -E " connected" | while read -r line; do
+            echo "   • $line"
+        done
+        
+        echo "🔥 GPU Profile (RTX 3080 Ti):"
+        nvidia-smi --query-gpu=name,driver_version,temperature.gpu,utilization.gpu,power.draw --format=csv,noheader 2>/dev/null || echo "   NVIDIA SMI query unavailable"
+        
+        echo "⚡ CPU Governor:"
+        cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "   schedutil / performance"
+        
+        echo "=================================================="
+        ;;
+    hud)
+        if [ "$2" == "on" ]; then
+            export MANGOHUD=1
+            echo "🟢 MangoHud enabled for session."
+        elif [ "$2" == "off" ]; then
+            export MANGOHUD=0
+            echo "⚪ MangoHud disabled for session."
+        else
+            echo "Current MangoHud configuration: ~/.config/MangoHud/MangoHud.conf"
+        fi
+        ;;
+    *)
+        show_help
+        ;;
+esac
